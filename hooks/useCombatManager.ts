@@ -135,15 +135,10 @@ export const useCombatManager = (
             newPlayerState.activeEffects = [];
             
             // 2. Handle NPC state (defeat vs respawn)
+            newPlayerState.defeatedNpcIds = [...new Set([...p.defeatedNpcIds, npc.id])];
+            
             if (isMonster) {
-                const mapId = playerInCombat.currentMap;
-                const mapNpcs = newPlayerState.generatedNpcs[mapId] || [];
-                if (mapNpcs.some(n => n.id === npc.id)) {
-                    const updatedNpcs = mapNpcs.filter(n => n.id !== npc.id);
-                    newPlayerState.generatedNpcs = { ...newPlayerState.generatedNpcs, [mapId]: updatedNpcs };
-                }
-
-                // Add to respawn queue
+                // Add monster to respawn queue
                 if (npc.baseId && typeof npc.level === 'number') {
                     const template = ALL_MONSTERS.find(m => m.baseId === npc.baseId);
                     if (template && template.respawnTimeMinutes) {
@@ -154,7 +149,7 @@ export const useCombatManager = (
                             originalId: npc.id,
                             baseId: npc.baseId,
                             level: npc.level,
-                            mapId: mapId,
+                            mapId: p.currentMap,
                             originalPosition: npc.position,
                             respawnAt,
                         };
@@ -163,8 +158,6 @@ export const useCombatManager = (
                 } else {
                     console.warn(`Attempted to kill monster (id: ${npc.id}, name: ${npc.name}) without a baseId or level. It will not respawn.`);
                 }
-            } else {
-                newPlayerState.defeatedNpcIds = [...new Set([...p.defeatedNpcIds, npc.id])];
             }
             
             // 3. Handle loot
@@ -222,7 +215,6 @@ export const useCombatManager = (
             newPlayerState.activeEffects = [];
     
             // Add the spared NPC to the defeated list to make them disappear.
-            // This is safer than a timed respawn which could use stale state.
             newPlayerState.defeatedNpcIds = [...new Set([...p.defeatedNpcIds, npc.id])];
     
             return newPlayerState;

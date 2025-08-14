@@ -104,6 +104,8 @@ export const useWorldManager = (
             const remainingNpcRespawnQueue = playerState.respawningNpcs?.filter(item => !npcsToRespawn.find(r => r.originalId === item.originalId));
             
             const newNpcs: NPC[] = [];
+            const idsToUnDefeat: string[] = [];
+
             npcsToRespawn.forEach(itemToRespawn => {
                 const template = ALL_MONSTERS.find(t => t.baseId === itemToRespawn.baseId);
                 if (!template) return;
@@ -111,6 +113,7 @@ export const useWorldManager = (
                 const newId = `respawn-${itemToRespawn.originalId}-${Date.now()}`;
                 const newNpc = createMonsterFromData(template, itemToRespawn.level, newId, itemToRespawn.originalPosition);
                 newNpcs.push(newNpc);
+                idsToUnDefeat.push(itemToRespawn.originalId);
             });
 
             if (newNpcs.length > 0) {
@@ -118,10 +121,13 @@ export const useWorldManager = (
                     if (!p) return null;
                     const currentMapNpcs = p.generatedNpcs[currentMapId] || [];
                     const updatedNpcs = [...currentMapNpcs, ...newNpcs];
+                    const updatedDefeatedIds = p.defeatedNpcIds.filter(id => !idsToUnDefeat.includes(id));
+
                     return { 
                         ...p, 
                         respawningNpcs: remainingNpcRespawnQueue,
-                        generatedNpcs: { ...p.generatedNpcs, [currentMapId]: updatedNpcs }
+                        generatedNpcs: { ...p.generatedNpcs, [currentMapId]: updatedNpcs },
+                        defeatedNpcIds: updatedDefeatedIds,
                     };
                 });
             } else {

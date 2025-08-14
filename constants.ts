@@ -152,6 +152,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
   generatedNpcs: {},
   defeatedNpcIds: [],
   time: { year: 1, season: 'Xuân', month: 1, day: 1, hour: 8, minute: 0 },
+  respawningNpcs: [],
 
   useRandomNames: false,
   nameOverrides: {},
