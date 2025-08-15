@@ -37,8 +37,8 @@ export const LINH_CAN_DATA: Record<LinhCanType, LinhCanDefinition> = {
         description: 'Tăng cường sự sắc bén và vững chắc. Chủ về tấn công và phòng ngự vật lý.',
         icon: React.createElement(GiMetalBar, { className: "text-gray-300" }),
         bonuses: [
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', valuePerPurity: 0.15 },
-            { targetStat: 'defensePower', modifier: 'ADDITIVE', valuePerPurity: 0.25 },
+            { targetStat: 'attackPower', modifier: 'MULTIPLIER', valuePerPurity: 0.0015 }, // +15% at 100 purity
+            { targetStat: 'defensePower', modifier: 'MULTIPLIER', valuePerPurity: 0.0015 }, // +15% at 100 purity
         ]
     },
     MOC: {
@@ -46,7 +46,7 @@ export const LINH_CAN_DATA: Record<LinhCanType, LinhCanDefinition> = {
         description: 'Tăng cường sinh mệnh lực và khả năng hồi phục. Chủ về sinh tồn và trị liệu.',
         icon: React.createElement(GiSprout, { className: "text-green-500" }),
         bonuses: [
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', valuePerPurity: 1.5 },
+            { targetStat: 'maxHp', modifier: 'MULTIPLIER', valuePerPurity: 0.002 }, // +20% at 100 purity
             { targetAttribute: 'canCot', modifier: 'ADDITIVE', valuePerPurity: 0.1 },
         ]
     },
@@ -55,7 +55,7 @@ export const LINH_CAN_DATA: Record<LinhCanType, LinhCanDefinition> = {
         description: 'Tăng cường sự linh hoạt và trữ lượng linh lực. Chủ về biến hóa và khống chế.',
         icon: React.createElement(GiWaterDrop, { className: "text-blue-400" }),
         bonuses: [
-            { targetStat: 'maxMana', modifier: 'ADDITIVE', valuePerPurity: 0.8 },
+            { targetStat: 'maxMana', modifier: 'MULTIPLIER', valuePerPurity: 0.0015 }, // +15% at 100 purity
             { targetStat: 'evasionRate', modifier: 'MULTIPLIER', valuePerPurity: 0.0005 }, // 5% at 100 purity
         ]
     },
@@ -64,7 +64,7 @@ export const LINH_CAN_DATA: Record<LinhCanType, LinhCanDefinition> = {
         description: 'Tăng cường sức mạnh bùng nổ và pháp thuật. Chủ về tấn công hủy diệt.',
         icon: React.createElement(GiFire, { className: "text-red-500" }),
         bonuses: [
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', valuePerPurity: 0.2 },
+            { targetStat: 'attackPower', modifier: 'MULTIPLIER', valuePerPurity: 0.002 }, // +20% at 100 purity
             { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', valuePerPurity: 0.15 },
         ]
     },
@@ -73,8 +73,8 @@ export const LINH_CAN_DATA: Record<LinhCanType, LinhCanDefinition> = {
         description: 'Tăng cường sự vững chãi và sức bền. Chủ về phòng ngự và sức chịu đựng.',
         icon: React.createElement(GiStoneSphere, { className: "text-yellow-600" }),
         bonuses: [
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', valuePerPurity: 1.0 },
-            { targetStat: 'defensePower', modifier: 'ADDITIVE', valuePerPurity: 0.3 },
+            { targetStat: 'maxHp', modifier: 'MULTIPLIER', valuePerPurity: 0.0015 },      // +15% at 100 purity
+            { targetStat: 'defensePower', modifier: 'MULTIPLIER', valuePerPurity: 0.0025 }, // +25% at 100 purity
         ]
     },
     PHONG: {
@@ -91,7 +91,7 @@ export const LINH_CAN_DATA: Record<LinhCanType, LinhCanDefinition> = {
         description: 'Tăng cường khả năng tấn công bất ngờ và chí mạng. Chủ về tốc độ và sức công phá.',
         icon: React.createElement(GiLightningTrio, { className: "text-yellow-300" }),
         bonuses: [
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', valuePerPurity: 0.1 },
+            { targetStat: 'attackPower', modifier: 'MULTIPLIER', valuePerPurity: 0.0005 }, // +5% at 100 purity
             { targetStat: 'critRate', modifier: 'MULTIPLIER', valuePerPurity: 0.001 }, // 10% at 100 purity
         ]
     },
@@ -100,7 +100,7 @@ export const LINH_CAN_DATA: Record<LinhCanType, LinhCanDefinition> = {
         description: 'Tăng cường khả năng hồi phục và nhận thức. Chủ về hỗ trợ và nhận biết.',
         icon: React.createElement(GiSun, { className: "text-yellow-200" }),
         bonuses: [
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', valuePerPurity: 0.5 },
+            { targetStat: 'maxHp', modifier: 'MULTIPLIER', valuePerPurity: 0.0005 }, // +5% at 100 purity
             { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', valuePerPurity: 0.15 },
         ]
     },
