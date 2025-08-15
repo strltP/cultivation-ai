@@ -33,13 +33,15 @@ const InteractionMenu: React.FC<InteractionMenuProps> = ({ npc, position, onStar
             role="dialog"
         >
             <div className="text-center text-white font-bold border-b border-gray-600 pb-1 mb-1 px-4">{npc.name}</div>
-            <button
-                onClick={createHandler(onStartChat)}
-                className="flex items-center gap-3 w-full text-left px-3 py-2 rounded-md text-gray-200 hover:bg-yellow-600/50 transition-colors"
-            >
-                <FaCommentDots className="text-yellow-300" />
-                <span>Trò chuyện</span>
-            </button>
+            {npc.npcType !== 'monster' && (
+                <button
+                    onClick={createHandler(onStartChat)}
+                    className="flex items-center gap-3 w-full text-left px-3 py-2 rounded-md text-gray-200 hover:bg-yellow-600/50 transition-colors"
+                >
+                    <FaCommentDots className="text-yellow-300" />
+                    <span>Trò chuyện</span>
+                </button>
+            )}
              {hasTradeOption && (
                  <button
                     onClick={createHandler(onTrade)}

@@ -48,7 +48,7 @@ const CombatUI: React.FC<CombatUIProps> = ({ combatState, onAction, onClose, onK
             </div>
 
             {/* Main container for log and actions */}
-            <div className="w-full max-w-6xl flex-grow flex gap-4">
+            <div className="w-full max-w-6xl flex-grow flex gap-4 min-h-0">
                  {/* Log */}
                 <CombatLog log={combatState.log} />
 

@@ -37,13 +37,13 @@ export const useInteractionManager = (
     setGameMessage: (message: string | null) => void,
     pendingInteraction: React.MutableRefObject<(() => void) | null>,
     interactionBlockers: InteractionBlockers,
-    dependencies: InteractionDependencies
+    dependencies: InteractionDependencies,
+    stopAllActions: React.MutableRefObject<() => void>
 ) => {
     const [activeDialogue, setActiveDialogue] = useState<Dialogue | null>(null);
     const [activeInteractionNpc, setActiveInteractionNpc] = useState<NPC | null>(null);
     const [activeInteractionInteractable, setActiveInteractionInteractable] = useState<Interactable | null>(null);
     const [viewingNpc, setViewingNpc] = useState<NPC | null>(null);
-    const stopAllActions = useRef(() => {});
 
     // Chat state
     const [activeChat, setActiveChat] = useState<Chat | null>(null);
@@ -97,7 +97,7 @@ export const useInteractionManager = (
         if (target.type === 'chest') {
             handleRemoveAndRespawn(target as Interactable);
         }
-    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, handleAddLinhThach, handleAddItemToInventory, handleRemoveAndRespawn]);
+    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, handleAddLinhThach, handleAddItemToInventory, handleRemoveAndRespawn, stopAllActions]);
 
     const handleTeleport = useCallback((gate: TeleportLocation) => {
         stopAllActions.current();
@@ -120,7 +120,7 @@ export const useInteractionManager = (
             setIsLoading(false);
             setGameMessage(`Đã đến ${targetMapName}!`);
         }, 1500);
-    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, allMaps]);
+    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, allMaps, stopAllActions]);
     
     const handleEnterPoi = useCallback((poi: PointOfInterest) => {
         if (!poi.targetMap || !poi.targetPosition) return;
@@ -143,10 +143,10 @@ export const useInteractionManager = (
             setIsLoading(false);
             setGameMessage(`Chào mừng đến ${poi.name}!`);
         }, 1500);
-    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage]);
+    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, stopAllActions]);
 
     const handleSpiritFieldClick = useCallback((plot: Interactable) => {
-        const plantedPlot = playerState.plantedPlots?.find(p => p.plotId === plot.id);
+        const plantedPlot = playerState.plantedPlots.find(p => p.plotId === plot.id);
 
         if (plantedPlot) {
             const seedDef = ALL_ITEMS.find(i => i.id === plantedPlot.seedId);
@@ -169,7 +169,7 @@ export const useInteractionManager = (
                 updateAndPersistPlayerState(prev => {
                     if (!prev) return prev;
 
-                    const newPlantedPlots = (prev.plantedPlots || []).filter(p => p.plotId !== plot.id);
+                    const newPlantedPlots = prev.plantedPlots.filter(p => p.plotId !== plot.id);
                     let newInventory: InventorySlot[] = JSON.parse(JSON.stringify(prev.inventory));
                     const lootMessages: string[] = [];
                     let inventoryIsFull = false;
@@ -264,7 +264,7 @@ export const useInteractionManager = (
             updateAndPersistPlayerState(prev => prev ? ({ ...prev, targetPosition: { x: targetX, y: targetY } }) : prev);
             pendingInteraction.current = interactionFn;
         }
-    }, [isLoading, interactionBlockers, playerState.position, updateAndPersistPlayerState, pendingInteraction, chatTargetNpc]);
+    }, [isLoading, interactionBlockers, playerState.position, updateAndPersistPlayerState, pendingInteraction, chatTargetNpc, stopAllActions]);
 
     const handleGatherInteractable = useCallback((interactable: Interactable) => {
         setActiveInteractionInteractable(null);
@@ -325,7 +325,23 @@ export const useInteractionManager = (
         handleRemoveAndRespawn(interactable, 4); // 4x respawn time multiplier
     }, [handleRemoveAndRespawn, setGameMessage, updateAndPersistPlayerState]);
 
-    const handleStartChat = useCallback((npc: NPC) => {
+    const handleStartChat = useCallback((npcToChatWith: NPC) => {
+        // Find the most up-to-date version of the NPC from the player state to prevent using a stale object.
+        const freshNpc = playerState.generatedNpcs[playerState.currentMap]?.find(n => n.id === npcToChatWith.id);
+
+        if (!freshNpc) {
+             setGameMessage(`${npcToChatWith.name} đã không còn ở đây.`);
+             setActiveInteractionNpc(null);
+             return;
+        }
+
+        const npc = freshNpc; // Use the fresh data for chat initiation.
+
+        if (npc.npcType === 'monster') {
+            setGameMessage("Không thể trò chuyện với yêu thú.");
+            setActiveInteractionNpc(null);
+            return;
+        }
         stopAllActions.current();
         setActiveInteractionNpc(null);
         const savedHistory = playerState.chatHistories?.[npc.id] || [];
@@ -333,7 +349,7 @@ export const useInteractionManager = (
         setActiveChat(chatSession);
         setChatTargetNpc(npc);
         setChatHistory(savedHistory.length > 0 ? savedHistory : [{ role: 'model', text: npc.prompt }]);
-    }, [playerState]);
+    }, [playerState, stopAllActions, setGameMessage]);
 
     const handleSendMessage = useCallback(async (message: string) => {
         if (!activeChat || isChatLoading || !chatTargetNpc) return;
@@ -391,6 +407,5 @@ export const useInteractionManager = (
         handleStartChat,
         handleSendMessage,
         handleCloseChat,
-        stopAllActions,
     };
 };

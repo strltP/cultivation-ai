@@ -48,6 +48,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
         tradingNpc, setTradingNpc,
         plantingPlot, setPlantingPlot,
         updateAndPersistPlayerState, // Get the atomic state updater
+        setTeleportingWithItemIndex,
     } = useUI();
     
     const { gameMessage, isLoading, currentPois, currentMapAreas, currentTeleportGates } = useWorld();
@@ -115,6 +116,11 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
     const onToggleInfoPanel = useCallback(() => setIsInfoPanelOpen(prev => !prev), [setIsInfoPanelOpen]);
     const onToggleWorldInfoPanel = useCallback(() => setIsWorldInfoPanelOpen(prev => !prev), [setIsWorldInfoPanelOpen]);
 
+    const handleCloseTeleportUI = useCallback(() => {
+        setIsTeleportUIOpen(false);
+        setTeleportingWithItemIndex(null);
+    }, [setIsTeleportUIOpen, setTeleportingWithItemIndex]);
+
     return (
         <>
             {!combatState && (
@@ -140,10 +146,24 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                 <InteractionMenu
                     npc={activeInteractionNpc}
                     position={calculateMenuPosition(activeInteractionNpc.position)}
-                    onStartChat={() => handleStartChat(activeInteractionNpc)}
-                    onChallenge={() => handleChallenge(activeInteractionNpc)}
+                    onStartChat={() => {
+                        // User requested workaround: trigger view info logic before starting chat
+                        handleViewInfo(activeInteractionNpc);
+                        // The Info Panel will be briefly set, then the Chat Panel will open over it.
+                        // When chat is closed, the info panel can be closed.
+                        setTimeout(() => handleStartChat(activeInteractionNpc), 0);
+                    }}
+                    onChallenge={() => {
+                         // User requested workaround: trigger view info logic before combat
+                        handleViewInfo(activeInteractionNpc);
+                        setTimeout(() => handleChallenge(activeInteractionNpc), 0);
+                    }}
                     onViewInfo={() => handleViewInfo(activeInteractionNpc)}
-                    onTrade={() => handleTrade(activeInteractionNpc)}
+                    onTrade={() => {
+                         // User requested workaround: trigger view info logic before trade
+                        handleViewInfo(activeInteractionNpc);
+                        setTimeout(() => handleTrade(activeInteractionNpc), 0);
+                    }}
                     onClose={() => setActiveInteractionNpc(null)}
                 />
             )}
@@ -185,7 +205,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                     currentMapId={playerState.currentMap}
                     allMaps={allMaps}
                     onTeleport={handleTalismanTeleport}
-                    onClose={() => setIsTeleportUIOpen(false)}
+                    onClose={handleCloseTeleportUI}
                 />
             )}
             {isAlchemyPanelOpen && (

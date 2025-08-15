@@ -8,7 +8,7 @@ export const useInventoryManager = (
     playerState: PlayerState,
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
-    openTeleportUI: () => void,
+    openTeleportUI: (itemIndex: number) => void,
     openAlchemyPanel: () => void,
 ) => {
 
@@ -97,7 +97,9 @@ export const useInventoryManager = (
                 shouldConsume = true;
             } else if ((currentItemDef.type === 'consumable' || currentItemDef.type === 'tool') && currentItemDef.effects) {
                  if (currentItemDef.type === 'consumable') {
-                    shouldConsume = true;
+                    if (!isTeleport) { // Do not consume teleport talisman here
+                        shouldConsume = true;
+                    }
                  }
                  currentItemDef.effects.forEach(effect => {
                     switch (effect.type) {
@@ -151,7 +153,7 @@ export const useInventoryManager = (
         });
 
         if (isTeleport) {
-            openTeleportUI();
+            openTeleportUI(itemIndex);
         }
         if (isAlchemy) {
             openAlchemyPanel();

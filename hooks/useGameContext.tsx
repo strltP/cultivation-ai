@@ -22,7 +22,6 @@ import { useDebounce } from './useDebounce';
 
 interface IUIContext {
     playerState: PlayerState;
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState>>;
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void;
     isGameReady: boolean;
     isGeneratingNames: boolean;
@@ -35,6 +34,8 @@ interface IUIContext {
     setIsWorldInfoPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
     isTeleportUIOpen: boolean;
     setIsTeleportUIOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    teleportingWithItemIndex: number | null;
+    setTeleportingWithItemIndex: React.Dispatch<React.SetStateAction<number | null>>;
     isAlchemyPanelOpen: boolean;
     setIsAlchemyPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
     tradingNpc: NPC | null;
@@ -145,12 +146,11 @@ export const useInteraction = () => {
 
 interface GameProviderProps {
     children: ReactNode;
-    initialPlayerState: PlayerState;
-    setPlayerStateForPersistence: React.Dispatch<React.SetStateAction<PlayerState | null>>;
+    playerState: PlayerState;
+    updateAndPersistPlayerState: (updater: React.SetStateAction<PlayerState>) => void;
 }
 
-export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPlayerState, setPlayerStateForPersistence }) => {
-    const [playerState, setPlayerState] = useState<PlayerState>(initialPlayerState);
+export const GameProvider: React.FC<GameProviderProps> = ({ children, playerState, updateAndPersistPlayerState }) => {
     const [isGameReady, setIsGameReady] = useState(false);
     const [isGeneratingNames, setIsGeneratingNames] = useState(false);
     
@@ -175,7 +175,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
 
                 const overrides = await generatePlaceNames(placesToName);
                 
-                setPlayerState(p => ({ ...p, nameOverrides: overrides }));
+                updateAndPersistPlayerState(p => ({ ...p, nameOverrides: overrides }));
                 setIsGeneratingNames(false);
             }
             setIsGameReady(true);
@@ -195,31 +195,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
         }
     }, [setGameMessageObject]);
 
-    // --- Debounced Auto-Save ---
-    // This is now the single source of truth for persisting state to localStorage.
-    // It prevents race conditions and improves performance by not saving on every state change.
-    const debouncedPlayerState = useDebounce(playerState, 500);
-
-    useEffect(() => {
-        // We only want to save once the game is ready and the debounced state exists.
-        // This prevents saving an empty or partially loaded state on initial load.
-        if (isGameReady && debouncedPlayerState) {
-            savePlayerState(debouncedPlayerState);
-        }
-    }, [debouncedPlayerState, isGameReady]);
-
-    // --- Atomic State Updater ---
-    // This function now ONLY updates the React state. The debounced useEffect above 
-    // will handle persisting it to localStorage automatically and safely.
-    const updateAndPersistPlayerState = useCallback((updater: (prevState: PlayerState) => PlayerState) => {
-        setPlayerState(updater);
-    }, [setPlayerState]);
-
     // --- UI Panel State ---
     const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
     const [isInfoPanelOpen, setIsInfoPanelOpen] = useState<boolean>(false);
     const [isWorldInfoPanelOpen, setIsWorldInfoPanelOpen] = useState<boolean>(false);
     const [isTeleportUIOpen, setIsTeleportUIOpen] = useState<boolean>(false);
+    const [teleportingWithItemIndex, setTeleportingWithItemIndex] = useState<number | null>(null);
     const [isAlchemyPanelOpen, setIsAlchemyPanelOpen] = useState<boolean>(false);
     const [tradingNpc, setTradingNpc] = useState<NPC | null>(null);
     const [plantingPlot, setPlantingPlot] = useState<Interactable | null>(null);
@@ -249,27 +230,45 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
     }, [playerState.nameOverrides]);
 
     // --- Sub-Hook Instantiation ---
-    const inventoryManager = useInventoryManager(playerState, updateAndPersistPlayerState, setGameMessage, () => setIsTeleportUIOpen(true), () => setIsAlchemyPanelOpen(true));
+    const stopAllActions = useRef<() => void>(() => {});
 
-    const worldManager = useWorldManager(playerState, setPlayerState, setGameMessage, {
+    const openTeleportUIWithItem = useCallback((itemIndex: number) => {
+        setTeleportingWithItemIndex(itemIndex);
+        setIsTeleportUIOpen(true);
+    }, []);
+
+    const inventoryManager = useInventoryManager(
+        playerState,
+        updateAndPersistPlayerState,
+        setGameMessage,
+        openTeleportUIWithItem,
+        () => setIsAlchemyPanelOpen(true)
+    );
+
+    const worldManager = useWorldManager(playerState, updateAndPersistPlayerState, setGameMessage, {
         pois: effectivePois,
         mapAreas: effectiveMapAreas,
         teleportGates: effectiveTeleportGates,
     });
 
-    const stopAllActions = useRef(() => { });
-
-    const playerActions = usePlayerActionsManager(updateAndPersistPlayerState, setGameMessage, stopAllActions.current);
+    const playerActions = usePlayerActionsManager(updateAndPersistPlayerState, setGameMessage, stopAllActions);
 
     const combatManager = useCombatManager(
-        playerState, updateAndPersistPlayerState, setGameMessage, stopAllActions.current,
+        playerState, updateAndPersistPlayerState, setGameMessage, stopAllActions,
         inventoryManager.handleAddItemToInventory,
         inventoryManager.handleAddLinhThach
     );
 
-    const handleInitiateTrade = (npc: NPC) => {
+    const handleInitiateTrade = (npcToTradeWith: NPC) => {
+        // Find the most up-to-date version of the NPC from the player state to prevent using a stale object.
+        const freshNpc = playerState.generatedNpcs[playerState.currentMap]?.find(n => n.id === npcToTradeWith.id);
+
+        if (!freshNpc) {
+            setGameMessage(`${npcToTradeWith.name || 'NPC'} đã không còn ở đây.`);
+            return;
+        }
         stopAllActions.current();
-        setTradingNpc(npc);
+        setTradingNpc(freshNpc); // Use the fresh NPC object
     };
 
     const interactionManager = useInteractionManager(
@@ -285,7 +284,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
             setPlantingPlot,
             setIsAlchemyPanelOpen,
             allMaps
-        }
+        },
+        stopAllActions
     );
 
     const fullStopAllActions = useCallback(() => {
@@ -296,15 +296,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
         interactionManager.setViewingNpc(null);
         setTradingNpc(null);
         setIsTeleportUIOpen(false);
+        setTeleportingWithItemIndex(null);
         setPlantingPlot(null);
         setIsAlchemyPanelOpen(false);
         interactionManager.handleCloseChat();
     }, [playerActions, interactionManager]);
 
     stopAllActions.current = fullStopAllActions;
-    playerActions.stopAllActions.current = fullStopAllActions;
-    combatManager.stopAllActions.current = fullStopAllActions;
-    interactionManager.stopAllActions.current = fullStopAllActions;
 
     useEffect(() => {
         if (tradingNpc) {
@@ -323,37 +321,60 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
     const setTargetPosition = (pos: Position) => {
         fullStopAllActions();
         pendingInteraction.current = null;
-        setPlayerState(prevState => ({ ...prevState, targetPosition: pos }));
+        updateAndPersistPlayerState(prevState => ({ ...prevState, targetPosition: pos }));
     };
     
     const handleTalismanTeleport = useCallback((targetMap: MapID) => {
+        if (teleportingWithItemIndex === null) return;
+
+        const itemIndexToConsume = teleportingWithItemIndex;
+        setTeleportingWithItemIndex(null);
         setIsTeleportUIOpen(false);
         worldManager.setIsLoading(true);
         const targetMapName = allMaps[targetMap].name;
         setGameMessage(`Không gian đang dao động, chuẩn bị dịch chuyển đến ${targetMapName}...`);
 
-        const landingPositions: Record<MapID, Position> = {
-            'BAC_VUC': { x: 400, y: 400 },
-            'DAI_HOANG': { x: 1100, y: 250 },
-            'DONG_HAI': { x: 150, y: 400 },
-            'THIEN_NAM': { x: 3800, y: 1800 },
-            'THAT_HUYEN_THANH': {x: 500, y: 850},
-            'LUC_YEN_THON': { x: 1000, y: 1300 },
-            'LUU_LY_TONG': { x: 1600, y: 2000 },
-            'VAN_BAO_LAU': { x: 1200, y: 1600 },
-            'THIEN_MA_TUU_LAU': { x: 1400, y: 1600 },
-            'MO_LINH_THANH': { x: 600, y: 850 },
-            'HUYEN_NGOC_THANH': { x: 2000, y: 1750 },
-            'THANH_VAN_MON': { x: 1500, y: 3800 },
-            'DUOC_VIEN': { x: 1000, y: 1300 },
-            'HAC_AM_SAM_LAM': { x: 1500, y: 3800 },
-        };
-
         setTimeout(() => {
             updateAndPersistPlayerState(prev => {
+                if (!prev) return prev;
+
+                // 1. Consume the item
+                const newInventory = [...prev.inventory];
+                const itemSlot = newInventory[itemIndexToConsume];
+
+                if (!itemSlot || !ALL_ITEMS.find(i => i.id === itemSlot.itemId)?.effects?.some(e => e.type === 'TELEPORT')) {
+                    console.error("Teleport item not found at expected index.");
+                    return prev;
+                }
+                
+                if (itemSlot.quantity > 1) {
+                    itemSlot.quantity -= 1;
+                } else {
+                    newInventory.splice(itemIndexToConsume, 1);
+                }
+                
                 const timeAdvanced = advanceTime(prev.time, 24 * 60); // Teleporting takes 1 day
+                
+                const landingPositions: Record<MapID, Position> = {
+                    'BAC_VUC': { x: 400, y: 400 },
+                    'DAI_HOANG': { x: 1100, y: 250 },
+                    'DONG_HAI': { x: 150, y: 400 },
+                    'THIEN_NAM': { x: 3800, y: 1800 },
+                    'THAT_HUYEN_THANH': {x: 500, y: 850},
+                    'LUC_YEN_THON': { x: 1000, y: 1300 },
+                    'LUU_LY_TONG': { x: 1600, y: 2000 },
+                    'VAN_BAO_LAU': { x: 1200, y: 1600 },
+                    'THIEN_MA_TUU_LAU': { x: 1400, y: 1600 },
+                    'MO_LINH_THANH': { x: 600, y: 850 },
+                    'HUYEN_NGOC_THANH': { x: 2000, y: 1750 },
+                    'THANH_VAN_MON': { x: 1500, y: 3800 },
+                    'DUOC_VIEN': { x: 1000, y: 1300 },
+                    'HAC_AM_SAM_LAM': { x: 1500, y: 3800 },
+                };
+
                 return {
                     ...prev,
+                    inventory: newInventory,
                     currentMap: targetMap,
                     position: landingPositions[targetMap],
                     targetPosition: landingPositions[targetMap],
@@ -363,7 +384,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
             worldManager.setIsLoading(false);
             setGameMessage(`Đã đến ${targetMapName}!`);
         }, 2000);
-    }, [updateAndPersistPlayerState, worldManager.setIsLoading, setGameMessage, allMaps]);
+    }, [updateAndPersistPlayerState, worldManager, setGameMessage, allMaps, teleportingWithItemIndex, setIsTeleportUIOpen]);
 
      const handlePlantSeed = useCallback((plotId: string, seedItemId: string, inventoryIndex: number) => {
         updateAndPersistPlayerState(prev => {
@@ -380,7 +401,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
                 newInventory.splice(inventoryIndex, 1);
             }
 
-            const newPlantedPlots = [...(prev.plantedPlots || [])];
+            const newPlantedPlots = [...prev.plantedPlots];
             newPlantedPlots.push({
                 plotId,
                 mapId: prev.currentMap,
@@ -468,17 +489,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
     // --- CONTEXT VALUES ---
 
     const uiContextValue: IUIContext = useMemo(() => ({
-        playerState, setPlayerState: setPlayerState as React.Dispatch<React.SetStateAction<PlayerState>>, 
+        playerState, 
         updateAndPersistPlayerState,
         isGameReady, isGeneratingNames, allMaps,
         isMapOpen, setIsMapOpen,
         isInfoPanelOpen, setIsInfoPanelOpen,
         isWorldInfoPanelOpen, setIsWorldInfoPanelOpen,
         isTeleportUIOpen, setIsTeleportUIOpen,
+        teleportingWithItemIndex, setTeleportingWithItemIndex,
         isAlchemyPanelOpen, setIsAlchemyPanelOpen,
         tradingNpc, setTradingNpc,
         plantingPlot, setPlantingPlot,
-    }), [playerState, setPlayerState, updateAndPersistPlayerState, isGameReady, isGeneratingNames, allMaps, isMapOpen, isInfoPanelOpen, isWorldInfoPanelOpen, isTeleportUIOpen, isAlchemyPanelOpen, tradingNpc, plantingPlot]);
+    }), [playerState, updateAndPersistPlayerState, isGameReady, isGeneratingNames, allMaps, isMapOpen, isInfoPanelOpen, isWorldInfoPanelOpen, isTeleportUIOpen, teleportingWithItemIndex, isAlchemyPanelOpen, tradingNpc, plantingPlot]);
 
     const worldContextValue: IWorldContext = useMemo(() => ({
         gameMessage: gameMessageObject,

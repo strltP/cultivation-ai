@@ -96,7 +96,7 @@ const generateInteractablesForMap = (mapId: MapID, allPois: Record<MapID, PointO
 
 export const useWorldManager = (
     playerState: PlayerState,
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>,
+    updateAndPersistPlayerState: (updater: React.SetStateAction<PlayerState>) => void,
     setGameMessage: (message: string | null) => void,
     dataSource: WorldDataSource
 ) => {
@@ -115,8 +115,8 @@ export const useWorldManager = (
         // --- Initialize Interactables if they haven't been generated for this map ---
         if (!playerState.generatedInteractables?.[currentMapId] && playerState.name) { // Check player name to avoid running on initial empty state
              const newInteractables = generateInteractablesForMap(currentMapId, dataSource.pois, dataSource.mapAreas);
-             setPlayerState(p => {
-                 if (!p) return null;
+             updateAndPersistPlayerState(p => {
+                 if (!p) return null as any;
                  const newGeneratedInteractables = { ...p.generatedInteractables, [currentMapId]: newInteractables };
                  return { ...p, generatedInteractables: newGeneratedInteractables };
              });
@@ -125,50 +125,44 @@ export const useWorldManager = (
         
         // --- Respawn Logic ---
         const now = gameTimeToMinutes(playerState.time);
-        const newlyRespawnedInteractableIds = new Set(
-            (playerState.respawningInteractables || [])
-                .filter(item => item.mapId === currentMapId && now >= gameTimeToMinutes(item.respawnAt))
-                .map(item => item.originalId)
-        );
+        const newlyRespawnedInteractableIds = new Set(playerState.respawningInteractables
+            .filter(item => item.mapId === currentMapId && now >= gameTimeToMinutes(item.respawnAt))
+            .map(item => item.originalId));
 
         if (newlyRespawnedInteractableIds.size > 0) {
-            setPlayerState(p => {
-                if (!p) return null;
-                const newQueue = p.respawningInteractables?.filter(item => !newlyRespawnedInteractableIds.has(item.originalId));
+            updateAndPersistPlayerState(p => {
+                if (!p) return null as any;
+                const newQueue = p.respawningInteractables.filter(item => !newlyRespawnedInteractableIds.has(item.originalId));
                 return { ...p, respawningInteractables: newQueue };
             });
             return; // Let re-render handle visibility change
         }
         
         // --- World Object Loading & Visibility ---
-        const activeRespawningIds = new Set(
-            (playerState.respawningInteractables || [])
-                .filter(item => item.mapId === currentMapId)
-                .map(item => item.originalId)
-        );
+        const activeRespawningIds = new Set(playerState.respawningInteractables
+            .filter(item => item.mapId === currentMapId)
+            .map(item => item.originalId));
         const interactablesForMap = (playerState.generatedInteractables[currentMapId] || []).filter(item => !activeRespawningIds.has(item.id));
         
-        if (playerState.plantedPlots) {
-            playerState.plantedPlots.forEach(plot => {
-                if (plot.mapId === currentMapId) {
-                    const interactable = interactablesForMap.find((i: Interactable) => i.id === plot.plotId);
-                    if (interactable) {
-                        const seedDef = ALL_ITEMS.find(item => item.id === plot.seedId);
-                        const grownItemDef = ALL_ITEMS.find(item => item.id === seedDef?.growsIntoItemId);
-                        if (seedDef && seedDef.growthTimeMinutes && grownItemDef) {
-                             const plantedTimeMins = gameTimeToMinutes(plot.plantedAt);
-                             const elapsedMins = now - plantedTimeMins;
-                             const isReady = elapsedMins >= seedDef.growthTimeMinutes;
-                             const growthPercent = Math.min(100, (elapsedMins / seedDef.growthTimeMinutes) * 100);
-                             interactable.isPlanted = true;
-                             interactable.plantName = grownItemDef.name;
-                             interactable.isReady = isReady;
-                             interactable.growthPercent = growthPercent;
-                        }
+        playerState.plantedPlots.forEach(plot => {
+            if (plot.mapId === currentMapId) {
+                const interactable = interactablesForMap.find((i: Interactable) => i.id === plot.plotId);
+                if (interactable) {
+                    const seedDef = ALL_ITEMS.find(item => item.id === plot.seedId);
+                    const grownItemDef = ALL_ITEMS.find(item => item.id === seedDef?.growsIntoItemId);
+                    if (seedDef && seedDef.growthTimeMinutes && grownItemDef) {
+                         const plantedTimeMins = gameTimeToMinutes(plot.plantedAt);
+                         const elapsedMins = now - plantedTimeMins;
+                         const isReady = elapsedMins >= seedDef.growthTimeMinutes;
+                         const growthPercent = Math.min(100, (elapsedMins / seedDef.growthTimeMinutes) * 100);
+                         interactable.isPlanted = true;
+                         interactable.plantName = grownItemDef.name;
+                         interactable.isReady = isReady;
+                         interactable.growthPercent = growthPercent;
                     }
                 }
-            });
-        }
+            }
+        });
         
         setCurrentInteractables(interactablesForMap);
         setCurrentTeleportGates(dataSource.teleportGates[currentMapId] || []);
@@ -180,7 +174,7 @@ export const useWorldManager = (
                 setIsLoading(true);
                 try {
                     const newNpcs = await loadNpcsForMap(currentMapId, POIS_BY_MAP);
-                    setPlayerState(prev => {
+                    updateAndPersistPlayerState(prev => {
                         if (!prev || prev.currentMap !== currentMapId) return prev;
                         const newGeneratedNpcs = { ...prev.generatedNpcs, [currentMapId]: newNpcs };
                         return { ...prev, generatedNpcs: newGeneratedNpcs };
@@ -199,8 +193,8 @@ export const useWorldManager = (
         // --- New Monster Population Check Logic ---
         const monsterRulesForMap = NPC_SPAWN_DEFINITIONS_BY_MAP[currentMapId]?.filter(def => def.type === 'procedural_monster');
         if (monsterRulesForMap && monsterRulesForMap.length > 0) {
-            setPlayerState(p => {
-                if (!p) return null;
+            updateAndPersistPlayerState(p => {
+                if (!p) return null as any;
                 
                 let updated = false;
                 const newState = JSON.parse(JSON.stringify(p)); // Deep copy to prevent mutation
@@ -250,14 +244,14 @@ export const useWorldManager = (
             });
         }
 
-    }, [playerState, dataSource, isLoading, setPlayerState, setGameMessage]); 
+    }, [playerState, dataSource, isLoading, updateAndPersistPlayerState, setGameMessage]); 
 
     const handleRemoveAndRespawn = useCallback((interactable: Interactable, respawnTimeMultiplier: number = 1) => {
         const template = ALL_INTERACTABLES.find(t => t.baseId === interactable.baseId);
         
         if (template && template.respawnTimeMinutes) {
-            setPlayerState(p => {
-                if (!p) return null;
+            updateAndPersistPlayerState(p => {
+                if (!p) return null as any;
                 const finalRespawnTimeMins = template.respawnTimeMinutes * respawnTimeMultiplier;
                 const respawnAt = advanceTime(p.time, finalRespawnTimeMins);
                 const newRespawningItem = {
@@ -270,13 +264,13 @@ export const useWorldManager = (
                 };
                 return {
                     ...p,
-                    respawningInteractables: [...(p.respawningInteractables || []), newRespawningItem],
+                    respawningInteractables: [...p.respawningInteractables, newRespawningItem],
                 };
             });
         } else {
             // Permanently remove if it doesn't respawn
-            setPlayerState(p => {
-                if (!p) return null;
+            updateAndPersistPlayerState(p => {
+                if (!p) return null as any;
                 const currentMapId = p.currentMap;
                 const masterList = p.generatedInteractables?.[currentMapId] || [];
                 const newList = masterList.filter(item => item.id !== interactable.id);
@@ -284,7 +278,7 @@ export const useWorldManager = (
                 return { ...p, generatedInteractables: newGeneratedInteractables };
             });
         }
-    }, [setPlayerState]);
+    }, [updateAndPersistPlayerState]);
 
     return {
         isLoading,

@@ -1,17 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { GameProvider, useUI, useCombat, useInteraction, useWorld, usePlayerActions } from './hooks/useGameContext';
 import { useCamera } from './hooks/useCamera';
 import { useGameLoop } from './hooks/useGameLoop';
 import type { PlayerState } from './types/character';
-import { usePlayerPersistence, createNewPlayer } from './hooks/usePlayerPersistence';
+import { usePlayerPersistence, createNewPlayer, savePlayerState } from './hooks/usePlayerPersistence';
 import type { LinhCan } from './types/linhcan';
 import UIManager from './components/ui/UIManager';
 import WorldRenderer from './components/world/WorldRenderer';
 import CharacterCreation from './components/CharacterCreation';
+import { useDebounce } from './hooks/useDebounce';
 
 
 const App: React.FC = () => {
-    const [playerState, setPlayerState, updateAndPersistPlayerState] = usePlayerPersistence();
+    const [playerState, setPlayerState] = usePlayerPersistence();
+    const debouncedPlayerState = useDebounce(playerState, 500);
+
+    useEffect(() => {
+        if (debouncedPlayerState) {
+            savePlayerState(debouncedPlayerState);
+        }
+    }, [debouncedPlayerState]);
 
     const handleCharacterCreate = (name: string, useRandomNames: boolean, linhCan: LinhCan[], gender: 'Nam' | 'Nữ') => {
         const newPlayer = createNewPlayer(name, useRandomNames, linhCan, gender);
@@ -21,11 +29,17 @@ const App: React.FC = () => {
     if (!playerState) {
         return <CharacterCreation onCharacterCreate={handleCharacterCreate} setPlayerState={setPlayerState} />;
     }
+    
+    // This is the single, authoritative function for updating state throughout the app.
+    // It's passed down through the context provider.
+    const updateAndPersistPlayerState = (updater: React.SetStateAction<PlayerState>) => {
+        setPlayerState(updater as any);
+    };
 
     return (
         <GameProvider 
-            initialPlayerState={playerState} 
-            setPlayerStateForPersistence={setPlayerState}
+            playerState={playerState} 
+            updateAndPersistPlayerState={updateAndPersistPlayerState}
         >
             <GameWorld />
         </GameProvider>
@@ -41,7 +55,6 @@ const GameWorld: React.FC = () => {
     // --- CONTEXT HOOKS ---
     const { 
         playerState, 
-        setPlayerState, 
         updateAndPersistPlayerState,
         isGameReady, 
         isGeneratingNames,
@@ -79,7 +92,7 @@ const GameWorld: React.FC = () => {
 
     // --- GAME LOOP ---
     const isPaused = !isGameReady || isMapOpen || isLoading || !!combatState || isGameOver || !!chatTargetNpc || !!plantingPlot || isAlchemyPanelOpen;
-    useGameLoop(playerState!, setPlayerState, isPaused, isMeditating, pendingInteraction);
+    useGameLoop(playerState!, updateAndPersistPlayerState, isPaused, isMeditating, pendingInteraction);
     
     // --- CAMERA ---
     const currentMapData = allMaps[playerState!.currentMap];

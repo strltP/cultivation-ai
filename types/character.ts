@@ -89,8 +89,8 @@ export interface PlayerState {
   generatedNpcs: Record<string, NPC[]>; // MapID -> NPC list for persistence
   generatedInteractables: Record<string, Interactable[]>; // MapID -> Interactable list
   defeatedNpcIds: string[]; // Using an array for JSON compatibility
-  plantedPlots?: { plotId: string; mapId: MapID; seedId: string; plantedAt: GameTime; }[];
-  respawningInteractables?: {
+  plantedPlots: { plotId: string; mapId: MapID; seedId: string; plantedAt: GameTime; }[];
+  respawningInteractables: {
     originalId: string;
     baseId: string;
     mapId: MapID;

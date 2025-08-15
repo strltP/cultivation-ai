@@ -75,6 +75,12 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         if (!parsed.activeEffects) parsed.activeEffects = [];
         if (!parsed.targetPosition) parsed.targetPosition = parsed.position;
         
+        // Add checks for numeric stats that might be missing in old saves.
+        if (typeof parsed.hp !== 'number' || isNaN(parsed.hp)) parsed.hp = parsed.stats?.maxHp || 50;
+        if (typeof parsed.mana !== 'number' || isNaN(parsed.mana)) parsed.mana = parsed.stats?.maxMana || 10;
+        if (typeof parsed.qi !== 'number' || isNaN(parsed.qi)) parsed.qi = 0;
+        if (typeof parsed.linhThach !== 'number' || isNaN(parsed.linhThach)) parsed.linhThach = 100;
+
         if (!parsed.time || !('year' in parsed.time)) {
              const oldTime = parsed.time || { day: 1, hour: 8, minute: 0 };
              const initialTime = INITIAL_PLAYER_STATE.time;
@@ -113,8 +119,12 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         }
 
         // Sanitize inventory and skills
-        parsed.inventory = (parsed.inventory as any[]).filter(slot => slot && ALL_ITEMS.find(i => i.id === slot.itemId));
-        parsed.learnedSkills = (parsed.learnedSkills as any[]).filter(ls => ls && ALL_SKILLS.find(s => s.id === ls.skillId));
+        parsed.inventory = Array.isArray(parsed.inventory)
+            ? (parsed.inventory as any[]).filter(slot => slot && ALL_ITEMS.find(i => i.id === slot.itemId))
+            : [];
+        parsed.learnedSkills = Array.isArray(parsed.learnedSkills)
+            ? (parsed.learnedSkills as any[]).filter(ls => ls && ALL_SKILLS.find(s => s.id === ls.skillId))
+            : [];
 
         // Always recalculate stats on load to apply balancing changes and new properties.
         const recalculatedStats = calculateCombatStats(
@@ -168,27 +178,9 @@ export const savePlayerState = (state: PlayerState) => {
   }
 };
 
-export const usePlayerPersistence = (): [PlayerState | null, React.Dispatch<React.SetStateAction<PlayerState | null>>, (updater: (prevState: PlayerState) => PlayerState) => void] => {
+export const usePlayerPersistence = (): [PlayerState | null, React.Dispatch<React.SetStateAction<PlayerState | null>>] => {
     const [playerState, setPlayerState] = useState<PlayerState | null>(loadPlayerState);
-
-    const updateAndPersistPlayerState = useCallback((updater: (prevState: PlayerState) => PlayerState) => {
-        setPlayerState(prev => {
-            if (!prev) return null;
-            const newState = updater(prev);
-            savePlayerState(newState);
-            return newState;
-        });
-    }, [setPlayerState]);
-
-    // This useEffect is now a fallback/secondary persistence mechanism.
-    // The primary mechanism is the atomic `updateAndPersistPlayerState`.
-    useEffect(() => {
-        if (playerState) {
-            savePlayerState(playerState);
-        }
-    }, [playerState]);
-    
-    return [playerState, setPlayerState as React.Dispatch<React.SetStateAction<PlayerState | null>>, updateAndPersistPlayerState];
+    return [playerState, setPlayerState];
 };
 
 export const createNewPlayer = (name: string, useRandomNames: boolean, linhCan: LinhCan[], gender: 'Nam' | 'Nữ'): PlayerState => {

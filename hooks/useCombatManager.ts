@@ -18,12 +18,11 @@ export const useCombatManager = (
     playerState: PlayerState,
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
-    initialStopAllActions: () => void,
+    stopAllActions: React.MutableRefObject<() => void>,
     handleAddItemToInventory: (itemId: string, quantity: number) => void,
     handleAddLinhThach: (amount: number) => void
 ) => {
     const [combatState, setCombatState] = useState<CombatState | null>(null);
-    const stopAllActions = useRef(initialStopAllActions);
 
     const addCombatLog = useCallback((message: string, type: CombatLogEntry['type'] = 'info') => {
         setCombatState(cs => {
@@ -38,7 +37,18 @@ export const useCombatManager = (
         setTimeout(() => setCombatState(cs => cs ? { ...cs, damageToShow: undefined } : null), 1000);
     }, []);
 
-    const handleChallenge = useCallback((npc: NPC) => {
+    const handleChallenge = useCallback((npcToChallenge: NPC) => {
+        // Find the most up-to-date version of the NPC from the player state to prevent using a stale object.
+        const freshNpc = playerState.generatedNpcs[playerState.currentMap]?.find(n => n.id === npcToChallenge.id);
+
+        // If the NPC can't be found (e.g., despawned), or is already defeated, do nothing.
+        if (!freshNpc || playerState.defeatedNpcIds.includes(freshNpc.id)) {
+            setGameMessage(`${npcToChallenge.name} đã không còn ở đây.`);
+            return;
+        }
+
+        const npc = freshNpc; // Use the fresh data for combat initiation.
+
         stopAllActions.current();
         setGameMessage(null);
         setCombatState({
@@ -50,7 +60,7 @@ export const useCombatManager = (
             combatEnded: false,
             isProcessing: false,
         });
-    }, [playerState, setGameMessage]);
+    }, [playerState, setGameMessage, stopAllActions]);
     
     const closeCombatScreen = useCallback(() => {
         const cs = combatState;
@@ -449,6 +459,5 @@ export const useCombatManager = (
         handleKillNpc,
         handleSpareNpc,
         handlePlayerDeathAndRespawn,
-        stopAllActions,
     };
 };

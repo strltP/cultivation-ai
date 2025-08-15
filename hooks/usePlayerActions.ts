@@ -9,10 +9,9 @@ import type { CharacterAttributes, CombatStats } from '../types/stats';
 export const usePlayerActions = (
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
-    initialStopAllActions: () => void
+    stopAllActions: React.MutableRefObject<() => void>
 ) => {
     const [isMeditating, setIsMeditating] = useState<boolean>(false);
-    const stopAllActions = useRef(initialStopAllActions);
 
     // Effect for handling the meditation process over time
     useEffect(() => {
@@ -124,7 +123,7 @@ export const usePlayerActions = (
                 time: timeAdvanced,
             };
         });
-    }, [updateAndPersistPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage, stopAllActions]);
 
     const handleToggleMeditation = useCallback(() => {
         if (isMeditating) {
@@ -149,7 +148,7 @@ export const usePlayerActions = (
                 };
             });
         }
-    }, [isMeditating, updateAndPersistPlayerState, setGameMessage]);
+    }, [isMeditating, updateAndPersistPlayerState, setGameMessage, stopAllActions]);
 
     const handleLevelUpSkill = useCallback((skillId: string) => {
         updateAndPersistPlayerState(prev => {
@@ -194,6 +193,5 @@ export const usePlayerActions = (
         handleBreakthrough,
         handleToggleMeditation,
         handleLevelUpSkill,
-        stopAllActions, // To update with the final function
     };
 };

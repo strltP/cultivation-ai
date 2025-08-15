@@ -5,7 +5,7 @@ import { advanceTime } from '../services/timeService';
 
 export const useGameLoop = (
     playerState: PlayerState,
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>,
+    updatePlayerState: (updater: (p: PlayerState) => PlayerState) => void,
     isPaused: boolean, // Combines isMapOpen, isLoading, isFighting, isChatting etc.
     isMeditating: boolean,
     pendingInteraction: React.MutableRefObject<(() => void) | null>
@@ -16,7 +16,7 @@ export const useGameLoop = (
     useEffect(() => {
         const gameTick = () => {
             // --- Player Movement & Time Progression ---
-            setPlayerState(prev => {
+            updatePlayerState(prev => {
                 if (!prev || isPaused || isMeditating) return prev;
                 
                 const { position, targetPosition } = prev;
@@ -64,5 +64,5 @@ export const useGameLoop = (
         return () => {
             if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
         };
-    }, [isPaused, isMeditating, setPlayerState, pendingInteraction]);
+    }, [isPaused, isMeditating, updatePlayerState, pendingInteraction]);
 };
