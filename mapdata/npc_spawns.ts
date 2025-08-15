@@ -30,6 +30,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
     ],
     THAT_HUYEN_THANH: [
         {
+            type: 'static',
             id: 'npc-lao-ma-1',
             baseId: 'lao_ma',
             position: { x: 450, y: 450 }
@@ -51,6 +52,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
     ],
     THIEN_MA_TUU_LAU: [
         {
+            type: 'static',
             id: 'npc-ly-tieu-nhi-1',
             baseId: 'ly_tieu_nhi',
             position: { x: 300, y: 350 }
@@ -64,6 +66,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
     ],
     VAN_BAO_LAU: [
         {
+            type: 'static',
             id: 'npc-van-bao-chuong-quy-1',
             baseId: 'van_bao_chuong_quy',
             position: { x: 300, y: 150 }
@@ -71,6 +74,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
     ],
     LUC_YEN_THON: [
         {
+            type: 'static',
             id: 'npc-luc-thon-truong-1',
             baseId: 'luc_thon_truong',
             position: { x: 1000, y: 600 }

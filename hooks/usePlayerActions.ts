@@ -1,5 +1,3 @@
-
-
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { PlayerState } from '../types/character';
 import { getNextCultivationLevel, getCultivationInfo, calculateCombatStats, getRealmLevelInfo } from '../services/cultivationService';
@@ -9,7 +7,7 @@ import { ALL_ITEMS } from '../data/items/index';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
 
 export const usePlayerActions = (
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>,
+    updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
     initialStopAllActions: () => void
 ) => {
@@ -23,8 +21,8 @@ export const usePlayerActions = (
         }
 
         const intervalId = window.setInterval(() => {
-            setPlayerState(prev => {
-                if (!prev) return null;
+            updateAndPersistPlayerState(prev => {
+                if (!prev) return prev;
 
                 const isQiFull = prev.qi >= prev.stats.maxQi;
                 const isHpFull = prev.hp >= prev.stats.maxHp;
@@ -74,12 +72,12 @@ export const usePlayerActions = (
         return () => {
             clearInterval(intervalId);
         };
-    }, [isMeditating, setIsMeditating, setPlayerState, setGameMessage]);
+    }, [isMeditating, setIsMeditating, updateAndPersistPlayerState, setGameMessage]);
 
 
     const handleBreakthrough = useCallback(() => {
         stopAllActions.current();
-        setPlayerState(prev => {
+        updateAndPersistPlayerState(prev => {
             if (!prev || prev.qi < prev.stats.maxQi) return prev;
             const nextCultivation = getNextCultivationLevel(prev.cultivation);
 
@@ -126,7 +124,7 @@ export const usePlayerActions = (
                 time: timeAdvanced,
             };
         });
-    }, [setPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage]);
 
     const handleToggleMeditation = useCallback(() => {
         if (isMeditating) {
@@ -134,7 +132,7 @@ export const usePlayerActions = (
             setGameMessage("Đã dừng đả toạ.");
         } else {
             stopAllActions.current();
-            setPlayerState(prev => {
+            updateAndPersistPlayerState(prev => {
                 if (!prev) return prev;
                 const isFull = prev.qi >= prev.stats.maxQi && prev.hp >= prev.stats.maxHp && prev.mana >= prev.stats.maxMana;
                 if (isFull) {
@@ -151,11 +149,11 @@ export const usePlayerActions = (
                 };
             });
         }
-    }, [isMeditating, setPlayerState, setGameMessage]);
+    }, [isMeditating, updateAndPersistPlayerState, setGameMessage]);
 
     const handleLevelUpSkill = useCallback((skillId: string) => {
-        setPlayerState(prev => {
-            if (!prev) return null;
+        updateAndPersistPlayerState(prev => {
+            if (!prev) return prev;
             const skillToLevelUp = prev.learnedSkills.find(s => s.skillId === skillId);
             const skillDef = ALL_SKILLS.find(s => s.id === skillId);
             if (!skillToLevelUp || !skillDef) return prev;
@@ -188,7 +186,7 @@ export const usePlayerActions = (
                 time: timeAdvanced,
             };
         });
-    }, [setPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage]);
     
     return {
         isMeditating,

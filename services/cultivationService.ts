@@ -1,7 +1,8 @@
 
 
 
-import { REALM_PROGRESSION, INITIAL_PLAYER_STATE } from '../constants';
+import { REALM_PROGRESSION } from '../constants';
+import { INITIAL_PLAYER_STATE as BASE_INITIAL_PLAYER_STATE } from '../hooks/usePlayerPersistence';
 import type { CultivationState, CharacterAttributes, CombatStats } from '../types/stats';
 import type { LearnedSkill, Skill } from '../types/skill';
 import type { InventorySlot, Item } from '../types/item';
@@ -21,7 +22,7 @@ export const calculateCombatStats = (
     linhCan: LinhCan[]
 ): CombatStats => {
     // 1. Start with absolute base stats of a mortal and add pre-rolled cultivation stats
-    const finalStats: Required<Mutable<Partial<CombatStats>>> = { ...INITIAL_PLAYER_STATE.stats };
+    const finalStats: Required<Mutable<Partial<CombatStats>>> = { ...BASE_INITIAL_PLAYER_STATE.stats };
     const modifiedAttributes: CharacterAttributes = { ...baseAttributes };
 
     // Apply pre-rolled stats from cultivation

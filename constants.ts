@@ -90,8 +90,7 @@ export const REALM_PROGRESSION: RealmProgression[] = [
   // Thêm các cảnh giới khác ở đây...
 ];
 
-
-export const INITIAL_PLAYER_STATE: PlayerState = {
+export const INITIAL_PLAYER_STATE: Omit<PlayerState, 'saveVersion'> = {
   name: "Đạo Hữu",
   gender: 'Nam',
   cultivation: { realmIndex: 0, level: -1 }, // Bắt đầu từ cấp -1 (Phàm Nhân)

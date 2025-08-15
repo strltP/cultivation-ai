@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import type { PlayerState } from '../../../types/character';
 import { ALL_ITEMS } from '../../../data/items/index';
@@ -11,7 +9,7 @@ import { GiBrain, GiFireBowl } from 'react-icons/gi';
 
 interface ItemsTabProps {
   playerState: PlayerState;
-  setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>;
+  setPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void;
   onUseItem: (itemIndex: number) => void;
 }
 
@@ -38,7 +36,7 @@ const ItemsTab: React.FC<ItemsTabProps> = ({ playerState, setPlayerState, onUseI
         const skillId = selectedItemDef.skillId;
 
         setPlayerState(prev => {
-            if (!prev) return null;
+            if (!prev) return prev;
 
             if (prev.learnedSkills.some(s => s.skillId === skillId)) {
                 // This state should be prevented by disabling the button, but as a safeguard.

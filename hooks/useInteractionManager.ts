@@ -31,7 +31,7 @@ type InteractionBlockers = {
 
 export const useInteractionManager = (
     playerState: PlayerState,
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>,
+    updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     isLoading: boolean,
     setIsLoading: (loading: boolean) => void,
     setGameMessage: (message: string | null) => void,
@@ -57,12 +57,19 @@ export const useInteractionManager = (
         stopAllActions.current();
         setActiveInteractionInteractable(null);
         
-        setPlayerState(p => p ? {...p, time: advanceTime(p.time, 5)} : p);
-        const currentState = playerState ? { ...playerState, time: advanceTime(playerState.time, 5)} : null;
-        if (!currentState) return;
+        let currentStateWithAdvancedTime: PlayerState | null = null;
+
+        updateAndPersistPlayerState(p => {
+             if (!p) return p;
+             const newState = {...p, time: advanceTime(p.time, 5)};
+             currentStateWithAdvancedTime = newState;
+             return newState;
+        });
+
+        if (!currentStateWithAdvancedTime) return;
 
         setIsLoading(true);
-        const response = await getInteractionResponse(currentState, target, ALL_ITEMS);
+        const response = await getInteractionResponse(currentStateWithAdvancedTime, target, ALL_ITEMS);
         setIsLoading(false);
 
         if (!response) {
@@ -90,7 +97,7 @@ export const useInteractionManager = (
         if (target.type === 'chest') {
             handleRemoveAndRespawn(target as Interactable);
         }
-    }, [playerState, setPlayerState, setIsLoading, setGameMessage, handleAddLinhThach, handleAddItemToInventory, handleRemoveAndRespawn]);
+    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, handleAddLinhThach, handleAddItemToInventory, handleRemoveAndRespawn]);
 
     const handleTeleport = useCallback((gate: TeleportLocation) => {
         stopAllActions.current();
@@ -99,8 +106,8 @@ export const useInteractionManager = (
         setGameMessage(`Đang chuẩn bị truyền tống đến ${targetMapName}...`);
 
         setTimeout(() => {
-            setPlayerState(prev => {
-                if (!prev) return null;
+            updateAndPersistPlayerState(prev => {
+                if (!prev) return prev;
                 const timeAdvanced = advanceTime(prev.time, 30); // Teleporting takes 30 minutes
                 return {
                     ...prev,
@@ -113,7 +120,7 @@ export const useInteractionManager = (
             setIsLoading(false);
             setGameMessage(`Đã đến ${targetMapName}!`);
         }, 1500);
-    }, [setPlayerState, setIsLoading, setGameMessage, allMaps]);
+    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, allMaps]);
     
     const handleEnterPoi = useCallback((poi: PointOfInterest) => {
         if (!poi.targetMap || !poi.targetPosition) return;
@@ -122,8 +129,8 @@ export const useInteractionManager = (
         setGameMessage(`Đang tiến vào ${poi.name}...`);
         
         setTimeout(() => {
-            setPlayerState(prev => {
-                if (!prev) return null;
+            updateAndPersistPlayerState(prev => {
+                if (!prev) return prev;
                 const timeAdvanced = advanceTime(prev.time, 1); // Entering POI takes 1 minute
                 return {
                     ...prev,
@@ -136,7 +143,7 @@ export const useInteractionManager = (
             setIsLoading(false);
             setGameMessage(`Chào mừng đến ${poi.name}!`);
         }, 1500);
-    }, [setPlayerState, setIsLoading, setGameMessage]);
+    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage]);
 
     const handleSpiritFieldClick = useCallback((plot: Interactable) => {
         const plantedPlot = playerState.plantedPlots?.find(p => p.plotId === plot.id);
@@ -159,8 +166,8 @@ export const useInteractionManager = (
                     return;
                 }
 
-                setPlayerState(prev => {
-                    if (!prev) return null;
+                updateAndPersistPlayerState(prev => {
+                    if (!prev) return prev;
 
                     const newPlantedPlots = (prev.plantedPlots || []).filter(p => p.plotId !== plot.id);
                     let newInventory: InventorySlot[] = JSON.parse(JSON.stringify(prev.inventory));
@@ -230,7 +237,7 @@ export const useInteractionManager = (
             setPlantingPlot(plot);
         }
         setActiveInteractionInteractable(null);
-    }, [playerState, setGameMessage, setPlantingPlot, setPlayerState]);
+    }, [playerState, setGameMessage, setPlantingPlot, updateAndPersistPlayerState]);
 
 
     const handleGenericInteraction = useCallback((target: NPC | Interactable | TeleportLocation | PointOfInterest, interactionFn: () => void) => {
@@ -247,17 +254,17 @@ export const useInteractionManager = (
         }
 
         if (distance <= effectiveInteractionRadius) {
-            setPlayerState(prev => prev ? ({...prev, targetPosition: prev.position}) : null);
+            updateAndPersistPlayerState(prev => prev ? ({...prev, targetPosition: prev.position}) : prev);
             interactionFn();
         } else {
             const angle = Math.atan2(dy, dx);
             const targetX = target.position.x - Math.cos(angle) * (effectiveInteractionRadius * 0.9);
             const targetY = target.position.y - Math.sin(angle) * (effectiveInteractionRadius * 0.9);
             
-            setPlayerState(prev => prev ? ({ ...prev, targetPosition: { x: targetX, y: targetY } }) : null);
+            updateAndPersistPlayerState(prev => prev ? ({ ...prev, targetPosition: { x: targetX, y: targetY } }) : prev);
             pendingInteraction.current = interactionFn;
         }
-    }, [isLoading, interactionBlockers, playerState.position, setPlayerState, pendingInteraction, chatTargetNpc]);
+    }, [isLoading, interactionBlockers, playerState.position, updateAndPersistPlayerState, pendingInteraction, chatTargetNpc]);
 
     const handleGatherInteractable = useCallback((interactable: Interactable) => {
         setActiveInteractionInteractable(null);
@@ -272,7 +279,7 @@ export const useInteractionManager = (
             return;
         }
 
-        setPlayerState(p => p ? {...p, time: advanceTime(p.time, 10)} : p); // Gathering takes 10 minutes
+        updateAndPersistPlayerState(p => p ? {...p, time: advanceTime(p.time, 10)} : p); // Gathering takes 10 minutes
         const template = ALL_INTERACTABLES.find(t => t.baseId === interactable.baseId);
 
         if (!template || !template.loot) {
@@ -303,20 +310,20 @@ export const useInteractionManager = (
         
         handleRemoveAndRespawn(interactable);
 
-    }, [handleAddItemToInventory, handleRemoveAndRespawn, setGameMessage, setPlayerState, handleSpiritFieldClick, setIsAlchemyPanelOpen]);
+    }, [handleAddItemToInventory, handleRemoveAndRespawn, setGameMessage, updateAndPersistPlayerState, handleSpiritFieldClick, setIsAlchemyPanelOpen]);
     
     const handleViewInfoInteractable = useCallback((interactable: Interactable) => {
         setActiveInteractionInteractable(null);
-        setPlayerState(p => p ? {...p, time: advanceTime(p.time, 1)} : p); // Viewing info takes 1 minute
+        updateAndPersistPlayerState(p => p ? {...p, time: advanceTime(p.time, 1)} : p); // Viewing info takes 1 minute
         setActiveDialogue({ title: interactable.name, text: interactable.prompt });
-    }, [setPlayerState]);
+    }, [updateAndPersistPlayerState]);
 
     const handleDestroyInteractable = useCallback((interactable: Interactable) => {
         setActiveInteractionInteractable(null);
-        setPlayerState(p => p ? {...p, time: advanceTime(p.time, 2)} : p); // Destroying takes 2 minutes
+        updateAndPersistPlayerState(p => p ? {...p, time: advanceTime(p.time, 2)} : p); // Destroying takes 2 minutes
         setGameMessage(`Bạn đã phá hủy ${interactable.name}. Thời gian hồi phục sẽ lâu hơn.`);
         handleRemoveAndRespawn(interactable, 4); // 4x respawn time multiplier
-    }, [handleRemoveAndRespawn, setGameMessage, setPlayerState]);
+    }, [handleRemoveAndRespawn, setGameMessage, updateAndPersistPlayerState]);
 
     const handleStartChat = useCallback((npc: NPC) => {
         stopAllActions.current();
@@ -341,8 +348,8 @@ export const useInteractionManager = (
             
             setChatHistory(prev => [...prev, modelMessage]);
 
-            setPlayerState(p => {
-                if (!p) return null;
+            updateAndPersistPlayerState(p => {
+                if (!p) return p;
                 const oldSavedHistory = p.chatHistories?.[chatTargetNpc.id] || [];
                 const newSavedHistory = [...oldSavedHistory, userMessage, modelMessage];
                 const newChatHistories = { ...(p.chatHistories || {}), [chatTargetNpc.id]: newSavedHistory };
@@ -356,7 +363,7 @@ export const useInteractionManager = (
         } finally {
             setIsChatLoading(false);
         }
-    }, [activeChat, isChatLoading, chatTargetNpc, setPlayerState]);
+    }, [activeChat, isChatLoading, chatTargetNpc, updateAndPersistPlayerState]);
 
     const handleCloseChat = useCallback(() => {
         setActiveChat(null);

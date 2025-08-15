@@ -59,6 +59,7 @@ export interface GameTime {
 }
 
 export interface PlayerState {
+  saveVersion: string;
   name: string;
   gender: 'Nam' | 'Nữ';
   cultivation: CultivationState;

@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import type { PlayerState } from '../types/character';
 import type { InventorySlot } from '../types/item';
@@ -7,7 +6,7 @@ import { INVENTORY_SIZE } from '../constants';
 
 export const useInventoryManager = (
     playerState: PlayerState,
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>,
+    updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
     openTeleportUI: () => void,
     openAlchemyPanel: () => void,
@@ -15,17 +14,17 @@ export const useInventoryManager = (
 
     const handleAddLinhThach = useCallback((amount: number) => {
         if (amount <= 0) return;
-        setPlayerState(prev => {
-            if (!prev) return null;
+        updateAndPersistPlayerState(prev => {
+            if (!prev) return prev;
             // Use setGameMessage inside to avoid overwriting other messages too quickly
             setGameMessage(`Nhận được ${amount.toLocaleString()} Linh Thạch!`);
             return { ...prev, linhThach: prev.linhThach + amount };
         });
-    }, [setPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage]);
 
     const handleAddItemToInventory = useCallback((itemIdToAdd: string, quantityToAdd: number) => {
-        setPlayerState(prev => {
-            if (!prev) return null;
+        updateAndPersistPlayerState(prev => {
+            if (!prev) return prev;
     
             const itemDef = ALL_ITEMS.find(i => i.id === itemIdToAdd);
             if (!itemDef) {
@@ -62,7 +61,7 @@ export const useInventoryManager = (
     
             return { ...prev, inventory: newInventory };
         });
-    }, [setPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage]);
 
     const handleUseItem = useCallback((itemIndex: number) => {
         const inventorySlot = playerState.inventory[itemIndex];
@@ -74,8 +73,8 @@ export const useInventoryManager = (
         const isTeleport = itemDef.effects?.some(e => e.type === 'TELEPORT');
         const isAlchemy = itemDef.effects?.some(e => e.type === 'OPEN_ALCHEMY_PANEL');
 
-        setPlayerState(prev => {
-            if (!prev) return null;
+        updateAndPersistPlayerState(prev => {
+            if (!prev) return prev;
 
             const currentInventorySlot = prev.inventory[itemIndex];
             if (!currentInventorySlot) return prev;
@@ -157,7 +156,7 @@ export const useInventoryManager = (
         if (isAlchemy) {
             openAlchemyPanel();
         }
-    }, [playerState, setPlayerState, setGameMessage, openTeleportUI, openAlchemyPanel]);
+    }, [playerState, updateAndPersistPlayerState, setGameMessage, openTeleportUI, openAlchemyPanel]);
 
     return {
         handleAddLinhThach,

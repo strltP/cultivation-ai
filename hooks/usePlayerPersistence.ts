@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { PlayerState } from '../types/character';
-import { INITIAL_PLAYER_STATE, DAYS_PER_MONTH, MONTHS_PER_YEAR, REALM_PROGRESSION } from '../constants';
+import { INITIAL_PLAYER_STATE as BASE_INITIAL_PLAYER_STATE, DAYS_PER_MONTH, MONTHS_PER_YEAR, REALM_PROGRESSION } from '../constants';
 import { calculateCombatStats } from '../services/cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { advanceTime } from '../services/timeService';
@@ -8,8 +8,15 @@ import { ALL_ITEMS } from '../data/items/index';
 import type { LinhCan, LinhCanType } from '../types/linhcan';
 import { LINH_CAN_TYPES } from '../types/linhcan';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
+import { MAPS } from '../mapdata';
 
 const PLAYER_STATE_STORAGE_KEY = 'tu_tien_player_state_v3';
+const CURRENT_SAVE_VERSION = '2.0';
+
+export const INITIAL_PLAYER_STATE: PlayerState = {
+    ...BASE_INITIAL_PLAYER_STATE,
+    saveVersion: CURRENT_SAVE_VERSION,
+};
 
 const getSeasonLegacy = (month: number): 'Xuân' | 'Hạ' | 'Thu' | 'Đông' => {
     if (month >= 1 && month <= 3) return 'Xuân';
@@ -31,23 +38,22 @@ export const generateRandomLinhCan = (): LinhCan[] => {
 
 const processLoadedState = (parsed: any): PlayerState | null => {
     try {
-        if(!parsed || !parsed.name || !parsed.cultivation || !parsed.attributes || !parsed.stats) {
+        // --- 1. VERSION CHECK ---
+        if (!parsed.saveVersion || parsed.saveVersion !== CURRENT_SAVE_VERSION) {
+            console.warn(`Save file version mismatch. Expected ${CURRENT_SAVE_VERSION}, found ${parsed.saveVersion}. Discarding save.`);
+            return null; // Reject old or invalid save version
+        }
+
+        // --- 2. CORE PROPERTY CHECK ---
+        if(!parsed || !parsed.name || !parsed.cultivation || !parsed.attributes || !parsed.stats || !parsed.currentMap) {
+             console.error("Core properties missing from save file.");
             return null;
         }
         
-        // Add new fields for backward compatibility
-        if (!parsed.cultivationStats) {
-            parsed.cultivationStats = {};
-        }
-        if (parsed.cultivation.level === undefined || parsed.cultivation.level === null) {
-            parsed.cultivation.level = 0; // Default old saves to level 0
-        }
-
-        // Migration: Remove linhLuc if it exists
-        if (parsed.attributes && parsed.attributes.linhLuc !== undefined) {
-            delete parsed.attributes.linhLuc;
-        }
-
+        // --- 3. BACKWARD COMPATIBILITY & DEFAULTS ---
+        if (!parsed.cultivationStats) parsed.cultivationStats = {};
+        if (parsed.cultivation.level === undefined || parsed.cultivation.level === null) parsed.cultivation.level = 0;
+        if (parsed.attributes && parsed.attributes.linhLuc !== undefined) delete parsed.attributes.linhLuc; // Migration
         if (!parsed.learnedSkills) parsed.learnedSkills = [];
         if (!parsed.learnedRecipes) parsed.learnedRecipes = [];
         if (!parsed.inventory) parsed.inventory = [];
@@ -93,10 +99,20 @@ const processLoadedState = (parsed: any): PlayerState | null => {
              };
         }
         
-        if (parsed.cultivation.level === 1 && parsed.cultivation.realmIndex === 0 && !parsed.inventory.some((i: any) => i.itemId === 'book_hoa_cau_thuat')) {
-             parsed.learnedSkills.push({ skillId: 'cong-phap-hoang-1', currentLevel: 1 });
+        // --- 4. DATA VALIDATION & SANITIZATION ---
+        
+        // Validate Map
+        const mapExists = Object.keys(MAPS).includes(parsed.currentMap);
+        if (!mapExists) {
+            console.warn(`Saved map "${parsed.currentMap}" no longer exists. Resetting to starting village.`);
+            parsed.currentMap = 'LUC_YEN_THON';
+            parsed.position = { x: 1000, y: 700 };
+            parsed.targetPosition = { x: 1000, y: 700 };
         }
 
+        // Sanitize inventory and skills
+        parsed.inventory = (parsed.inventory as any[]).filter(slot => slot && ALL_ITEMS.find(i => i.id === slot.itemId));
+        parsed.learnedSkills = (parsed.learnedSkills as any[]).filter(ls => ls && ALL_SKILLS.find(s => s.id === ls.skillId));
 
         // Always recalculate stats on load to apply balancing changes and new properties.
         const recalculatedStats = calculateCombatStats(
@@ -118,7 +134,8 @@ const processLoadedState = (parsed: any): PlayerState | null => {
 
         return parsed as PlayerState;
     } catch (error) {
-        console.error("Error processing player state:", error);
+        console.error("Critical error processing player state. The save file might be corrupted. Removing it to prevent crash loops.", error);
+        localStorage.removeItem(PLAYER_STATE_STORAGE_KEY);
         return null;
     }
 }
@@ -133,29 +150,43 @@ const loadPlayerState = (): PlayerState | null => {
     }
     return null;
   } catch (error) {
-    console.error("Failed to load player state:", error);
+    console.error("Failed to load or parse player state from localStorage:", error);
+    localStorage.removeItem(PLAYER_STATE_STORAGE_KEY);
     return null;
   }
 };
 
 export const savePlayerState = (state: PlayerState) => {
   try {
-    localStorage.setItem(PLAYER_STATE_STORAGE_KEY, JSON.stringify(state));
+    // Ensure the state being saved always has the current version
+    const stateToSave = { ...state, saveVersion: CURRENT_SAVE_VERSION };
+    localStorage.setItem(PLAYER_STATE_STORAGE_KEY, JSON.stringify(stateToSave));
   } catch (error) {
     console.error("Failed to save player state:", error);
   }
 };
 
-export const usePlayerPersistence = (): [PlayerState | null, React.Dispatch<React.SetStateAction<PlayerState | null>>] => {
+export const usePlayerPersistence = (): [PlayerState | null, React.Dispatch<React.SetStateAction<PlayerState | null>>, (updater: (prevState: PlayerState) => PlayerState) => void] => {
     const [playerState, setPlayerState] = useState<PlayerState | null>(loadPlayerState);
 
+    const updateAndPersistPlayerState = useCallback((updater: (prevState: PlayerState) => PlayerState) => {
+        setPlayerState(prev => {
+            if (!prev) return null;
+            const newState = updater(prev);
+            savePlayerState(newState);
+            return newState;
+        });
+    }, [setPlayerState]);
+
+    // This useEffect is now a fallback/secondary persistence mechanism.
+    // The primary mechanism is the atomic `updateAndPersistPlayerState`.
     useEffect(() => {
         if (playerState) {
             savePlayerState(playerState);
         }
     }, [playerState]);
     
-    return [playerState, setPlayerState];
+    return [playerState, setPlayerState as React.Dispatch<React.SetStateAction<PlayerState | null>>, updateAndPersistPlayerState];
 };
 
 export const createNewPlayer = (name: string, useRandomNames: boolean, linhCan: LinhCan[], gender: 'Nam' | 'Nữ'): PlayerState => {
@@ -231,7 +262,8 @@ export const exportPlayerState = (playerState: PlayerState | null) => {
         return;
     }
     try {
-        const jsonString = JSON.stringify(playerState, null, 2);
+        const stateToExport = { ...playerState, saveVersion: CURRENT_SAVE_VERSION };
+        const jsonString = JSON.stringify(stateToExport, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -275,7 +307,7 @@ export const importPlayerState = (
                     savePlayerState(processedState);
                     onComplete(true, "Tải file save thành công!");
                 } else {
-                    throw new Error("File save không hợp lệ hoặc đã lỗi thời.");
+                    throw new Error("File save không hợp lệ hoặc đã lỗi thời. Vui lòng tạo nhân vật mới hoặc thử một file khác.");
                 }
             } catch (error) {
                 console.error("Lỗi khi nhập file save:", error);

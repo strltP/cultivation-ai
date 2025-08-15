@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo } from 'react';
 import type { PlayerState } from '../../../types/character';
 import type { Item, InventorySlot } from '../../../types/item';
@@ -15,7 +13,7 @@ import { BsHeadset } from 'react-icons/bs';
 
 interface EquipmentTabProps {
     playerState: PlayerState;
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>;
+    setPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void;
 }
 
 const SLOT_ICONS: Record<EquipmentSlot, React.ReactNode> = {
@@ -52,7 +50,7 @@ const EquipmentTab: React.FC<EquipmentTabProps> = ({ playerState, setPlayerState
         if (!itemDef || !itemDef.slot) return;
 
         setPlayerState(prev => {
-            if (!prev) return null;
+            if (!prev) return prev;
             
             const newInventory = [...prev.inventory];
             const newEquipment = { ...prev.equipment };
@@ -78,7 +76,7 @@ const EquipmentTab: React.FC<EquipmentTabProps> = ({ playerState, setPlayerState
 
     const handleUnequip = (slot: EquipmentSlot) => {
         setPlayerState(prev => {
-            if (!prev) return null;
+            if (!prev) return prev;
             const itemToUnequip = prev.equipment[slot];
             if (!itemToUnequip) return prev;
             

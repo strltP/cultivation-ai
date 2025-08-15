@@ -11,7 +11,7 @@ import CharacterCreation from './components/CharacterCreation';
 
 
 const App: React.FC = () => {
-    const [playerState, setPlayerState] = usePlayerPersistence();
+    const [playerState, setPlayerState, updateAndPersistPlayerState] = usePlayerPersistence();
 
     const handleCharacterCreate = (name: string, useRandomNames: boolean, linhCan: LinhCan[], gender: 'Nam' | 'Nữ') => {
         const newPlayer = createNewPlayer(name, useRandomNames, linhCan, gender);
@@ -23,7 +23,10 @@ const App: React.FC = () => {
     }
 
     return (
-        <GameProvider initialPlayerState={playerState} setPlayerStateForPersistence={setPlayerState}>
+        <GameProvider 
+            initialPlayerState={playerState} 
+            setPlayerStateForPersistence={setPlayerState}
+        >
             <GameWorld />
         </GameProvider>
     );
@@ -39,6 +42,7 @@ const GameWorld: React.FC = () => {
     const { 
         playerState, 
         setPlayerState, 
+        updateAndPersistPlayerState,
         isGameReady, 
         isGeneratingNames,
         allMaps,
@@ -69,9 +73,9 @@ const GameWorld: React.FC = () => {
         const age = playerState.time.year - 1;
         if (age >= playerState.stats.maxThoNguyen) {
             setIsGameOver(true);
-            setPlayerState(p => ({ ...p, targetPosition: p.position }));
+            updateAndPersistPlayerState(p => ({ ...p, targetPosition: p.position }));
         }
-    }, [playerState?.time.year, playerState?.stats.maxThoNguyen, setPlayerState]);
+    }, [playerState?.time.year, playerState?.stats.maxThoNguyen, updateAndPersistPlayerState]);
 
     // --- GAME LOOP ---
     const isPaused = !isGameReady || isMapOpen || isLoading || !!combatState || isGameOver || !!chatTargetNpc || !!plantingPlot || isAlchemyPanelOpen;
@@ -141,7 +145,6 @@ const GameWorld: React.FC = () => {
             />
             <UIManager
                 playerState={playerState}
-                setPlayerState={setPlayerState}
                 currentMapData={currentMapData}
                 currentArea={currentArea}
                 currentZone={currentZone}

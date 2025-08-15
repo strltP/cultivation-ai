@@ -21,7 +21,6 @@ import ChatPanel from './ChatPanel';
 
 interface UIManagerProps {
     playerState: PlayerState;
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>;
     currentMapData: GameMap;
     currentArea: string | null;
     currentZone: string | null;
@@ -32,7 +31,6 @@ interface UIManagerProps {
 const UIManager: React.FC<UIManagerProps> = (props) => {
     const { 
         playerState, 
-        setPlayerState,
         currentMapData, 
         currentArea, 
         currentZone,
@@ -49,6 +47,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
         isAlchemyPanelOpen, setIsAlchemyPanelOpen,
         tradingNpc, setTradingNpc,
         plantingPlot, setPlantingPlot,
+        updateAndPersistPlayerState, // Get the atomic state updater
     } = useUI();
     
     const { gameMessage, isLoading, currentPois, currentMapAreas, currentTeleportGates } = useWorld();
@@ -178,9 +177,9 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                 currentMapAreas={currentMapAreas}
                 currentTeleportGates={currentTeleportGates}
             />}
-            {isInfoPanelOpen && <InfoPanel playerState={playerState} setPlayerState={setPlayerState} onClose={onToggleInfoPanel} onLevelUpSkill={handleLevelUpSkill} onUseItem={handleUseItem} />}
+            {isInfoPanelOpen && <InfoPanel playerState={playerState} setPlayerState={updateAndPersistPlayerState} onClose={onToggleInfoPanel} onLevelUpSkill={handleLevelUpSkill} onUseItem={handleUseItem} />}
             {isWorldInfoPanelOpen && <WorldInfoPanel onClose={onToggleWorldInfoPanel} />}
-            {tradingNpc && <TradePanel playerState={playerState} setPlayerState={setPlayerState} npc={tradingNpc} setNpc={setTradingNpc} onClose={() => setTradingNpc(null)} />}
+            {tradingNpc && <TradePanel playerState={playerState} setPlayerState={updateAndPersistPlayerState} npc={tradingNpc} setNpc={setTradingNpc} onClose={() => setTradingNpc(null)} />}
             {isTeleportUIOpen && (
                 <TeleportationTalismanUI
                     currentMapId={playerState.currentMap}

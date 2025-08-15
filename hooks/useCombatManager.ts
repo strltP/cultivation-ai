@@ -16,7 +16,7 @@ import { advanceTime } from '../services/timeService';
 
 export const useCombatManager = (
     playerState: PlayerState,
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>,
+    updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
     initialStopAllActions: () => void,
     handleAddItemToInventory: (itemId: string, quantity: number) => void,
@@ -55,21 +55,21 @@ export const useCombatManager = (
     const closeCombatScreen = useCallback(() => {
         const cs = combatState;
         if (cs && cs.winner === 'npc' && cs.npcDecision?.decision === 'spare') {
-            setPlayerState(prev => {
-                    if (!prev) return null;
+            updateAndPersistPlayerState(prev => {
+                    if (!prev) return prev;
                     const finalHp = cs.player.hp <= 0 ? 1 : cs.player.hp;
                     return {...prev, hp: finalHp};
             });
         }
         setCombatState(null);
-    }, [combatState, setPlayerState]);
+    }, [combatState, updateAndPersistPlayerState]);
 
     const handlePlayerDeathAndRespawn = useCallback(() => {
         const linhThachLost = playerState.linhThach - Math.floor(playerState.linhThach / 2);
         setGameMessage(`Bạn đã mất ${linhThachLost.toLocaleString()} Linh Thạch!`);
         
-        setPlayerState(prev => {
-            if (!prev) return null;
+        updateAndPersistPlayerState(prev => {
+            if (!prev) return prev;
 
             return {
                 ...prev,
@@ -82,7 +82,7 @@ export const useCombatManager = (
             };
         });
         setCombatState(null);
-    }, [playerState, setPlayerState, setGameMessage]);
+    }, [playerState, updateAndPersistPlayerState, setGameMessage]);
 
     const handleKillNpc = useCallback(() => {
         if (!combatState || !combatState.npc) return;
@@ -123,8 +123,8 @@ export const useCombatManager = (
         const gameWinMessage = `Đã kết liễu ${npc.name}. Nhận ${camNgoGained} Cảm Ngộ.${finalLootMessage}`;
 
         // --- Update Player State ---
-        setPlayerState(p => {
-            if (!p) return null;
+        updateAndPersistPlayerState(p => {
+            if (!p) return p;
 
             // Handle Loot
             let newInventory: InventorySlot[] = JSON.parse(JSON.stringify(p.inventory));
@@ -167,7 +167,7 @@ export const useCombatManager = (
         // --- Final UI updates ---
         setTimeout(() => setGameMessage(gameWinMessage), 100);
         setCombatState(null);
-    }, [combatState, setPlayerState, setGameMessage]);
+    }, [combatState, updateAndPersistPlayerState, setGameMessage]);
     
     const handleSpareNpc = useCallback(() => {
         if (!combatState || !combatState.npc || combatState.npc.npcType === 'monster') return;
@@ -176,8 +176,8 @@ export const useCombatManager = (
     
         setGameMessage(`Bạn đã tha mạng cho ${npc.name} và nhận được ${camNgoGained} điểm Cảm Ngộ.`);
     
-        setPlayerState(p => {
-            if (!p) return null;
+        updateAndPersistPlayerState(p => {
+            if (!p) return p;
             
             const newPlayerState = { ...p };
             
@@ -194,7 +194,7 @@ export const useCombatManager = (
         });
     
         setCombatState(null);
-    }, [combatState, setGameMessage, setPlayerState]);
+    }, [combatState, setGameMessage, updateAndPersistPlayerState]);
 
     const processCombatEnd = useCallback((winner: 'player' | 'npc') => {
         setCombatState(cs => {

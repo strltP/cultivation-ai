@@ -8,7 +8,7 @@ import { GiTwoCoins } from 'react-icons/gi';
 
 interface TradePanelProps {
     playerState: PlayerState;
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>;
+    setPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void;
     npc: NPC;
     setNpc: (npc: NPC | null) => void;
     onClose: () => void;
@@ -108,7 +108,7 @@ const TradePanel: React.FC<TradePanelProps> = ({ playerState, setPlayerState, np
         if (!canSell || !selectedItem || selectedItem.type !== 'player' || !selectedItem.slot) return;
         
         setPlayerState(prev => {
-            if (!prev) return null;
+            if (!prev) return prev;
 
             const totalPrice = sellPrice * transactionQuantity;
 
@@ -166,7 +166,7 @@ const TradePanel: React.FC<TradePanelProps> = ({ playerState, setPlayerState, np
         if (!canBuy || !selectedItem || selectedItem.type !== 'npc') return;
 
         setPlayerState(prev => {
-            if (!prev) return null;
+            if (!prev) return prev;
             
             const totalPrice = buyPrice * transactionQuantity;
 

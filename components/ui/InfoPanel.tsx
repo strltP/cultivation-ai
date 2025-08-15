@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { PlayerState } from '../../types/character';
 import { FaBook, FaCog } from 'react-icons/fa';
@@ -11,7 +10,7 @@ import LinhCanTab from './info-panel/LinhCanTab';
 
 interface InfoPanelProps {
   playerState: PlayerState;
-  setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>;
+  setPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void;
   onClose: () => void;
   onLevelUpSkill: (skillId: string) => void;
   onUseItem: (itemIndex: number) => void;

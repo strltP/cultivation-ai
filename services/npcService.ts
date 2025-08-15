@@ -231,7 +231,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
     const mapData = MAPS[mapId];
 
     // Handle static spawns
-    const staticSpawns = spawnDefinitions.filter((def): def is StaticNpcSpawn => 'id' in def);
+    const staticSpawns = spawnDefinitions.filter((def): def is StaticNpcSpawn => def.type === 'static');
     for (const spawn of staticSpawns) {
         const template = staticNpcTemplates.get(spawn.baseId);
         if (template) {
@@ -242,7 +242,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
     }
 
     // Handle procedural monster spawns
-    const monsterRules = spawnDefinitions.filter((def): def is ProceduralMonsterRule => 'monsterBaseIds' in def);
+    const monsterRules = spawnDefinitions.filter((def): def is ProceduralMonsterRule => def.type === 'procedural_monster');
     for (const rule of monsterRules) {
         const area = (MAPS[mapId] && MAP_AREAS_BY_MAP[mapId] || []).find(a => a.id === rule.areaId);
         if (!area) continue;
@@ -263,7 +263,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
     }
 
     // Handle procedural cultivator spawns
-    const proceduralRules = spawnDefinitions.filter((def): def is ProceduralNpcRule => 'poiIds' in def);
+    const proceduralRules = spawnDefinitions.filter((def): def is ProceduralNpcRule => def.type === 'procedural');
     const generationPromises: Promise<NPC[]>[] = [];
 
     for (const rule of proceduralRules) {

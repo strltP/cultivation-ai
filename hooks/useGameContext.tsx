@@ -14,6 +14,8 @@ import { ALL_ITEMS } from '../data/items/index';
 import { ALL_RECIPES } from '../../data/alchemy_recipes';
 import type { CombatState, PlayerAction } from '../types/combat';
 import { generatePlaceNames, PlaceToName } from '../services/geminiService';
+import { savePlayerState } from './usePlayerPersistence';
+import { useDebounce } from './useDebounce';
 
 
 // --- TYPE DEFINITIONS FOR CONTEXTS ---
@@ -21,6 +23,7 @@ import { generatePlaceNames, PlaceToName } from '../services/geminiService';
 interface IUIContext {
     playerState: PlayerState;
     setPlayerState: React.Dispatch<React.SetStateAction<PlayerState>>;
+    updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void;
     isGameReady: boolean;
     isGeneratingNames: boolean;
     allMaps: Record<string, GameMap>;
@@ -151,10 +154,20 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
     const [isGameReady, setIsGameReady] = useState(false);
     const [isGeneratingNames, setIsGeneratingNames] = useState(false);
     
-    // Sync internal state with the persistent one from the parent (App.tsx)
+    // --- BIỆN PHÁP 3: DEBOUNCED AUTO-SAVE ---
+    // Create a debounced version of the player state. It will only update
+    // 500ms after the playerState has stopped changing.
+    const debouncedPlayerState = useDebounce(playerState, 500);
+
+    // This effect now ONLY runs when the debounced state changes.
+    // This prevents saving to localStorage on every frame during movement,
+    // drastically improving performance.
     useEffect(() => {
-        setPlayerStateForPersistence(playerState);
-    }, [playerState, setPlayerStateForPersistence]);
+        if (debouncedPlayerState) {
+            // This is our new, performant "auto-save" mechanism.
+            savePlayerState(debouncedPlayerState);
+        }
+    }, [debouncedPlayerState]);
 
     // Game Initialization Logic (e.g., generating names)
     useEffect(() => {
@@ -197,6 +210,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
         }
     }, [setGameMessageObject]);
 
+    // --- BIỆN PHÁP 1: ATOMIC UPDATE FUNCTION ---
+    // This function remains crucial for immediate, critical saves.
+    const updateAndPersistPlayerState = useCallback((updater: (prevState: PlayerState) => PlayerState) => {
+        setPlayerState(prev => {
+            if (!prev) return null;
+            const newState = updater(prev);
+            // ATOMIC SAVE: Persist the new state immediately to localStorage
+            savePlayerState(newState); 
+            return newState;
+        });
+    }, [setPlayerState]);
+
     // --- UI Panel State ---
     const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
     const [isInfoPanelOpen, setIsInfoPanelOpen] = useState<boolean>(false);
@@ -231,7 +256,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
     }, [playerState.nameOverrides]);
 
     // --- Sub-Hook Instantiation ---
-    const inventoryManager = useInventoryManager(playerState, setPlayerState, setGameMessage, () => setIsTeleportUIOpen(true), () => setIsAlchemyPanelOpen(true));
+    const inventoryManager = useInventoryManager(playerState, updateAndPersistPlayerState, setGameMessage, () => setIsTeleportUIOpen(true), () => setIsAlchemyPanelOpen(true));
 
     const worldManager = useWorldManager(playerState, setPlayerState, setGameMessage, {
         pois: effectivePois,
@@ -241,10 +266,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
 
     const stopAllActions = useRef(() => { });
 
-    const playerActions = usePlayerActionsManager(setPlayerState, setGameMessage, stopAllActions.current);
+    const playerActions = usePlayerActionsManager(updateAndPersistPlayerState, setGameMessage, stopAllActions.current);
 
     const combatManager = useCombatManager(
-        playerState, setPlayerState, setGameMessage, stopAllActions.current,
+        playerState, updateAndPersistPlayerState, setGameMessage, stopAllActions.current,
         inventoryManager.handleAddItemToInventory,
         inventoryManager.handleAddLinhThach
     );
@@ -255,7 +280,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
     };
 
     const interactionManager = useInteractionManager(
-        playerState, setPlayerState, worldManager.isLoading, worldManager.setIsLoading,
+        playerState, updateAndPersistPlayerState, worldManager.isLoading, worldManager.setIsLoading,
         setGameMessage, pendingInteraction,
         { isMapOpen, isInfoPanelOpen, isWorldInfoPanelOpen, combatState: combatManager.combatState },
         {
@@ -332,7 +357,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
         };
 
         setTimeout(() => {
-            setPlayerState(prev => {
+            updateAndPersistPlayerState(prev => {
                 const timeAdvanced = advanceTime(prev.time, 24 * 60); // Teleporting takes 1 day
                 return {
                     ...prev,
@@ -345,10 +370,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
             worldManager.setIsLoading(false);
             setGameMessage(`Đã đến ${targetMapName}!`);
         }, 2000);
-    }, [setPlayerState, worldManager.setIsLoading, setGameMessage, allMaps]);
+    }, [updateAndPersistPlayerState, worldManager.setIsLoading, setGameMessage, allMaps]);
 
      const handlePlantSeed = useCallback((plotId: string, seedItemId: string, inventoryIndex: number) => {
-        setPlayerState(prev => {
+        updateAndPersistPlayerState(prev => {
             if (!prev) return prev;
 
             const seedDef = ALL_ITEMS.find(i => i.id === seedItemId);
@@ -379,10 +404,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
                 plantedPlots: newPlantedPlots,
             };
         });
-    }, [setPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage]);
     
     const handleCraftItem = useCallback((recipeId: string) => {
-        setPlayerState(prev => {
+        updateAndPersistPlayerState(prev => {
             if (!prev) return prev;
             const recipe = ALL_RECIPES.find(r => r.id === recipeId);
             if (!recipe) {
@@ -444,13 +469,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
             }
             return newState;
         });
-    }, [setPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage]);
 
 
     // --- CONTEXT VALUES ---
 
     const uiContextValue: IUIContext = useMemo(() => ({
         playerState, setPlayerState: setPlayerState as React.Dispatch<React.SetStateAction<PlayerState>>, 
+        updateAndPersistPlayerState,
         isGameReady, isGeneratingNames, allMaps,
         isMapOpen, setIsMapOpen,
         isInfoPanelOpen, setIsInfoPanelOpen,
@@ -459,7 +485,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
         isAlchemyPanelOpen, setIsAlchemyPanelOpen,
         tradingNpc, setTradingNpc,
         plantingPlot, setPlantingPlot,
-    }), [playerState, setPlayerState, isGameReady, isGeneratingNames, allMaps, isMapOpen, isInfoPanelOpen, isWorldInfoPanelOpen, isTeleportUIOpen, isAlchemyPanelOpen, tradingNpc, plantingPlot]);
+    }), [playerState, setPlayerState, updateAndPersistPlayerState, isGameReady, isGeneratingNames, allMaps, isMapOpen, isInfoPanelOpen, isWorldInfoPanelOpen, isTeleportUIOpen, isAlchemyPanelOpen, tradingNpc, plantingPlot]);
 
     const worldContextValue: IWorldContext = useMemo(() => ({
         gameMessage: gameMessageObject,

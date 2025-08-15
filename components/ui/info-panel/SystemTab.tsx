@@ -6,7 +6,7 @@ import { GiScrollQuill } from 'react-icons/gi';
 
 interface SystemTabProps {
   playerState: PlayerState;
-  setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>;
+  setPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void;
 }
 
 const ConfirmationModal: React.FC<{ onConfirm: () => void; onCancel: () => void; }> = ({ onConfirm, onCancel }) => (

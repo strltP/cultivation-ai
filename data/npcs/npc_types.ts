@@ -23,6 +23,7 @@ export interface StaticNpcDefinition {
 }
 
 export interface StaticNpcSpawn {
+    type: 'static';
     id: string;
     baseId: string;
     position: Position;
