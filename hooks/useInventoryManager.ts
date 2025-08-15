@@ -6,6 +6,7 @@ import { ALL_ITEMS } from '../data/items/index';
 import { INVENTORY_SIZE } from '../constants';
 
 export const useInventoryManager = (
+    playerState: PlayerState,
     setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>,
     setGameMessage: (message: string | null) => void,
     openTeleportUI: () => void,
@@ -64,36 +65,42 @@ export const useInventoryManager = (
     }, [setPlayerState, setGameMessage]);
 
     const handleUseItem = useCallback((itemIndex: number) => {
-        let isTeleport = false;
-        let isAlchemy = false;
+        const inventorySlot = playerState.inventory[itemIndex];
+        if (!inventorySlot) return;
+
+        const itemDef = ALL_ITEMS.find(i => i.id === inventorySlot.itemId);
+        if (!itemDef) return;
+
+        const isTeleport = itemDef.effects?.some(e => e.type === 'TELEPORT');
+        const isAlchemy = itemDef.effects?.some(e => e.type === 'OPEN_ALCHEMY_PANEL');
 
         setPlayerState(prev => {
             if (!prev) return null;
 
-            const inventorySlot = prev.inventory[itemIndex];
-            if (!inventorySlot) return prev;
+            const currentInventorySlot = prev.inventory[itemIndex];
+            if (!currentInventorySlot) return prev;
 
-            const itemDef = ALL_ITEMS.find(i => i.id === inventorySlot.itemId);
-            if (!itemDef) return prev;
+            const currentItemDef = ALL_ITEMS.find(i => i.id === currentInventorySlot.itemId);
+            if (!currentItemDef) return prev;
 
             let updatedPlayer = { ...prev };
             const messages: string[] = [];
             let shouldConsume = false;
 
-            if (itemDef.type === 'recipe' && itemDef.recipeId) {
-                const recipeId = itemDef.recipeId;
+            if (currentItemDef.type === 'recipe' && currentItemDef.recipeId) {
+                const recipeId = currentItemDef.recipeId;
                 if (updatedPlayer.learnedRecipes.includes(recipeId)) {
-                    setGameMessage(`Bạn đã học đan phương "${itemDef.name}" rồi.`);
+                    setGameMessage(`Bạn đã học đan phương "${currentItemDef.name}" rồi.`);
                     return prev; // Don't consume item if already learned
                 }
                 updatedPlayer.learnedRecipes = [...updatedPlayer.learnedRecipes, recipeId];
-                messages.push(`lĩnh ngộ đan phương "${itemDef.name}"`);
+                messages.push(`lĩnh ngộ đan phương "${currentItemDef.name}"`);
                 shouldConsume = true;
-            } else if ((itemDef.type === 'consumable' || itemDef.type === 'tool') && itemDef.effects) {
-                 if (itemDef.type === 'consumable') {
+            } else if ((currentItemDef.type === 'consumable' || currentItemDef.type === 'tool') && currentItemDef.effects) {
+                 if (currentItemDef.type === 'consumable') {
                     shouldConsume = true;
                  }
-                 itemDef.effects.forEach(effect => {
+                 currentItemDef.effects.forEach(effect => {
                     switch (effect.type) {
                         case 'RESTORE_HP':
                             const hpRestored = Math.min(updatedPlayer.stats.maxHp, updatedPlayer.hp + effect.value) - updatedPlayer.hp;
@@ -111,11 +118,9 @@ export const useInventoryManager = (
                              if (manaRestored > 0) messages.push(`hồi phục ${manaRestored} Linh Lực`);
                             break;
                         case 'TELEPORT':
-                            isTeleport = true;
                             messages.push('kích hoạt Truyền Tống Phù');
                             break;
                         case 'OPEN_ALCHEMY_PANEL':
-                            isAlchemy = true;
                             messages.push('mở ra Tiểu Hình Đan Lô');
                             break;
                     }
@@ -126,9 +131,9 @@ export const useInventoryManager = (
             }
 
             if (messages.length > 0) {
-                setGameMessage(`Sử dụng ${itemDef.name}, ${messages.join(' và ')}.`);
+                setGameMessage(`Sử dụng ${currentItemDef.name}, ${messages.join(' và ')}.`);
             } else {
-                 setGameMessage(`Sử dụng ${itemDef.name}, nhưng không có hiệu quả.`);
+                 setGameMessage(`Sử dụng ${currentItemDef.name}, nhưng không có hiệu quả.`);
             }
 
             // Consume the item if it's consumable or a recipe
@@ -152,7 +157,7 @@ export const useInventoryManager = (
         if (isAlchemy) {
             openAlchemyPanel();
         }
-    }, [setPlayerState, setGameMessage, openTeleportUI, openAlchemyPanel]);
+    }, [playerState, setPlayerState, setGameMessage, openTeleportUI, openAlchemyPanel]);
 
     return {
         handleAddLinhThach,

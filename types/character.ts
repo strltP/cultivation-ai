@@ -6,6 +6,7 @@ import type { InventorySlot } from './item';
 import type { EquipmentSlot } from './equipment';
 import type { LinhCan } from './linhcan';
 import type { ActiveStatusEffect } from './combat';
+import type { Interactable } from './interaction';
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -19,6 +20,7 @@ export interface NPC {
   baseId?: string;
   npcType?: 'cultivator' | 'monster';
   title?: string; // Danh hiệu, ví dụ: "Kiếm Thánh" (Optional)
+  spawnRuleId?: string; // For procedural monsters, to link them to their spawn rule
   role: string;   // Chức vụ, ví dụ: "Trưởng Lão" (Required)
   position: Position;
   prompt: string;
@@ -84,6 +86,7 @@ export interface PlayerState {
   
   // Persisted world state
   generatedNpcs: Record<string, NPC[]>; // MapID -> NPC list for persistence
+  generatedInteractables: Record<string, Interactable[]>; // MapID -> Interactable list
   defeatedNpcIds: string[]; // Using an array for JSON compatibility
   plantedPlots?: { plotId: string; mapId: MapID; seedId: string; plantedAt: GameTime; }[];
   respawningInteractables?: {
@@ -95,14 +98,13 @@ export interface PlayerState {
     respawnAt: GameTime;
   }[];
   respawningNpcs?: {
-    originalId: string;
-    baseId: string;
-    mapId: MapID;
-    level: number;
-    originalPosition: Position;
-    respawnAt: GameTime;
+      originalId: string;
+      baseId: string;
+      mapId: MapID;
+      respawnAt: GameTime;
   }[];
   chatHistories?: Record<string, ChatMessage[]>;
+  lastPopCheck?: Record<string, GameTime>; // Key: mapId-areaId for monster population, Value: last check time
   
   // Game Time
   time: GameTime;

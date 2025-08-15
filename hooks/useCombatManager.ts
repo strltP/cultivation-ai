@@ -76,9 +76,9 @@ export const useCombatManager = (
                 hp: Math.max(1, Math.round(prev.stats.maxHp * 0.1)),
                 qi: 0,
                 linhThach: Math.floor(prev.linhThach / 2),
-                currentMap: 'THIEN_NAM',
-                position: { x: 3800, y: 1800 },
-                targetPosition: { x: 3800, y: 1800 },
+                currentMap: 'LUC_YEN_THON',
+                position: { x: 1000, y: 700 },
+                targetPosition: { x: 1000, y: 700 },
             };
         });
         setCombatState(null);
@@ -126,43 +126,7 @@ export const useCombatManager = (
         setPlayerState(p => {
             if (!p) return null;
 
-            let newPlayerState = { ...p };
-
-            // 1. Update player stats from combat
-            newPlayerState.hp = playerInCombat.hp;
-            newPlayerState.mana = playerInCombat.mana;
-            newPlayerState.camNgo += camNgoGained;
-            newPlayerState.activeEffects = [];
-            
-            // 2. Handle NPC state (defeat vs respawn)
-            newPlayerState.defeatedNpcIds = [...new Set([...p.defeatedNpcIds, npc.id])];
-            
-            if (isMonster) {
-                // Add monster to respawn queue
-                if (npc.baseId && typeof npc.level === 'number') {
-                    const template = ALL_MONSTERS.find(m => m.baseId === npc.baseId);
-                    if (template && template.respawnTimeMinutes) {
-                        const [min, max] = template.respawnTimeMinutes;
-                        const respawnTimeMins = Math.floor(Math.random() * (max - min + 1)) + min;
-                        const respawnAt = advanceTime(p.time, respawnTimeMins);
-                        const newRespawningNpc = {
-                            originalId: npc.id,
-                            baseId: npc.baseId,
-                            level: npc.level,
-                            mapId: p.currentMap,
-                            originalPosition: npc.position,
-                            respawnAt,
-                        };
-                        newPlayerState.respawningNpcs = [...(p.respawningNpcs || []), newRespawningNpc];
-                    }
-                } else {
-                    console.warn(`Attempted to kill monster (id: ${npc.id}, name: ${npc.name}) without a baseId or level. It will not respawn.`);
-                }
-            }
-            
-            // 3. Handle loot
-            newPlayerState.linhThach += npc.linhThach;
-            
+            // Handle Loot
             let newInventory: InventorySlot[] = JSON.parse(JSON.stringify(p.inventory));
             allLootItems.forEach(itemLoot => {
                 const itemDef = ALL_ITEMS.find(i => i.id === itemLoot.itemId);
@@ -186,9 +150,18 @@ export const useCombatManager = (
                     remainingQuantity -= amountForNewStack;
                 }
             });
-            newPlayerState.inventory = newInventory;
-            
-            return newPlayerState;
+
+            // Construct the new state object immutably
+            return {
+                ...p,
+                hp: playerInCombat.hp,
+                mana: playerInCombat.mana,
+                camNgo: p.camNgo + camNgoGained,
+                activeEffects: [],
+                defeatedNpcIds: [...new Set([...p.defeatedNpcIds, npc.id])],
+                linhThach: p.linhThach + (npc.linhThach || 0),
+                inventory: newInventory,
+            };
         });
 
         // --- Final UI updates ---

@@ -1,25 +1,191 @@
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import type { PlayerState, NPC } from '../types/character';
+import React, { createContext, useContext, useState, useCallback, useRef, useMemo, useEffect, ReactNode } from 'react';
+import type { PlayerState, NPC, ChatMessage } from '../types/character';
 import type { Position } from '../types/common';
 import type { GameMap, MapArea, PointOfInterest, TeleportLocation, MapID } from '../types/map';
-import type { Interactable } from '../interaction';
+import type { Dialogue, Interactable } from '../types/interaction';
 import { useWorldManager } from './useWorldManager';
-import { usePlayerActions } from './usePlayerActions';
+import { usePlayerActions as usePlayerActionsManager } from './usePlayerActions';
 import { useInventoryManager } from './useInventoryManager';
 import { useCombatManager } from './useCombatManager';
 import { useInteractionManager } from './useInteractionManager';
-import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP, MAP_AREAS_BY_MAP, INTERACTABLES_BY_MAP } from '../constants';
+import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP, MAP_AREAS_BY_MAP } from '../mapdata';
 import { advanceTime } from '../services/timeService';
-import { ALL_ITEMS } from '../data/items';
-import { ALL_RECIPES } from '../data/alchemy_recipes';
-import type { InventorySlot } from '../types/item';
+import { ALL_ITEMS } from '../data/items/index';
+import { ALL_RECIPES } from '../../data/alchemy_recipes';
+import type { CombatState, PlayerAction } from '../types/combat';
+import { generatePlaceNames, PlaceToName } from '../services/geminiService';
 
-export const useGameState = (
-    playerState: PlayerState,
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>,
-    options: { allMaps: Record<string, GameMap> }
-) => {
-    // --- Core State & Refs ---
+
+// --- TYPE DEFINITIONS FOR CONTEXTS ---
+
+interface IUIContext {
+    playerState: PlayerState;
+    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState>>;
+    isGameReady: boolean;
+    isGeneratingNames: boolean;
+    allMaps: Record<string, GameMap>;
+    isMapOpen: boolean;
+    setIsMapOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    isInfoPanelOpen: boolean;
+    setIsInfoPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    isWorldInfoPanelOpen: boolean;
+    setIsWorldInfoPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    isTeleportUIOpen: boolean;
+    setIsTeleportUIOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    isAlchemyPanelOpen: boolean;
+    setIsAlchemyPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    tradingNpc: NPC | null;
+    setTradingNpc: React.Dispatch<React.SetStateAction<NPC | null>>;
+    plantingPlot: Interactable | null;
+    setPlantingPlot: React.Dispatch<React.SetStateAction<Interactable | null>>;
+}
+
+interface IWorldContext {
+    gameMessage: { text: string; id: number } | null;
+    isLoading: boolean;
+    currentNpcs: NPC[];
+    currentInteractables: Interactable[];
+    currentTeleportGates: TeleportLocation[];
+    currentPois: PointOfInterest[];
+    currentMapAreas: MapArea[];
+}
+
+interface IPlayerActionsContext {
+    isMeditating: boolean;
+    setIsMeditating: React.Dispatch<React.SetStateAction<boolean>>;
+    handleBreakthrough: () => void;
+    handleToggleMeditation: () => void;
+    handleLevelUpSkill: (skillId: string) => void;
+    handleUseItem: (itemIndex: number) => void;
+    handleTalismanTeleport: (targetMap: MapID) => void;
+    handleCraftItem: (recipeId: string) => void;
+}
+
+interface ICombatContext {
+    combatState: CombatState | null;
+    handleChallenge: (npc: NPC) => void;
+    handleCombatAction: (action: PlayerAction) => void;
+    closeCombatScreen: () => void;
+    handleKillNpc: () => void;
+    handleSpareNpc: () => void;
+    handlePlayerDeathAndRespawn: () => void;
+}
+
+interface IInteractionContext {
+    pendingInteraction: React.MutableRefObject<(() => void) | null>;
+    activeDialogue: Dialogue | null;
+    setActiveDialogue: React.Dispatch<React.SetStateAction<Dialogue | null>>;
+    activeInteractionNpc: NPC | null;
+    setActiveInteractionNpc: React.Dispatch<React.SetStateAction<NPC | null>>;
+    activeInteractionInteractable: Interactable | null;
+    setActiveInteractionInteractable: React.Dispatch<React.SetStateAction<Interactable | null>>;
+    viewingNpc: NPC | null;
+    setViewingNpc: React.Dispatch<React.SetStateAction<NPC | null>>;
+    chatTargetNpc: NPC | null;
+    chatHistory: ChatMessage[];
+    isChatLoading: boolean;
+    processInteraction: (target: Interactable) => Promise<void>;
+    handleTeleport: (gate: TeleportLocation) => void;
+    handleEnterPoi: (poi: PointOfInterest) => void;
+    handleGenericInteraction: (target: NPC | Interactable | TeleportLocation | PointOfInterest, interactionFn: () => void) => void;
+    handleGatherInteractable: (interactable: Interactable) => void;
+    handleDestroyInteractable: (interactable: Interactable) => void;
+    handleViewInfoInteractable: (interactable: Interactable) => void;
+    handlePlantSeed: (plotId: string, seedItemId: string, inventoryIndex: number) => void;
+    handleInitiateTrade: (npc: NPC) => void;
+    setTargetPosition: (pos: Position) => void;
+    handleStartChat: (npc: NPC) => void;
+    handleSendMessage: (message: string) => Promise<void>;
+    handleCloseChat: () => void;
+}
+
+
+// --- CONTEXT CREATION ---
+
+const UIContext = createContext<IUIContext | null>(null);
+const WorldContext = createContext<IWorldContext | null>(null);
+const PlayerActionsContext = createContext<IPlayerActionsContext | null>(null);
+const CombatContext = createContext<ICombatContext | null>(null);
+const InteractionContext = createContext<IInteractionContext | null>(null);
+
+
+// --- CONSUMER HOOKS ---
+
+export const useUI = () => {
+    const context = useContext(UIContext);
+    if (!context) throw new Error("useUI must be used within a GameProvider");
+    return context;
+};
+export const useWorld = () => {
+    const context = useContext(WorldContext);
+    if (!context) throw new Error("useWorld must be used within a GameProvider");
+    return context;
+};
+export const usePlayerActions = () => {
+    const context = useContext(PlayerActionsContext);
+    if (!context) throw new Error("usePlayerActions must be used within a GameProvider");
+    return context;
+};
+export const useCombat = () => {
+    const context = useContext(CombatContext);
+    if (!context) throw new Error("useCombat must be used within a GameProvider");
+    return context;
+};
+export const useInteraction = () => {
+    const context = useContext(InteractionContext);
+    if (!context) throw new Error("useInteraction must be used within a GameProvider");
+    return context;
+};
+
+
+// --- GAME PROVIDER COMPONENT ---
+
+interface GameProviderProps {
+    children: ReactNode;
+    initialPlayerState: PlayerState;
+    setPlayerStateForPersistence: React.Dispatch<React.SetStateAction<PlayerState | null>>;
+}
+
+export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPlayerState, setPlayerStateForPersistence }) => {
+    const [playerState, setPlayerState] = useState<PlayerState>(initialPlayerState);
+    const [isGameReady, setIsGameReady] = useState(false);
+    const [isGeneratingNames, setIsGeneratingNames] = useState(false);
+    
+    // Sync internal state with the persistent one from the parent (App.tsx)
+    useEffect(() => {
+        setPlayerStateForPersistence(playerState);
+    }, [playerState, setPlayerStateForPersistence]);
+
+    // Game Initialization Logic (e.g., generating names)
+    useEffect(() => {
+        const initializeGame = async () => {
+            if (playerState.useRandomNames && (!playerState.nameOverrides || Object.keys(playerState.nameOverrides).length === 0)) {
+                setIsGeneratingNames(true);
+                
+                const placesToName: PlaceToName[] = [];
+                Object.values(MAPS).forEach(map => placesToName.push({ id: map.id, type: 'Đại Lục', originalName: map.name }));
+                Object.values(MAP_AREAS_BY_MAP).flat().forEach(area => placesToName.push({ id: area.id, type: 'Vùng Đất', originalName: area.name }));
+                Object.values(POIS_BY_MAP).flat().forEach(poi => {
+                    let type = 'Địa Điểm';
+                    if (poi.type === 'city') type = 'Thành Thị';
+                    if (poi.type === 'village') type = 'Thôn Làng';
+                    if (poi.type === 'sect') type = 'Tông Môn';
+                    if (poi.type === 'dungeon') type = 'Bí Cảnh';
+                    placesToName.push({ id: poi.id, type, originalName: poi.name });
+                });
+                Object.values(TELEPORT_GATES_BY_MAP).flat().forEach(gate => placesToName.push({ id: gate.id, type: 'Trận Pháp', originalName: gate.name }));
+
+                const overrides = await generatePlaceNames(placesToName);
+                
+                setPlayerState(p => ({ ...p, nameOverrides: overrides }));
+                setIsGeneratingNames(false);
+            }
+            setIsGameReady(true);
+        };
+        initializeGame();
+    }, []); // Run only once on mount
+
+
     const [gameMessageObject, setGameMessageObject] = useState<{ text: string; id: number } | null>(null);
     const pendingInteraction = useRef<(() => void) | null>(null);
 
@@ -40,66 +206,67 @@ export const useGameState = (
     const [tradingNpc, setTradingNpc] = useState<NPC | null>(null);
     const [plantingPlot, setPlantingPlot] = useState<Interactable | null>(null);
 
-
     // --- Effective Map Data Calculation ---
-    const { effectivePois, effectiveMapAreas, effectiveTeleportGates } = useMemo(() => {
+    const { allMaps, effectivePois, effectiveMapAreas, effectiveTeleportGates } = useMemo(() => {
         const overrides = playerState.nameOverrides || {};
+        const maps = JSON.parse(JSON.stringify(MAPS));
         const pois = JSON.parse(JSON.stringify(POIS_BY_MAP));
         const areas = JSON.parse(JSON.stringify(MAP_AREAS_BY_MAP));
         const gates = JSON.parse(JSON.stringify(TELEPORT_GATES_BY_MAP));
 
+        Object.keys(maps).forEach(mapId => {
+            if (overrides?.[mapId]) maps[mapId].name = overrides[mapId];
+        });
         Object.values(pois).flat().forEach((poi: PointOfInterest) => {
-            if(overrides[poi.id]) poi.name = overrides[poi.id];
+            if (overrides[poi.id]) poi.name = overrides[poi.id];
         });
         Object.values(areas).flat().forEach((area: MapArea) => {
-            if(overrides[area.id]) area.name = overrides[area.id];
+            if (overrides[area.id]) area.name = overrides[area.id];
         });
         Object.values(gates).flat().forEach((gate: TeleportLocation) => {
-            if(overrides[gate.id]) gate.name = overrides[gate.id];
+            if (overrides[gate.id]) gate.name = overrides[gate.id];
         });
 
-        return { effectivePois: pois, effectiveMapAreas: areas, effectiveTeleportGates: gates };
+        return { allMaps: maps, effectivePois: pois, effectiveMapAreas: areas, effectiveTeleportGates: gates };
     }, [playerState.nameOverrides]);
 
-
     // --- Sub-Hook Instantiation ---
-    const inventoryManager = useInventoryManager(setPlayerState, setGameMessage, () => setIsTeleportUIOpen(true), () => setIsAlchemyPanelOpen(true));
-    
+    const inventoryManager = useInventoryManager(playerState, setPlayerState, setGameMessage, () => setIsTeleportUIOpen(true), () => setIsAlchemyPanelOpen(true));
+
     const worldManager = useWorldManager(playerState, setPlayerState, setGameMessage, {
         pois: effectivePois,
         mapAreas: effectiveMapAreas,
         teleportGates: effectiveTeleportGates,
-        interactables: INTERACTABLES_BY_MAP
     });
-    
-    const stopAllActions = useCallback(() => {}, []);
 
-    const playerActions = usePlayerActions(setPlayerState, setGameMessage, stopAllActions);
+    const stopAllActions = useRef(() => { });
+
+    const playerActions = usePlayerActionsManager(setPlayerState, setGameMessage, stopAllActions.current);
 
     const combatManager = useCombatManager(
-        playerState, setPlayerState, setGameMessage, stopAllActions, 
-        inventoryManager.handleAddItemToInventory, 
+        playerState, setPlayerState, setGameMessage, stopAllActions.current,
+        inventoryManager.handleAddItemToInventory,
         inventoryManager.handleAddLinhThach
     );
 
-     const handleInitiateTrade = (npc: NPC) => {
-        interactionManager.stopAllActions.current();
+    const handleInitiateTrade = (npc: NPC) => {
+        stopAllActions.current();
         setTradingNpc(npc);
     };
 
     const interactionManager = useInteractionManager(
         playerState, setPlayerState, worldManager.isLoading, worldManager.setIsLoading,
-        setGameMessage, pendingInteraction, 
+        setGameMessage, pendingInteraction,
         { isMapOpen, isInfoPanelOpen, isWorldInfoPanelOpen, combatState: combatManager.combatState },
-        { 
-            handleAddItemToInventory: inventoryManager.handleAddItemToInventory, 
+        {
+            handleAddItemToInventory: inventoryManager.handleAddItemToInventory,
             handleAddLinhThach: inventoryManager.handleAddLinhThach,
-            handleRemoveAndRespawn: worldManager.handleRemoveAndRespawn, 
+            handleRemoveAndRespawn: worldManager.handleRemoveAndRespawn,
             handleChallenge: combatManager.handleChallenge,
             handleInitiateTrade: handleInitiateTrade,
             setPlantingPlot,
             setIsAlchemyPanelOpen,
-            allMaps: options.allMaps
+            allMaps
         }
     );
 
@@ -116,22 +283,20 @@ export const useGameState = (
         interactionManager.handleCloseChat();
     }, [playerActions, interactionManager]);
 
+    stopAllActions.current = fullStopAllActions;
     playerActions.stopAllActions.current = fullStopAllActions;
     combatManager.stopAllActions.current = fullStopAllActions;
     interactionManager.stopAllActions.current = fullStopAllActions;
 
-    // Sync tradingNpc state with the master list in playerState
     useEffect(() => {
         if (tradingNpc) {
             const npcsOnMap = playerState.generatedNpcs[playerState.currentMap] || [];
             const updatedNpc = npcsOnMap.find(n => n.id === tradingNpc.id);
             if (updatedNpc) {
-                // Check if the state is actually different to prevent infinite loops
                 if (JSON.stringify(updatedNpc) !== JSON.stringify(tradingNpc)) {
                     setTradingNpc(updatedNpc);
                 }
             } else {
-                // NPC was removed from the world, so close the trade panel.
                 setTradingNpc(null);
             }
         }
@@ -140,16 +305,13 @@ export const useGameState = (
     const setTargetPosition = (pos: Position) => {
         fullStopAllActions();
         pendingInteraction.current = null;
-        setPlayerState(prevState => {
-            if (!prevState) return null;
-            return { ...prevState, targetPosition: pos };
-        });
+        setPlayerState(prevState => ({ ...prevState, targetPosition: pos }));
     };
-
+    
     const handleTalismanTeleport = useCallback((targetMap: MapID) => {
         setIsTeleportUIOpen(false);
         worldManager.setIsLoading(true);
-        const targetMapName = options.allMaps[targetMap].name;
+        const targetMapName = allMaps[targetMap].name;
         setGameMessage(`Không gian đang dao động, chuẩn bị dịch chuyển đến ${targetMapName}...`);
 
         const landingPositions: Record<MapID, Position> = {
@@ -171,7 +333,6 @@ export const useGameState = (
 
         setTimeout(() => {
             setPlayerState(prev => {
-                if (!prev) return null;
                 const timeAdvanced = advanceTime(prev.time, 24 * 60); // Teleporting takes 1 day
                 return {
                     ...prev,
@@ -184,16 +345,15 @@ export const useGameState = (
             worldManager.setIsLoading(false);
             setGameMessage(`Đã đến ${targetMapName}!`);
         }, 2000);
-    }, [setPlayerState, worldManager.setIsLoading, setGameMessage, options.allMaps]);
+    }, [setPlayerState, worldManager.setIsLoading, setGameMessage, allMaps]);
 
-    const handlePlantSeed = useCallback((plotId: string, seedItemId: string, inventoryIndex: number) => {
+     const handlePlantSeed = useCallback((plotId: string, seedItemId: string, inventoryIndex: number) => {
         setPlayerState(prev => {
-            if (!prev) return null;
+            if (!prev) return prev;
 
             const seedDef = ALL_ITEMS.find(i => i.id === seedItemId);
             if (!seedDef) return prev;
 
-            // Remove seed from inventory
             const newInventory = [...prev.inventory];
             const invSlot = newInventory[inventoryIndex];
             if (invSlot.quantity > 1) {
@@ -202,7 +362,6 @@ export const useGameState = (
                 newInventory.splice(inventoryIndex, 1);
             }
 
-            // Add to planted plots
             const newPlantedPlots = [...(prev.plantedPlots || [])];
             newPlantedPlots.push({
                 plotId,
@@ -224,29 +383,23 @@ export const useGameState = (
     
     const handleCraftItem = useCallback((recipeId: string) => {
         setPlayerState(prev => {
-            if (!prev) return null;
-
+            if (!prev) return prev;
             const recipe = ALL_RECIPES.find(r => r.id === recipeId);
             if (!recipe) {
                 setGameMessage("Không tìm thấy đan phương này.");
                 return prev;
             }
-
             const inventoryMap = prev.inventory.reduce((acc, slot) => {
                 acc[slot.itemId] = (acc[slot.itemId] || 0) + slot.quantity;
                 return acc;
             }, {} as Record<string, number>);
-
             const hasAllIngredients = recipe.ingredients.every(
                 ing => (inventoryMap[ing.itemId] || 0) >= ing.quantity
             );
-
             if (!hasAllIngredients) {
                 setGameMessage("Không đủ nguyên liệu để luyện đan.");
                 return prev;
             }
-            
-            // Consume ingredients
             let newInventory = [...prev.inventory];
             recipe.ingredients.forEach(ing => {
                 let remainingToRemove = ing.quantity;
@@ -259,14 +412,10 @@ export const useGameState = (
                     return slot;
                 }).filter(slot => slot.quantity > 0);
             });
-
-            // Calculate success
             const successChance = Math.min(1, recipe.baseSuccessChance + prev.attributes.ngoTinh * recipe.ngoTinhFactor);
             const isSuccess = Math.random() < successChance;
-            
             const timeAdvanced = advanceTime(prev.time, recipe.timeToCraftMinutes);
             let newState = { ...prev, inventory: newInventory, time: timeAdvanced };
-
             if (isSuccess) {
                 const quantity = Math.floor(Math.random() * (recipe.resultQuantity[1] - recipe.resultQuantity[0] + 1)) + recipe.resultQuantity[0];
                 const resultItemDef = ALL_ITEMS.find(i => i.id === recipe.resultItemId);
@@ -293,14 +442,16 @@ export const useGameState = (
             } else {
                 setGameMessage("Luyện đan thất bại! Tất cả nguyên liệu đã bị hủy.");
             }
-            
             return newState;
         });
     }, [setPlayerState, setGameMessage]);
 
-    return {
-        gameMessage: gameMessageObject,
-        isLoading: worldManager.isLoading,
+
+    // --- CONTEXT VALUES ---
+
+    const uiContextValue: IUIContext = useMemo(() => ({
+        playerState, setPlayerState: setPlayerState as React.Dispatch<React.SetStateAction<PlayerState>>, 
+        isGameReady, isGeneratingNames, allMaps,
         isMapOpen, setIsMapOpen,
         isInfoPanelOpen, setIsInfoPanelOpen,
         isWorldInfoPanelOpen, setIsWorldInfoPanelOpen,
@@ -308,19 +459,30 @@ export const useGameState = (
         isAlchemyPanelOpen, setIsAlchemyPanelOpen,
         tradingNpc, setTradingNpc,
         plantingPlot, setPlantingPlot,
-        pendingInteraction,
+    }), [playerState, setPlayerState, isGameReady, isGeneratingNames, allMaps, isMapOpen, isInfoPanelOpen, isWorldInfoPanelOpen, isTeleportUIOpen, isAlchemyPanelOpen, tradingNpc, plantingPlot]);
+
+    const worldContextValue: IWorldContext = useMemo(() => ({
+        gameMessage: gameMessageObject,
+        isLoading: worldManager.isLoading,
         currentNpcs: worldManager.currentNpcs,
         currentInteractables: worldManager.currentInteractables,
         currentTeleportGates: worldManager.currentTeleportGates,
         currentPois: worldManager.currentPois,
         currentMapAreas: worldManager.currentMapAreas,
+    }), [gameMessageObject, worldManager]);
+
+    const playerActionsContextValue: IPlayerActionsContext = useMemo(() => ({
         isMeditating: playerActions.isMeditating,
+        setIsMeditating: playerActions.setIsMeditating,
         handleBreakthrough: playerActions.handleBreakthrough,
         handleToggleMeditation: playerActions.handleToggleMeditation,
         handleLevelUpSkill: playerActions.handleLevelUpSkill,
         handleUseItem: inventoryManager.handleUseItem,
         handleTalismanTeleport,
         handleCraftItem,
+    }), [playerActions, inventoryManager, handleTalismanTeleport, handleCraftItem]);
+
+    const combatContextValue: ICombatContext = useMemo(() => ({
         combatState: combatManager.combatState,
         handleChallenge: combatManager.handleChallenge,
         handleCombatAction: combatManager.handleCombatAction,
@@ -328,29 +490,26 @@ export const useGameState = (
         handleKillNpc: combatManager.handleKillNpc,
         handleSpareNpc: combatManager.handleSpareNpc,
         handlePlayerDeathAndRespawn: combatManager.handlePlayerDeathAndRespawn,
-        activeDialogue: interactionManager.activeDialogue,
-        setActiveDialogue: interactionManager.setActiveDialogue,
-        activeInteractionNpc: interactionManager.activeInteractionNpc,
-        setActiveInteractionNpc: interactionManager.setActiveInteractionNpc,
-        activeInteractionInteractable: interactionManager.activeInteractionInteractable,
-        setActiveInteractionInteractable: interactionManager.setActiveInteractionInteractable,
-        viewingNpc: interactionManager.viewingNpc,
-        setViewingNpc: interactionManager.setViewingNpc,
-        processInteraction: interactionManager.processInteraction,
-        handleTeleport: interactionManager.handleTeleport,
-        handleEnterPoi: interactionManager.handleEnterPoi,
-        handleGenericInteraction: interactionManager.handleGenericInteraction,
-        handleGatherInteractable: interactionManager.handleGatherInteractable,
-        handleDestroyInteractable: interactionManager.handleDestroyInteractable,
-        handleViewInfoInteractable: interactionManager.handleViewInfoInteractable,
-        handlePlantSeed,
-        handleInitiateTrade,
+    }), [combatManager]);
+
+    const interactionContextValue: IInteractionContext = useMemo(() => ({
+        pendingInteraction,
+        ...interactionManager,
         setTargetPosition,
-        chatTargetNpc: interactionManager.chatTargetNpc,
-        chatHistory: interactionManager.chatHistory,
-        isChatLoading: interactionManager.isChatLoading,
-        handleStartChat: interactionManager.handleStartChat,
-        handleSendMessage: interactionManager.handleSendMessage,
-        handleCloseChat: interactionManager.handleCloseChat,
-    };
+        handlePlantSeed,
+    }), [interactionManager, setTargetPosition, handlePlantSeed]);
+
+    return (
+        <UIContext.Provider value={uiContextValue}>
+            <WorldContext.Provider value={worldContextValue}>
+                <PlayerActionsContext.Provider value={playerActionsContextValue}>
+                    <CombatContext.Provider value={combatContextValue}>
+                        <InteractionContext.Provider value={interactionContextValue}>
+                            {children}
+                        </InteractionContext.Provider>
+                    </CombatContext.Provider>
+                </PlayerActionsContext.Provider>
+            </WorldContext.Provider>
+        </UIContext.Provider>
+    );
 };

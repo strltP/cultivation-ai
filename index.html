@@ -117,6 +117,47 @@
                 box-shadow: 0 0 30px 15px rgba(253, 224, 71, 0.8);
             }
         }
+
+        /* Confirmation Modal Styles */
+        .confirmation-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50; /* Ensure it's on top */
+            animation: fade-in 0.3s ease-out;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .confirmation-modal-content {
+            background: linear-gradient(145deg, #2d3748, #1a202c);
+            border: 2px solid rgba(252, 211, 77, 0.5); /* border-yellow-400/50 */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 2rem; /* p-8 */
+            width: 100%;
+            max-width: 28rem; /* max-w-md */
+            text-align: center;
+            animation: slide-up 0.4s ease-out;
+        }
+
+        @keyframes slide-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 <script type="importmap">
 {

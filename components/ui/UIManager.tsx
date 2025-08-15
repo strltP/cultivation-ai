@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import type { PlayerState, NPC } from '../../types/character';
-import type { Interactable } from '../../types/interaction';
 import type { GameMap } from '../../types/map';
 import type { Position } from '../../types/common';
-import type { useGameState } from '../../hooks/useGameState';
+import { useUI, useWorld, usePlayerActions, useCombat, useInteraction } from '../../hooks/useGameContext';
 
 import Hud from './Hud';
 import DialogueBox from './DialogueBox';
@@ -23,88 +22,74 @@ import ChatPanel from './ChatPanel';
 interface UIManagerProps {
     playerState: PlayerState;
     setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>;
-    gameState: ReturnType<typeof useGameState>;
     currentMapData: GameMap;
     currentArea: string | null;
     currentZone: string | null;
     cameraPosition: Position;
     allMaps: Record<string, GameMap>;
-    onToggleMap: () => void;
-    onToggleInfoPanel: () => void;
-    onToggleWorldInfoPanel: () => void;
 }
 
 const UIManager: React.FC<UIManagerProps> = (props) => {
     const { 
         playerState, 
         setPlayerState,
-        gameState, 
         currentMapData, 
         currentArea, 
         currentZone,
         cameraPosition,
         allMaps,
-        onToggleMap, 
-        onToggleInfoPanel, 
-        onToggleWorldInfoPanel 
     } = props;
     
+    // --- CONTEXT HOOKS ---
     const {
-        activeDialogue,
-        setActiveDialogue,
-        gameMessage,
-        isLoading,
-        isMapOpen,
-        isInfoPanelOpen,
-        isWorldInfoPanelOpen,
-        isTeleportUIOpen,
-        setIsTeleportUIOpen,
-        isAlchemyPanelOpen,
-        setIsAlchemyPanelOpen,
-        tradingNpc,
-        setTradingNpc,
-        plantingPlot,
-        setPlantingPlot,
-        chatTargetNpc,
-        chatHistory,
-        isChatLoading,
-        currentPois,
-        currentMapAreas,
-        currentTeleportGates,
-        pendingInteraction,
-        activeInteractionNpc,
-        setActiveInteractionNpc,
-        activeInteractionInteractable,
-        setActiveInteractionInteractable,
-        viewingNpc,
-        setViewingNpc,
-        combatState,
-        handleBreakthrough,
-        handleTeleport,
-        handleEnterPoi,
-        handleGenericInteraction,
-        handleChallenge,
-        handleInitiateTrade,
-        setTargetPosition,
-        handleToggleMeditation,
-        handleLevelUpSkill,
+        isMapOpen, setIsMapOpen,
+        isInfoPanelOpen, setIsInfoPanelOpen,
+        isWorldInfoPanelOpen, setIsWorldInfoPanelOpen,
+        isTeleportUIOpen, setIsTeleportUIOpen,
+        isAlchemyPanelOpen, setIsAlchemyPanelOpen,
+        tradingNpc, setTradingNpc,
+        plantingPlot, setPlantingPlot,
+    } = useUI();
+    
+    const { gameMessage, isLoading, currentPois, currentMapAreas, currentTeleportGates } = useWorld();
+    
+    const { 
+        isMeditating, 
+        handleBreakthrough, 
+        handleToggleMeditation, 
+        handleLevelUpSkill, 
         handleUseItem,
         handleTalismanTeleport,
+        handleCraftItem,
+    } = usePlayerActions();
+
+    const {
+        combatState,
         handleCombatAction,
         closeCombatScreen,
         handleKillNpc,
         handleSpareNpc,
         handlePlayerDeathAndRespawn,
+        handleChallenge,
+    } = useCombat();
+
+    const {
+        activeDialogue, setActiveDialogue,
+        activeInteractionNpc, setActiveInteractionNpc,
+        activeInteractionInteractable, setActiveInteractionInteractable,
+        viewingNpc, setViewingNpc,
+        chatTargetNpc, chatHistory, isChatLoading,
         handleGatherInteractable,
         handleDestroyInteractable,
         handleViewInfoInteractable,
         handlePlantSeed,
-        handleCraftItem,
+        handleInitiateTrade,
         handleStartChat,
         handleSendMessage,
         handleCloseChat,
-    } = gameState;
-
+    } = useInteraction();
+    
+    // --- DERIVED LOGIC & HANDLERS ---
     const calculateMenuPosition = (worldPos: Position) => {
         const screenX = worldPos.x + cameraPosition.x;
         const screenY = worldPos.y + cameraPosition.y;
@@ -120,6 +105,16 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
         setActiveInteractionNpc(null);
         handleInitiateTrade(npc);
     };
+    
+    const onToggleMap = useCallback(() => {
+        if (!isMapOpen) {
+            // Logic to stop player movement can be handled by the game loop's isPaused flag
+        }
+        setIsMapOpen(prev => !prev);
+    }, [isMapOpen, setIsMapOpen]);
+    
+    const onToggleInfoPanel = useCallback(() => setIsInfoPanelOpen(prev => !prev), [setIsInfoPanelOpen]);
+    const onToggleWorldInfoPanel = useCallback(() => setIsWorldInfoPanelOpen(prev => !prev), [setIsWorldInfoPanelOpen]);
 
     return (
         <>
@@ -136,7 +131,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                     onToggleMeditation={handleToggleMeditation}
                     onToggleInfoPanel={onToggleInfoPanel}
                     onToggleWorldInfoPanel={onToggleWorldInfoPanel}
-                    isMeditating={gameState.isMeditating}
+                    isMeditating={isMeditating}
                 />
             )}
 

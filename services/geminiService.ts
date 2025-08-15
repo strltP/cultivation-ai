@@ -195,7 +195,7 @@ BỐI CẢNH TRÒ CHUYỆN
 
 export const getInteractionResponse = async (
     playerState: PlayerState, 
-    target: Interactable | NPC,
+    target: Interactable,
     possibleItems: Item[]
 ): Promise<GeminiInteractionResponse | null> => {
     try {
@@ -204,20 +204,12 @@ export const getInteractionResponse = async (
         const timeOfDay = getHourPeriod(playerState.time.hour);
         const season = playerState.time.season;
         
-        let prompt: string;
-        const isNpc = !('type' in target);
-
-        if (isNpc) {
-           // This path is now deprecated in favor of the chat system, but kept for potential fallback.
-            const npc = target as NPC;
-            prompt = `Nhân vật của tôi là một tu sĩ tên '${playerState.name}' ở cảnh giới ${cultivationInfo.name}. ${timeOfDay} vào mùa ${season}, họ gặp gỡ NPC '${npc.name}' (${npc.role}). Bối cảnh của NPC là: "${npc.prompt}". Hãy tạo một đoạn đối thoại ngắn (2-4 câu) cho NPC. NPC sẽ không cho bất kỳ vật phẩm hay linh thạch nào. Chỉ có đối thoại. Trả lời dưới dạng JSON.`;
-        } else { // Interactable (only chests reach here)
-             const itemNames = possibleItems.map(i => i.name).join(', ');
-             prompt = `Nhân vật của tôi, một tu sĩ tên '${playerState.name}' ở cảnh giới ${cultivationInfo.name}, tương tác với một '${target.name}' ${timeOfDay} vào mùa ${season}. Nội dung của nó là: "${target.prompt}". 
+        // This function now only handles Interactable types, specifically chests as per game logic.
+        const itemNames = possibleItems.map(i => i.name).join(', ');
+        const prompt = `Nhân vật của tôi, một tu sĩ tên '${playerState.name}' ở cảnh giới ${cultivationInfo.name}, tương tác với một '${target.name}' ${timeOfDay} vào mùa ${season}. Nội dung của nó là: "${target.prompt}". 
 Hãy tạo ra một đoạn đối thoại mô tả ngắn gọn (2-3 câu).
 Sau đó, hãy quyết định xem họ có tìm thấy vật phẩm nào không. Nếu có, hãy chọn một hoặc hai vật phẩm từ danh sách sau: [${itemNames}]. Ngoài ra, có thể thưởng cho họ một lượng nhỏ Linh Thạch (0 đến 50).
 Trả lời dưới dạng JSON.`;
-        }
 
 
         const response = await client.models.generateContent({

@@ -5,7 +5,7 @@ import { advanceTime } from '../services/timeService';
 
 export const useGameLoop = (
     playerState: PlayerState,
-    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState>>,
+    setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>,
     isPaused: boolean, // Combines isMapOpen, isLoading, isFighting, isChatting etc.
     isMeditating: boolean,
     pendingInteraction: React.MutableRefObject<(() => void) | null>

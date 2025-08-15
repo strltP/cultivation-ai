@@ -48,18 +48,26 @@ const TradePanel: React.FC<TradePanelProps> = ({ playerState, setPlayerState, np
         const npcSaleItem = selectedItem.type === 'npc' ? npc.forSale?.find(i => i.itemId === itemDef.id) : null;
         const currentBuyPrice = npcSaleItem ? Math.floor((itemDef.value || 0) * (npcSaleItem.priceModifier || 1)) : 0;
         
-        const currentMaxSell = selectedItem.type === 'player' ? selectedItem.slot?.quantity || 0 : 0;
+        let currentMaxSell = 0;
+        if (selectedItem.type === 'player' && currentSellPrice > 0) {
+            const maxByInventory = selectedItem.slot?.quantity || 0;
+            const maxByNpcMoney = Math.floor(npc.linhThach / currentSellPrice);
+            currentMaxSell = Math.min(maxByInventory, maxByNpcMoney);
+        }
 
         let currentMaxBuy = 0;
         if (selectedItem.type === 'npc' && npcSaleItem && currentBuyPrice > 0) {
             const maxByStock = npcSaleItem.stock === -1 ? Infinity : npcSaleItem.stock;
             const maxByMoney = Math.floor(playerState.linhThach / currentBuyPrice);
             
-            const existingStacks = playerState.inventory.filter(s => s.itemId === itemDef.id);
-            const spaceInStacks = existingStacks.reduce((total, stack) => total + (itemDef.stackable - stack.quantity), 0);
-            const emptySlots = INVENTORY_SIZE - playerState.inventory.length + (existingStacks.some(s => s.itemId === itemDef.id) ? 0 : -1);
-            const spaceInNewStacks = Math.max(0, emptySlots * itemDef.stackable);
-            const maxBySpace = spaceInStacks + spaceInNewStacks;
+            const spaceInExistingStacks = playerState.inventory
+                .filter(slot => slot.itemId === itemDef.id)
+                .reduce((total, slot) => total + (itemDef.stackable - slot.quantity), 0);
+            
+            const emptySlotCount = INVENTORY_SIZE - playerState.inventory.length;
+            const spaceInEmptySlots = emptySlotCount * itemDef.stackable;
+
+            const maxBySpace = spaceInExistingStacks + spaceInEmptySlots;
             
             currentMaxBuy = Math.floor(Math.min(maxByStock, maxByMoney, maxBySpace));
         }
@@ -69,7 +77,7 @@ const TradePanel: React.FC<TradePanelProps> = ({ playerState, setPlayerState, np
 
         return { maxBuy: currentMaxBuy, maxSell: currentMaxSell, buyPrice: currentBuyPrice, sellPrice: currentSellPrice, canBuy: currentCanBuy, canSell: currentCanSell };
 
-    }, [selectedItem, transactionQuantity, playerState, npc.forSale]);
+    }, [selectedItem, transactionQuantity, playerState, npc.forSale, npc.linhThach]);
     
     const handleQuantityChange = (amount: number | string) => {
         let value: number;
@@ -107,11 +115,32 @@ const TradePanel: React.FC<TradePanelProps> = ({ playerState, setPlayerState, np
             // Update NPC in master list
             const newGeneratedNpcs = JSON.parse(JSON.stringify(prev.generatedNpcs));
             const npcsOnMap = newGeneratedNpcs[prev.currentMap] || [];
-            const npcIndex = npcsOnMap.findIndex(n => n.id === npc.id);
+            const npcIndex = npcsOnMap.findIndex((n: NPC) => n.id === npc.id);
             if (npcIndex === -1) return prev; 
             
             const currentNpc = npcsOnMap[npcIndex];
             currentNpc.linhThach = Math.max(0, currentNpc.linhThach - totalPrice);
+
+            // Add item to NPC's forSale list
+            const itemDef = selectedItem.item;
+
+            if (!currentNpc.forSale) {
+                currentNpc.forSale = [];
+            }
+
+            const existingSaleItem = currentNpc.forSale.find((i: any) => i.itemId === itemDef.id);
+
+            if (existingSaleItem) {
+                if (existingSaleItem.stock !== -1) {
+                    existingSaleItem.stock += transactionQuantity;
+                }
+            } else {
+                currentNpc.forSale.push({
+                    itemId: itemDef.id,
+                    stock: transactionQuantity,
+                    priceModifier: 1.5 // Default markup for reselling
+                });
+            }
 
             // Update player
             const newInventory = [...prev.inventory];
@@ -144,7 +173,7 @@ const TradePanel: React.FC<TradePanelProps> = ({ playerState, setPlayerState, np
             // Update NPC in master list
             const newGeneratedNpcs = JSON.parse(JSON.stringify(prev.generatedNpcs));
             const npcsOnMap = newGeneratedNpcs[prev.currentMap] || [];
-            const npcIndex = npcsOnMap.findIndex(n => n.id === npc.id);
+            const npcIndex = npcsOnMap.findIndex((n: NPC) => n.id === npc.id);
             if (npcIndex === -1) return prev;
             
             const currentNpc = npcsOnMap[npcIndex];

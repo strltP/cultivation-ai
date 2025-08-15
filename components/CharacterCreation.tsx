@@ -62,17 +62,14 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onCharacterCreate
   };
   
   const handleImportSave = () => {
-    importPlayerState(
-        (newState) => {
-            setPlayerState(newState); 
-        },
-        (success, msg) => {
-            if (!success) {
-                setMessage(msg);
-                setTimeout(() => setMessage(null), 4000);
-            }
+    importPlayerState((success, msg) => {
+        if (success) {
+            window.location.reload();
+        } else {
+            setMessage(msg);
+            setTimeout(() => setMessage(null), 4000);
         }
-    );
+    });
   };
 
   return (

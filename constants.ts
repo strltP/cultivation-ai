@@ -2,23 +2,6 @@
 
 import type { PlayerState } from './types/character';
 import type { CharacterAttributes, CombatStats } from './types/stats';
-import { 
-    MAPS, 
-    POIS_BY_MAP, 
-    INTERACTABLES_BY_MAP, 
-    TELEPORT_GATES_BY_MAP, 
-    MAP_AREAS_BY_MAP 
-} from './mapdata';
-// Removed calculateCombatStats import to break circular dependency
-
-// Re-export all map data so other files don't need to change their imports
-export { 
-    MAPS, 
-    POIS_BY_MAP, 
-    INTERACTABLES_BY_MAP, 
-    TELEPORT_GATES_BY_MAP, 
-    MAP_AREAS_BY_MAP 
-};
 
 interface LevelProgression {
     qiRequired: number;
@@ -150,6 +133,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
   position: { x: 1000, y: 700 },
   targetPosition: { x: 1000, y: 700 },
   generatedNpcs: {},
+  generatedInteractables: {},
   defeatedNpcIds: [],
   time: { year: 1, season: 'Xuân', month: 1, day: 1, hour: 8, minute: 0 },
   respawningNpcs: [],

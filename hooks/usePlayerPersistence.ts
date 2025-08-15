@@ -29,13 +29,11 @@ export const generateRandomLinhCan = (): LinhCan[] => {
     }));
 };
 
-
-const loadPlayerState = (): PlayerState | null => {
-  try {
-    const savedState = localStorage.getItem(PLAYER_STATE_STORAGE_KEY);
-    if (savedState) {
-      const parsed = JSON.parse(savedState);
-      if(parsed.name && parsed.cultivation && parsed.attributes && parsed.stats) {
+const processLoadedState = (parsed: any): PlayerState | null => {
+    try {
+        if(!parsed || !parsed.name || !parsed.cultivation || !parsed.attributes || !parsed.stats) {
+            return null;
+        }
         
         // Add new fields for backward compatibility
         if (!parsed.cultivationStats) {
@@ -58,6 +56,7 @@ const loadPlayerState = (): PlayerState | null => {
             parsed.linhCan = generateRandomLinhCan();
         }
         if (!parsed.generatedNpcs) parsed.generatedNpcs = {};
+        if (!parsed.generatedInteractables) parsed.generatedInteractables = {};
         if (!parsed.defeatedNpcIds) parsed.defeatedNpcIds = [];
         if (!parsed.plantedPlots) parsed.plantedPlots = [];
         if (!parsed.respawningInteractables) parsed.respawningInteractables = [];
@@ -94,7 +93,7 @@ const loadPlayerState = (): PlayerState | null => {
              };
         }
         
-        if (parsed.cultivation.level === 1 && parsed.cultivation.realmIndex === 0 && !parsed.inventory.some(i => i.itemId === 'book_hoa_cau_thuat')) {
+        if (parsed.cultivation.level === 1 && parsed.cultivation.realmIndex === 0 && !parsed.inventory.some((i: any) => i.itemId === 'book_hoa_cau_thuat')) {
              parsed.learnedSkills.push({ skillId: 'cong-phap-hoang-1', currentLevel: 1 });
         }
 
@@ -117,13 +116,24 @@ const loadPlayerState = (): PlayerState | null => {
         parsed.mana = Math.min(parsed.mana, recalculatedStats.maxMana);
         parsed.qi = Math.min(parsed.qi, recalculatedStats.maxQi);
 
-        return parsed;
-      }
+        return parsed as PlayerState;
+    } catch (error) {
+        console.error("Error processing player state:", error);
+        return null;
+    }
+}
+
+
+const loadPlayerState = (): PlayerState | null => {
+  try {
+    const savedState = localStorage.getItem(PLAYER_STATE_STORAGE_KEY);
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
+      return processLoadedState(parsed);
     }
     return null;
   } catch (error) {
     console.error("Failed to load player state:", error);
-    localStorage.removeItem(PLAYER_STATE_STORAGE_KEY);
     return null;
   }
 };
@@ -153,12 +163,17 @@ export const createNewPlayer = (name: string, useRandomNames: boolean, linhCan: 
         ...INITIAL_PLAYER_STATE,
         name: name,
         gender: gender,
+        time: {
+            ...INITIAL_PLAYER_STATE.time,
+            year: 17, // Bắt đầu từ 16 tuổi (năm - 1)
+        },
         useRandomNames: useRandomNames,
         nameOverrides: {},
         chatHistories: {},
         linhCan: linhCan,
         cultivation: { realmIndex: 0, level: -1 }, // Start as Mortal
         cultivationStats: {},
+        generatedInteractables: {},
         learnedSkills: [{ skillId: 'cong-phap-hoang-1', currentLevel: 1 }],
         inventory: [
             ...INITIAL_PLAYER_STATE.inventory,
@@ -210,25 +225,6 @@ export const createNewPlayer = (name: string, useRandomNames: boolean, linhCan: 
 
 // --- SAVE/LOAD TO FILE ---
 
-const isPlayerState = (obj: any): obj is PlayerState => {
-    return obj &&
-        typeof obj.name === 'string' &&
-        typeof obj.gender === 'string' &&
-        typeof obj.cultivation === 'object' && obj.cultivation !== null &&
-        typeof obj.attributes === 'object' && obj.attributes !== null &&
-        typeof obj.stats === 'object' && obj.stats !== null &&
-        Array.isArray(obj.linhCan) &&
-        Array.isArray(obj.learnedSkills) &&
-        Array.isArray(obj.inventory) &&
-        typeof obj.equipment === 'object' && obj.equipment !== null &&
-        typeof obj.hp === 'number' &&
-        typeof obj.qi === 'number' &&
-        typeof obj.camNgo === 'number' &&
-        typeof obj.generatedNpcs === 'object' &&
-        Array.isArray(obj.defeatedNpcIds) &&
-        typeof obj.time === 'object' && obj.time !== null && 'year' in obj.time;
-};
-
 export const exportPlayerState = (playerState: PlayerState | null) => {
     if (!playerState) {
         alert("Không có dữ liệu người chơi để xuất.");
@@ -253,7 +249,6 @@ export const exportPlayerState = (playerState: PlayerState | null) => {
 
 
 export const importPlayerState = (
-    setPlayerState: (state: PlayerState) => void,
     onComplete: (success: boolean, message: string) => void
 ) => {
     const input = document.createElement('input');
@@ -274,8 +269,10 @@ export const importPlayerState = (
                 }
                 const importedState = JSON.parse(text);
 
-                if (isPlayerState(importedState)) {
-                    setPlayerState(importedState);
+                const processedState = processLoadedState(importedState);
+
+                if (processedState) {
+                    savePlayerState(processedState);
                     onComplete(true, "Tải file save thành công!");
                 } else {
                     throw new Error("File save không hợp lệ hoặc đã lỗi thời.");

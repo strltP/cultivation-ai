@@ -5,12 +5,12 @@ import { getCultivationInfo } from '../../services/cultivationService';
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
 import { ALL_SKILLS, SKILL_TIER_INFO } from '../../data/skills/skills';
-import { FaBookDead, FaBook, FaGem, FaHourglassHalf } from 'react-icons/fa';
+import { FaBookDead, FaBook, FaGem, FaHourglassHalf, FaLock } from 'react-icons/fa';
 import { ALL_ITEMS } from '../../data/items/index';
 import type { EquipmentSlot } from '../../types/equipment';
 import { EQUIPMENT_SLOT_NAMES } from '../../types/equipment';
 import { BsHeadset } from 'react-icons/bs';
-import { GiBroadsword, GiLeatherArmor, GiLegArmor, GiCrystalEarrings, GiDiamondHard, GiBackpack, GiGalaxy, GiSwapBag } from 'react-icons/gi';
+import { GiBroadsword, GiLeatherArmor, GiLegArmor, GiCrystalEarrings, GiDiamondHard, GiBackpack, GiGalaxy, GiSwapBag, GiTwoCoins } from 'react-icons/gi';
 import { LINH_CAN_DATA } from '../../data/linhcan';
 
 interface NpcInfoPanelProps {
@@ -18,12 +18,12 @@ interface NpcInfoPanelProps {
   onClose: () => void;
 }
 
-const SLOT_ICONS: Record<EquipmentSlot, React.ReactNode> = {
-    WEAPON: <GiBroadsword />,
-    HEAD: <BsHeadset />,
-    ARMOR: <GiLeatherArmor />,
-    LEGS: <GiLegArmor />,
-    ACCESSORY: <GiCrystalEarrings />,
+type DisplayItem = {
+    itemId: string;
+    quantity: number;
+    status: 'EQUIPPED' | 'FOR_SALE' | 'PERSONAL';
+    price?: number;
+    slot?: EquipmentSlot;
 };
 
 const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
@@ -42,8 +42,63 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
   const congPhapList = npc.learnedSkills
     .map(ls => ({ learned: ls, def: ALL_SKILLS.find(s => s.id === ls.skillId) }))
     .filter(item => item.def?.type === 'CONG_PHAP');
+        
+    const combinedInventory = React.useMemo<DisplayItem[]>(() => {
+        if (isMonster) return [];
+        
+        const itemMap = new Map<string, DisplayItem>();
 
-    const equipmentSlots: EquipmentSlot[] = ['WEAPON', 'HEAD', 'ARMOR', 'LEGS', 'ACCESSORY'];
+        // 1. Process equipped items first
+        for (const slot in npc.equipment) {
+            const equipmentSlot = slot as EquipmentSlot;
+            const itemSlot = npc.equipment[equipmentSlot];
+            if (itemSlot) {
+                itemMap.set(itemSlot.itemId, {
+                    itemId: itemSlot.itemId,
+                    quantity: 1,
+                    status: 'EQUIPPED',
+                    slot: equipmentSlot,
+                });
+            }
+        }
+
+        // 2. Process personal inventory
+        (npc.inventory || []).forEach(invItem => {
+            if (!itemMap.has(invItem.itemId)) { // Don't overwrite equipped items
+                itemMap.set(invItem.itemId, {
+                    itemId: invItem.itemId,
+                    quantity: invItem.quantity,
+                    status: 'PERSONAL',
+                });
+            }
+        });
+
+        // 3. Process items for sale, updating status and price
+        (npc.forSale || []).forEach(saleItem => {
+            const itemDef = ALL_ITEMS.find(i => i.id === saleItem.itemId);
+            if (!itemDef) return;
+
+            const price = Math.floor((itemDef.value || 0) * (saleItem.priceModifier || 1));
+            
+            if (itemMap.has(saleItem.itemId)) {
+                const existingItem = itemMap.get(saleItem.itemId)!;
+                if(existingItem.status !== 'EQUIPPED') {
+                    existingItem.status = 'FOR_SALE';
+                    existingItem.price = price;
+                    existingItem.quantity = saleItem.stock === -1 ? Infinity : saleItem.stock;
+                }
+            } else {
+                 itemMap.set(saleItem.itemId, {
+                    itemId: saleItem.itemId,
+                    quantity: saleItem.stock === -1 ? Infinity : saleItem.stock,
+                    status: 'FOR_SALE',
+                    price: price,
+                });
+            }
+        });
+
+        return Array.from(itemMap.values());
+    }, [npc.equipment, npc.inventory, npc.forSale, isMonster]);
 
   return (
     <div
@@ -51,7 +106,7 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="bg-gray-900/80 border-2 border-yellow-400/50 rounded-lg shadow-2xl shadow-yellow-500/20 p-6 backdrop-blur-sm w-full max-w-lg flex flex-col gap-4 max-h-[90vh]"
+        className="bg-gray-900/80 border-2 border-yellow-400/50 rounded-lg shadow-2xl shadow-yellow-500/20 p-6 backdrop-blur-sm w-full max-w-2xl flex flex-col gap-4 max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start flex-shrink-0">
@@ -163,27 +218,57 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
                 </div>
 
                 <div className="mt-2 pt-4 border-t border-yellow-400/20">
-                    <h3 className="flex items-center gap-2 text-lg text-green-300 font-semibold mb-2"><GiDiamondHard /> Trang Bị</h3>
-                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                        {equipmentSlots.map(slot => {
-                            const equippedItemSlot = npc.equipment?.[slot];
-                            const itemDef = equippedItemSlot ? ALL_ITEMS.find(i => i.id === equippedItemSlot.itemId) : null;
-                            const tierColor = itemDef?.tier ? SKILL_TIER_INFO[itemDef.tier].color : 'text-gray-400';
+                    <h3 className="flex items-center gap-2 text-lg text-indigo-300 font-semibold mb-2"><GiBackpack /> Túi Đồ & Trang Bị</h3>
+                    {combinedInventory.length > 0 ? (
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+                            {combinedInventory.map((displayItem, index) => {
+                                const itemDef = ALL_ITEMS.find(i => i.id === displayItem.itemId);
+                                if (!itemDef) return null;
 
-                            return (
-                                 <div key={slot} className="flex flex-col items-center gap-1 text-center">
-                                    <div className="relative w-16 h-16 bg-gray-800/50 rounded-md border border-gray-700 flex items-center justify-center text-3xl" title={itemDef?.name || EQUIPMENT_SLOT_NAMES[slot]}>
-                                        {itemDef ? itemDef.icon : <div className="text-gray-600 opacity-50">{SLOT_ICONS[slot]}</div>}
+                                const tierColor = itemDef.tier ? SKILL_TIER_INFO[itemDef.tier].color : 'text-gray-400';
+                                const quantityText = displayItem.quantity === Infinity ? '∞' : displayItem.quantity;
+                                let titleText = `${itemDef.name} x${quantityText}`;
+                                if (displayItem.status === 'EQUIPPED') titleText += `\n(Đang trang bị: ${EQUIPMENT_SLOT_NAMES[displayItem.slot!]})`;
+                                else if (displayItem.status === 'FOR_SALE') titleText += `\nGiá: ${displayItem.price} Linh Thạch`;
+                                else titleText += `\n(Vật phẩm cá nhân)`;
+
+                                return (
+                                    <div key={`${displayItem.itemId}-${index}`} className="flex flex-col items-center gap-1 text-center">
+                                        <div className="relative w-16 h-16 bg-gray-800/50 rounded-md border border-gray-700 flex items-center justify-center text-3xl" title={titleText}>
+                                            {itemDef.icon}
+                                            {displayItem.quantity > 1 && (
+                                                <span className="absolute bottom-1 right-1 text-xs font-bold text-white bg-gray-800/80 px-1.5 py-0.5 rounded">
+                                                    {quantityText}
+                                                </span>
+                                            )}
+                                            {displayItem.status === 'EQUIPPED' && (
+                                                 <span className="absolute top-1 left-1 text-[10px] font-bold text-white bg-green-700/90 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                                    <GiDiamondHard /> Trang Bị
+                                                </span>
+                                            )}
+                                            {displayItem.status === 'FOR_SALE' && (
+                                                <span className="absolute top-1 left-1 text-[10px] font-bold text-yellow-300 bg-black/60 px-1 rounded-full flex items-center gap-0.5">
+                                                    <FaGem className="text-yellow-400" /> {displayItem.price}
+                                                </span>
+                                            )}
+                                             {displayItem.status === 'PERSONAL' && (
+                                                <span className="absolute top-1 left-1 text-[10px] font-bold text-gray-300 bg-red-900/80 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                                    <FaLock /> Không Bán
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className={`text-xs font-semibold h-8 leading-tight flex items-center justify-center ${tierColor}`}>
+                                            {itemDef.name}
+                                        </p>
                                     </div>
-                                    <p className={`text-xs font-semibold h-8 leading-tight flex items-center justify-center ${tierColor}`}>
-                                        {itemDef ? itemDef.name : 'Trống'}
-                                    </p>
-                                </div>
-                            )
-                        })}
-                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-gray-500 italic px-2">Nhân vật này không mang theo vật phẩm nào.</p>
+                    )}
                 </div>
-
+                
                 <div className="mt-2 pt-4 border-t border-yellow-400/20">
                     <h3 className="flex items-center gap-2 text-lg text-yellow-300 font-semibold mb-2"><FaGem /> Linh Thạch</h3>
                     {npc.linhThach > 0 ? (
@@ -192,39 +277,6 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
                         </div>
                     ) : (
                         <p className="text-sm text-gray-500 italic px-2">Nhân vật này không mang theo Linh Thạch.</p>
-                    )}
-                </div>
-                
-                <div className="mt-2 pt-4 border-t border-yellow-400/20">
-                    <h3 className="flex items-center gap-2 text-lg text-indigo-300 font-semibold mb-2"><GiBackpack /> Túi Đồ</h3>
-                    {npc.inventory && npc.inventory.length > 0 ? (
-                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                            {npc.inventory.map((slot, index) => {
-                                const itemDef = ALL_ITEMS.find(i => i.id === slot.itemId);
-                                if (!itemDef) return null;
-                                
-                                const tierColor = itemDef.tier ? SKILL_TIER_INFO[itemDef.tier].color : 'text-gray-400';
-                                const titleText = `${itemDef.name} x${slot.quantity}`;
-
-                                return (
-                                     <div key={`${slot.itemId}-${index}`} className="flex flex-col items-center gap-1 text-center">
-                                        <div className="relative w-16 h-16 bg-gray-800/50 rounded-md border border-gray-700 flex items-center justify-center text-3xl" title={titleText}>
-                                            {itemDef.icon}
-                                            {slot.quantity > 1 && (
-                                                 <span className="absolute bottom-1 right-1 text-xs font-bold text-white bg-gray-800/80 px-1.5 py-0.5 rounded">
-                                                    {slot.quantity}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className={`text-xs font-semibold h-8 leading-tight flex items-center justify-center ${tierColor}`}>
-                                            {itemDef.name}
-                                        </p>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    ) : (
-                        <p className="text-sm text-gray-500 italic">Nhân vật này không mang theo vật phẩm nào.</p>
                     )}
                 </div>
 

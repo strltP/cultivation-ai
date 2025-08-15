@@ -8,7 +8,8 @@ import { ALL_MONSTERS } from '../data/npcs/monsters';
 import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, ProceduralMonsterRule, MonsterDefinition } from '../data/npcs/npc_types';
 import { POI_ROLE_DEFINITIONS } from '../data/npcs/poi_roles';
 import { generateNpcs, GeneratedNpcData } from './geminiService';
-import { REALM_PROGRESSION, MAPS, MAP_AREAS_BY_MAP } from '../constants';
+import { REALM_PROGRESSION } from '../constants';
+import { MAPS, MAP_AREAS_BY_MAP } from '../mapdata';
 import { calculateCombatStats } from './cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { ALL_ITEMS } from '../data/items/index';
@@ -166,7 +167,7 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
     };
 }
 
-export function createMonsterFromData(template: MonsterDefinition, level: number, id: string, position: {x:number, y:number}): NPC {
+export function createMonsterFromData(template: MonsterDefinition, level: number, id: string, position: {x:number, y:number}, spawnRuleId?: string): NPC {
     const levelMultiplier = Math.pow(1.15, level - 1);
 
     const finalAttributes: CharacterAttributes = {
@@ -195,6 +196,7 @@ export function createMonsterFromData(template: MonsterDefinition, level: number
         name: `${template.name} (Cấp ${level})`,
         gender: 'Nam', // Monsters don't have a meaningful gender in this context
         npcType: 'monster',
+        spawnRuleId,
         role: 'Yêu Thú',
         prompt: `Một con ${template.name} cấp ${level} hung dữ đang chắn đường.`,
         position,
@@ -229,7 +231,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
     const mapData = MAPS[mapId];
 
     // Handle static spawns
-    const staticSpawns = spawnDefinitions.filter((def): def is StaticNpcSpawn => !('type' in def));
+    const staticSpawns = spawnDefinitions.filter((def): def is StaticNpcSpawn => 'id' in def);
     for (const spawn of staticSpawns) {
         const template = staticNpcTemplates.get(spawn.baseId);
         if (template) {
@@ -240,7 +242,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
     }
 
     // Handle procedural monster spawns
-    const monsterRules = spawnDefinitions.filter((def): def is ProceduralMonsterRule => 'type' in def && def.type === 'procedural_monster');
+    const monsterRules = spawnDefinitions.filter((def): def is ProceduralMonsterRule => 'monsterBaseIds' in def);
     for (const rule of monsterRules) {
         const area = (MAPS[mapId] && MAP_AREAS_BY_MAP[mapId] || []).find(a => a.id === rule.areaId);
         if (!area) continue;
@@ -255,12 +257,13 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
             const y = area.position.y - area.size.height / 2 + Math.random() * area.size.height;
             const id = `proc-monster-${mapId}-${baseId}-${Date.now()}-${i}`;
             
-            finalNpcs.push(createMonsterFromData(template, level, id, {x, y}));
+            const spawnRuleId = `${mapId}-${rule.areaId}`;
+            finalNpcs.push(createMonsterFromData(template, level, id, {x, y}, spawnRuleId));
         }
     }
 
     // Handle procedural cultivator spawns
-    const proceduralRules = spawnDefinitions.filter((def): def is ProceduralNpcRule => 'type' in def && def.type === 'procedural');
+    const proceduralRules = spawnDefinitions.filter((def): def is ProceduralNpcRule => 'poiIds' in def);
     const generationPromises: Promise<NPC[]>[] = [];
 
     for (const rule of proceduralRules) {
