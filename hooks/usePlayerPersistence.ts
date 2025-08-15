@@ -72,6 +72,8 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         if (parsed.camNgo === undefined) parsed.camNgo = 0;
         if (!parsed.chatHistories) parsed.chatHistories = {};
         if (!parsed.gender) parsed.gender = 'Nam';
+        if (!parsed.activeEffects) parsed.activeEffects = [];
+        if (!parsed.targetPosition) parsed.targetPosition = parsed.position;
         
         if (!parsed.time || !('year' in parsed.time)) {
              const oldTime = parsed.time || { day: 1, hour: 8, minute: 0 };

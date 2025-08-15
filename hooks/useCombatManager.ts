@@ -165,8 +165,11 @@ export const useCombatManager = (
         });
 
         // --- Final UI updates ---
-        setTimeout(() => setGameMessage(gameWinMessage), 100);
-        setCombatState(null);
+        // The timeout gives React a moment to process the state update before closing the combat screen, preventing a race condition.
+        setTimeout(() => {
+            setGameMessage(gameWinMessage);
+            setCombatState(null);
+        }, 100);
     }, [combatState, updateAndPersistPlayerState, setGameMessage]);
     
     const handleSpareNpc = useCallback(() => {
@@ -174,7 +177,7 @@ export const useCombatManager = (
         const { npc, player: playerInCombat } = combatState;
         const camNgoGained = Math.floor((combatState.camNgoGained || 0) / 2);
     
-        setGameMessage(`Bạn đã tha mạng cho ${npc.name} và nhận được ${camNgoGained} điểm Cảm Ngộ.`);
+        const message = `Bạn đã tha mạng cho ${npc.name} và nhận được ${camNgoGained} điểm Cảm Ngộ.`;
     
         updateAndPersistPlayerState(p => {
             if (!p) return p;
@@ -193,7 +196,11 @@ export const useCombatManager = (
             return newPlayerState;
         });
     
-        setCombatState(null);
+        // The timeout gives React a moment to process the state update before closing the combat screen, preventing a race condition.
+        setTimeout(() => {
+            setGameMessage(message);
+            setCombatState(null);
+        }, 100);
     }, [combatState, setGameMessage, updateAndPersistPlayerState]);
 
     const processCombatEnd = useCallback((winner: 'player' | 'npc') => {

@@ -154,21 +154,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
     const [isGameReady, setIsGameReady] = useState(false);
     const [isGeneratingNames, setIsGeneratingNames] = useState(false);
     
-    // --- BIỆN PHÁP 3: DEBOUNCED AUTO-SAVE ---
-    // Create a debounced version of the player state. It will only update
-    // 500ms after the playerState has stopped changing.
-    const debouncedPlayerState = useDebounce(playerState, 500);
-
-    // This effect now ONLY runs when the debounced state changes.
-    // This prevents saving to localStorage on every frame during movement,
-    // drastically improving performance.
-    useEffect(() => {
-        if (debouncedPlayerState) {
-            // This is our new, performant "auto-save" mechanism.
-            savePlayerState(debouncedPlayerState);
-        }
-    }, [debouncedPlayerState]);
-
     // Game Initialization Logic (e.g., generating names)
     useEffect(() => {
         const initializeGame = async () => {
@@ -210,16 +195,24 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, initialPla
         }
     }, [setGameMessageObject]);
 
-    // --- BIỆN PHÁP 1: ATOMIC UPDATE FUNCTION ---
-    // This function remains crucial for immediate, critical saves.
+    // --- Debounced Auto-Save ---
+    // This is now the single source of truth for persisting state to localStorage.
+    // It prevents race conditions and improves performance by not saving on every state change.
+    const debouncedPlayerState = useDebounce(playerState, 500);
+
+    useEffect(() => {
+        // We only want to save once the game is ready and the debounced state exists.
+        // This prevents saving an empty or partially loaded state on initial load.
+        if (isGameReady && debouncedPlayerState) {
+            savePlayerState(debouncedPlayerState);
+        }
+    }, [debouncedPlayerState, isGameReady]);
+
+    // --- Atomic State Updater ---
+    // This function now ONLY updates the React state. The debounced useEffect above 
+    // will handle persisting it to localStorage automatically and safely.
     const updateAndPersistPlayerState = useCallback((updater: (prevState: PlayerState) => PlayerState) => {
-        setPlayerState(prev => {
-            if (!prev) return null;
-            const newState = updater(prev);
-            // ATOMIC SAVE: Persist the new state immediately to localStorage
-            savePlayerState(newState); 
-            return newState;
-        });
+        setPlayerState(updater);
     }, [setPlayerState]);
 
     // --- UI Panel State ---
