@@ -17,7 +17,7 @@ import TradePanel from './TradePanel';
 import TeleportationTalismanUI from './TeleportationTalismanUI';
 import PlantingMenu from './PlantingMenu';
 import AlchemyPanel from './AlchemyPanel';
-import ChatPanel from './ChatPanel';
+
 
 interface UIManagerProps {
     playerState: PlayerState;
@@ -78,15 +78,12 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
         activeInteractionNpc, setActiveInteractionNpc,
         activeInteractionInteractable, setActiveInteractionInteractable,
         viewingNpc, setViewingNpc,
-        chatTargetNpc, chatHistory, isChatLoading,
         handleGatherInteractable,
         handleDestroyInteractable,
         handleViewInfoInteractable,
         handlePlantSeed,
         handleInitiateTrade,
         handleStartChat,
-        handleSendMessage,
-        handleCloseChat,
     } = useInteraction();
     
     // --- DERIVED LOGIC & HANDLERS ---
@@ -146,24 +143,10 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                 <InteractionMenu
                     npc={activeInteractionNpc}
                     position={calculateMenuPosition(activeInteractionNpc.position)}
-                    onStartChat={() => {
-                        // User requested workaround: trigger view info logic before starting chat
-                        handleViewInfo(activeInteractionNpc);
-                        // The Info Panel will be briefly set, then the Chat Panel will open over it.
-                        // When chat is closed, the info panel can be closed.
-                        setTimeout(() => handleStartChat(activeInteractionNpc), 0);
-                    }}
-                    onChallenge={() => {
-                         // User requested workaround: trigger view info logic before combat
-                        handleViewInfo(activeInteractionNpc);
-                        setTimeout(() => handleChallenge(activeInteractionNpc), 0);
-                    }}
+                    onStartChat={() => handleStartChat(activeInteractionNpc)}
+                    onChallenge={() => handleChallenge(activeInteractionNpc)}
                     onViewInfo={() => handleViewInfo(activeInteractionNpc)}
-                    onTrade={() => {
-                         // User requested workaround: trigger view info logic before trade
-                        handleViewInfo(activeInteractionNpc);
-                        setTimeout(() => handleTrade(activeInteractionNpc), 0);
-                    }}
+                    onTrade={() => handleTrade(activeInteractionNpc)}
                     onClose={() => setActiveInteractionNpc(null)}
                 />
             )}
@@ -213,15 +196,6 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                     playerState={playerState}
                     onClose={() => setIsAlchemyPanelOpen(false)}
                     onCraft={handleCraftItem}
-                />
-            )}
-            {chatTargetNpc && (
-                <ChatPanel
-                    npc={chatTargetNpc}
-                    history={chatHistory}
-                    isLoading={isChatLoading}
-                    onSendMessage={handleSendMessage}
-                    onClose={handleCloseChat}
                 />
             )}
 

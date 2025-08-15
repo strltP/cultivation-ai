@@ -17,6 +17,13 @@ interface CombatUIProps {
   onPlayerDeath: () => void;
 }
 
+const combatBackgroundStyle: React.CSSProperties = {
+    backgroundImage: `radial-gradient(ellipse at 50% 0%, #4a5568 0%, transparent 70%), linear-gradient(to top, #111827, #1f2937)`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+};
+
+
 const CombatUI: React.FC<CombatUIProps> = ({ combatState, onAction, onClose, onKill, onSpare, onPlayerDeath }) => {
     const { player, npc, isPlayerTurn, combatEnded, isProcessing } = combatState;
     const [activeSubMenu, setActiveSubMenu] = useState<'skills' | null>(null);
@@ -39,16 +46,16 @@ const CombatUI: React.FC<CombatUIProps> = ({ combatState, onAction, onClose, onK
         .filter((s): s is Skill => !!(s && s.type === 'CONG_PHAP' && s.damage));
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-around p-8 animate-fade-in" style={combatBackgroundStyle}>
             {/* Combatants */}
-            <div className="w-full max-w-6xl flex justify-between items-start mb-4 gap-8 px-8">
+            <div className="w-full max-w-7xl flex justify-between items-start gap-8 px-8">
                 <CombatantDisplay combatant={player} isPlayer={true} isTurn={isPlayerTurn && !combatEnded} damageToShow={combatState.damageToShow} damageKey={damageKey} />
                 <div className="text-4xl font-bold text-red-500 pt-16">VS</div>
                 <CombatantDisplay combatant={npc} isPlayer={false} isTurn={!isPlayerTurn && !combatEnded} damageToShow={combatState.damageToShow} damageKey={damageKey} />
             </div>
 
             {/* Main container for log and actions */}
-            <div className="w-full max-w-6xl flex-grow flex gap-4 min-h-0">
+            <div className="w-full max-w-7xl flex gap-4 h-72">
                  {/* Log */}
                 <CombatLog log={combatState.log} />
 
@@ -105,7 +112,7 @@ const ActionButton: React.FC<{icon: React.ReactNode, label: string, onClick: () 
     <button 
         onClick={onClick} 
         disabled={disabled}
-        className="flex flex-col items-center justify-center p-4 bg-gray-900/80 border-2 border-yellow-500/50 rounded-lg h-32 hover:bg-yellow-400/20 hover:border-yellow-400 transition-all duration-200 disabled:bg-gray-800/50 disabled:border-gray-600/50 disabled:cursor-not-allowed disabled:hover:bg-gray-800/50"
+        className="flex flex-col items-center justify-center p-4 bg-gray-900/80 border-2 border-yellow-500/50 rounded-lg h-full hover:bg-yellow-400/20 hover:border-yellow-400 transition-all duration-200 disabled:bg-gray-800/50 disabled:border-gray-600/50 disabled:cursor-not-allowed disabled:hover:bg-gray-800/50"
     >
         <div className="text-4xl text-yellow-300 mb-2">{icon}</div>
         <span className="text-lg font-semibold text-white">{label}</span>

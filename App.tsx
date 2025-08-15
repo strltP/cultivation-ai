@@ -8,6 +8,7 @@ import type { LinhCan } from './types/linhcan';
 import UIManager from './components/ui/UIManager';
 import WorldRenderer from './components/world/WorldRenderer';
 import CharacterCreation from './components/CharacterCreation';
+import ChatPanel from './components/ui/ChatPanel';
 import { useDebounce } from './hooks/useDebounce';
 
 
@@ -69,6 +70,8 @@ const GameWorld: React.FC = () => {
     const { 
         pendingInteraction, 
         chatTargetNpc, 
+        chatHistory,
+        isChatLoading,
         setTargetPosition,
         setActiveInteractionNpc,
         setActiveInteractionInteractable,
@@ -76,7 +79,9 @@ const GameWorld: React.FC = () => {
         processInteraction,
         handleGatherInteractable,
         handleTeleport,
-        handleEnterPoi
+        handleEnterPoi,
+        handleSendMessage,
+        handleCloseChat,
     } = useInteraction();
     
     // --- GAME OVER LOGIC ---
@@ -135,27 +140,29 @@ const GameWorld: React.FC = () => {
     }
 
     return (
-        <div ref={gameContainerRef} className="relative w-full h-full overflow-hidden bg-gray-900">
-            <WorldRenderer
-                playerRef={playerRef}
-                currentMapData={currentMapData}
-                cameraPosition={cameraPosition}
-                playerState={playerState}
-                isMeditating={isMeditating}
-                currentPois={currentPois}
-                currentNpcs={currentNpcs}
-                currentInteractables={currentInteractables}
-                currentTeleportGates={currentTeleportGates}
-                allMaps={allMaps}
-                onWorldClick={handleWorldClick}
-                onGenericInteraction={handleGenericInteraction}
-                onProcessInteraction={processInteraction}
-                setActiveInteractionNpc={setActiveInteractionNpc}
-                setActiveInteractionInteractable={setActiveInteractionInteractable}
-                onGatherInteractable={handleGatherInteractable}
-                onTeleport={handleTeleport}
-                onEnterPoi={handleEnterPoi}
-            />
+        <div ref={gameContainerRef} className={`relative w-full h-full overflow-hidden ${combatState || chatTargetNpc ? '' : 'bg-gray-900'}`}>
+            {!combatState && !chatTargetNpc && (
+                 <WorldRenderer
+                    playerRef={playerRef}
+                    currentMapData={currentMapData}
+                    cameraPosition={cameraPosition}
+                    playerState={playerState}
+                    isMeditating={isMeditating}
+                    currentPois={currentPois}
+                    currentNpcs={currentNpcs}
+                    currentInteractables={currentInteractables}
+                    currentTeleportGates={currentTeleportGates}
+                    allMaps={allMaps}
+                    onWorldClick={handleWorldClick}
+                    onGenericInteraction={handleGenericInteraction}
+                    onProcessInteraction={processInteraction}
+                    setActiveInteractionNpc={setActiveInteractionNpc}
+                    setActiveInteractionInteractable={setActiveInteractionInteractable}
+                    onGatherInteractable={handleGatherInteractable}
+                    onTeleport={handleTeleport}
+                    onEnterPoi={handleEnterPoi}
+                />
+            )}
             <UIManager
                 playerState={playerState}
                 currentMapData={currentMapData}
@@ -164,6 +171,16 @@ const GameWorld: React.FC = () => {
                 cameraPosition={cameraPosition}
                 allMaps={allMaps}
             />
+
+             {chatTargetNpc && (
+                <ChatPanel
+                    npc={chatTargetNpc}
+                    history={chatHistory}
+                    isLoading={isChatLoading}
+                    onSendMessage={handleSendMessage}
+                    onClose={handleCloseChat}
+                />
+            )}
 
             {isGameOver && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 animate-fade-in text-center">
