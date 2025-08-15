@@ -3,6 +3,7 @@ import type { PlayerState } from '../types/character';
 import type { InventorySlot } from '../types/item';
 import { ALL_ITEMS } from '../data/items/index';
 import { INVENTORY_SIZE } from '../constants';
+import { LINH_CAN_DATA } from '../data/linhcan';
 
 export const useInventoryManager = (
     playerState: PlayerState,
@@ -117,6 +118,31 @@ export const useInventoryManager = (
                              const manaRestored = Math.min(updatedPlayer.stats.maxMana, updatedPlayer.mana + effect.value) - updatedPlayer.mana;
                              updatedPlayer.mana += manaRestored;
                              if (manaRestored > 0) messages.push(`hồi phục ${manaRestored} Linh Lực`);
+                            break;
+                        case 'INCREASE_LINH_CAN_PURITY':
+                            const linhCanToUpdate = updatedPlayer.linhCan.find(lc => lc.type === effect.linhCanType);
+                            if (linhCanToUpdate) {
+                                if (linhCanToUpdate.purity < 100) {
+                                    linhCanToUpdate.purity = Math.min(100, linhCanToUpdate.purity + effect.value);
+                                    const linhCanDef = LINH_CAN_DATA[effect.linhCanType!];
+                                    messages.push(`độ thuần khiết ${linhCanDef.name} tăng ${effect.value}`);
+                                    shouldConsume = true;
+                                } else {
+                                    const linhCanDef = LINH_CAN_DATA[effect.linhCanType!];
+                                    messages.push(`${linhCanDef.name} đã đạt mức tối đa, không thể tăng thêm.`);
+                                    shouldConsume = false; // Don't consume if it has no effect
+                                }
+                            } else {
+                                shouldConsume = true; // Item is consumed regardless
+                                const damageTaken = Math.round(updatedPlayer.stats.maxHp * 0.20); // 20% max HP damage
+                                updatedPlayer.hp = Math.max(1, updatedPlayer.hp - damageTaken);
+                                
+                                const camNgoGained = 100;
+                                updatedPlayer.camNgo += camNgoGained;
+                                
+                                const linhCanDef = LINH_CAN_DATA[effect.linhCanType!];
+                                messages.push(`cơ thể không có ${linhCanDef.name}, linh lực cuồng bạo của vật phẩm phản phệ! Mất ${damageTaken} Sinh Lực, nhưng thu được ${camNgoGained} Cảm Ngộ.`);
+                            }
                             break;
                         case 'TELEPORT':
                             messages.push('kích hoạt Truyền Tống Phù');

@@ -35,56 +35,51 @@ const LinhCanTab: React.FC<LinhCanTabProps> = ({ playerState }) => {
         {linhCan.map(lc => {
           const lcData = LINH_CAN_DATA[lc.type];
           return (
-            <div key={lc.type} className="bg-gray-800/60 p-4 rounded-lg border border-gray-700 flex gap-4">
-              <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center bg-black/30 rounded-lg text-5xl">
-                {lcData.icon}
-              </div>
-              <div className="flex-grow">
-                <h3 className="font-bold text-xl text-white">{lcData.name}</h3>
-                <div className="flex justify-between items-baseline my-1">
-                    <span className="text-sm text-gray-400">Độ Thuần Khiết:</span>
-                    <span className="text-lg font-bold text-yellow-300">{lc.purity}</span>
+            <div key={lc.type} className="bg-gray-800/60 p-4 rounded-lg border border-gray-700 flex flex-col justify-between">
+                <div>
+                    <div className="flex gap-4">
+                        <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center bg-black/30 rounded-lg text-5xl">
+                            {lcData.icon}
+                        </div>
+                        <div className="flex-grow">
+                            <h3 className="font-bold text-xl text-white">{lcData.name}</h3>
+                            <div className="flex justify-between items-baseline my-1">
+                                <span className="text-sm text-gray-400">Độ Thuần Khiết:</span>
+                                <span className="text-lg font-bold text-yellow-300">{lc.purity}</span>
+                            </div>
+                            <div className="w-full bg-gray-700 rounded-full h-3">
+                                <div className="bg-gradient-to-r from-yellow-400 to-amber-500 h-3 rounded-full" style={{ width: `${lc.purity}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p className="text-gray-400 mt-3 text-sm italic">{lcData.description}</p>
                 </div>
-                <div className="w-full bg-gray-700 rounded-full h-3">
-                    <div className="bg-gradient-to-r from-yellow-400 to-amber-500 h-3 rounded-full" style={{ width: `${lc.purity}%` }}></div>
+
+                <div className="mt-4 pt-3 border-t border-gray-600/50">
+                    <h4 className="font-semibold text-gray-200 mb-2">Hiệu Quả Linh Căn:</h4>
+                    <ul className="space-y-1 text-green-300 text-sm">
+                        {lcData.bonuses.map((bonus, index) => {
+                            const key = bonus.targetStat || bonus.targetAttribute;
+                            if (!key) return null;
+
+                            const name = ATTRIBUTE_NAMES[key] || key;
+                            const totalValue = bonus.valuePerPurity * lc.purity;
+                            const isMultiplier = bonus.modifier === 'MULTIPLIER';
+                            const displayValue = isMultiplier ? `${(totalValue * 100).toFixed(2)}%` : `${Math.round(totalValue)}`;
+                            
+                            return (
+                                <li key={index} className="flex justify-between">
+                                    <span>{name}:</span>
+                                    <span className="font-bold text-white">+{displayValue}</span>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 </div>
-                <p className="text-gray-400 mt-2 text-sm italic">{lcData.description}</p>
-              </div>
             </div>
           );
         })}
       </div>
-       <div className="mt-6 p-4 bg-black/20 rounded-lg border border-gray-700">
-            <h3 className="text-xl font-bold text-yellow-200 mb-3">Tổng Hợp Hiệu Quả</h3>
-            <ul className="space-y-2 text-green-300">
-                {
-                    Object.values(linhCan.reduce((acc, lc) => {
-                        const lcData = LINH_CAN_DATA[lc.type];
-                        lcData.bonuses.forEach(bonus => {
-                            const key = bonus.targetStat || bonus.targetAttribute;
-                            if (!key) return;
-                            if (!acc[key]) {
-                                acc[key] = {
-                                    name: ATTRIBUTE_NAMES[key] || key,
-                                    totalValue: 0,
-                                    isMultiplier: bonus.modifier === 'MULTIPLIER'
-                                };
-                            }
-                            acc[key].totalValue += bonus.valuePerPurity * lc.purity;
-                        });
-                        return acc;
-                    }, {} as Record<string, {name: string, totalValue: number, isMultiplier: boolean}>))
-                    .map(b => (
-                        <li key={b.name} className="text-base">
-                            <span className="font-semibold">{b.name}:</span>
-                            <span className="font-bold text-white ml-2">
-                                +{b.isMultiplier ? `${(b.totalValue * 100).toFixed(2)}%` : Math.round(b.totalValue)}
-                            </span>
-                        </li>
-                    ))
-                }
-            </ul>
-        </div>
     </div>
   );
 };

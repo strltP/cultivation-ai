@@ -265,4 +265,46 @@ export const ALL_INTERACTABLES: InteractableTemplate[] = [
         loot: [{ itemId: 'material_ma_van_moc', quantity: [1, 1], chance: 0.7 }],
         respawnTimeMinutes: 300000, // ~7 months
     },
+    
+    // === Divine Tier Herbs (Linh Can Purity) ===
+    {
+        baseId: 'herb_thai_bach_kim_tinh_qua_node',
+        name: 'Thái Bạch Kim Tinh Quả Thụ',
+        type: 'herb',
+        prompt: 'Một cây linh quả nhỏ mọc ra từ một tảng kim loại, trên cây có một quả duy nhất lấp lánh ánh kim. Dường như là Thái Bạch Kim Tinh Quả trong truyền thuyết.',
+        loot: [{ itemId: 'consumable_thai_bach_kim_tinh_qua', quantity: [1, 1], chance: 0.8 }],
+        respawnTimeMinutes: 525600, // 1 year
+    },
+    {
+        baseId: 'herb_bat_tu_than_moc_diep_node',
+        name: 'Bất Tử Thần Mộc',
+        type: 'herb',
+        prompt: 'Một nhánh nhỏ của cây thần mộc cổ đại, trên đó có một chiếc lá duy nhất tỏa ra sinh mệnh lực dồi dào. Đây chính là Bất Tử Thần Mộc Diệp.',
+        loot: [{ itemId: 'consumable_bat_tu_than_moc_diep', quantity: [1, 1], chance: 0.8 }],
+        respawnTimeMinutes: 525600, // 1 year
+    },
+    {
+        baseId: 'herb_cuu_u_huyen_thuy_tinh_node',
+        name: 'Cửu U Hàn Đàm',
+        type: 'herb', // Using herb type for consistency of gathering.
+        prompt: 'Một hồ nước nhỏ tỏa ra hàn khí cực độ, ở giữa dường như có một viên tinh thể màu xanh sẫm đang ngưng tụ. Đó là Cửu U Huyền Thủy Tinh.',
+        loot: [{ itemId: 'consumable_cuu_u_huyen_thuy_tinh', quantity: [1, 1], chance: 0.7 }],
+        respawnTimeMinutes: 1051200, // 2 years
+    },
+    {
+        baseId: 'herb_phuong_hoang_niet_ban_hoa_node',
+        name: 'Phượng Hoàng Niết Bàn Hỏa',
+        type: 'herb', // Using herb type for consistency of gathering.
+        prompt: 'Một đóa hoa sen lửa đang nở rộ giữa không trung, nhiệt độ xung quanh cực cao. Trong nhụy hoa dường như có một hạt châu rực lửa. Đó là tinh hoa của Phượng Hoàng Niết Bàn Hoa.',
+        loot: [{ itemId: 'consumable_phuong_hoang_niet_ban_hoa', quantity: [1, 1], chance: 0.7 }],
+        respawnTimeMinutes: 1051200, // 2 years
+    },
+    {
+        baseId: 'herb_hon_don_tuc_nhuong_node',
+        name: 'Hỗn Độn Tức Nhưỡng',
+        type: 'stone', // This one fits 'stone' better.
+        prompt: 'Một khối đất nhỏ có năm màu sắc, tựa như đang hô hấp, tỏa ra khí tức hỗn độn nguyên thủy. Đây là Hỗn Độn Tức Nhưỡng trong truyền thuyết.',
+        loot: [{ itemId: 'consumable_hon_don_tuc_nhuong', quantity: [1, 1], chance: 0.7 }],
+        respawnTimeMinutes: 1051200, // 2 years
+    },
 ];

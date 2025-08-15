@@ -42,11 +42,12 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
             type: 'procedural',
             areaId: 'area-2', 
             itemWeights: {
-                'herb_da_sinh_linh_thao': 12, // Rất phổ biến
-                'herb_tinh_luc_thao_node': 10,
-                'herb_thanh_phong_hoa': 4,  // Không phổ biến
-                'herb_nhat_chieu_cuc': 2,   // Hiếm
-                'herb_bach_linh_sam_node': 1,
+                'herb_da_sinh_linh_thao': 120, // Rất phổ biến
+                'herb_tinh_luc_thao_node': 100,
+                'herb_thanh_phong_hoa': 40,  // Không phổ biến
+                'herb_nhat_chieu_cuc': 20,   // Hiếm
+                'herb_bach_linh_sam_node': 10,
+                'herb_phuong_hoang_niet_ban_hoa_node': 1, // Cực hiếm
             },
             count: 120 // Sinh ra tổng cộng 120 cây thảo dược rải rác trong khu vực này
         },
@@ -169,12 +170,14 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
             type: 'procedural',
             areaId: 'bv-area-1',
             itemWeights: {
-                'herb_han_bang_thao_node': 10,
-                'herb_tuyet_ngoc_chi_node': 8,
-                'stone_huyen_thiet': 6,
-                'stone_tinh_thiet_node': 5,
-                'stone_linh_thach_tho': 2,
-                'stone_han_ngoc_node': 1,
+                'herb_han_bang_thao_node': 100,
+                'herb_tuyet_ngoc_chi_node': 80,
+                'stone_huyen_thiet': 60,
+                'stone_tinh_thiet_node': 50,
+                'stone_linh_thach_tho': 20,
+                'stone_han_ngoc_node': 10,
+                'herb_bat_tu_than_moc_diep_node': 5,
+                'herb_cuu_u_huyen_thuy_tinh_node': 2,
             },
             count: 100,
         },
@@ -212,10 +215,12 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
             type: 'procedural',
             areaId: 'dh-area-2', // Hoàng Long Vực
             itemWeights: {
-                'stone_tinh_ngan_khoang_node': 8,
-                'herb_ngan_tuy_hoa_node': 6,
-                'herb_hoang_kim_qua_node': 3,
-                'stone_co_bia': 1,
+                'stone_tinh_ngan_khoang_node': 80,
+                'herb_ngan_tuy_hoa_node': 60,
+                'herb_hoang_kim_qua_node': 30,
+                'stone_co_bia': 10,
+                'herb_thai_bach_kim_tinh_qua_node': 5,
+                'herb_hon_don_tuc_nhuong_node': 2,
             },
             count: 100
         },

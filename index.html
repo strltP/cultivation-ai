@@ -6,7 +6,7 @@
     <title>Tu Tiên Chi Lộ: Hành Trình Luyện Đạo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Charm:wght@400;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap&subset=vietnamese');
         html, body, #root {
             height: 100%;
             margin: 0;
@@ -15,6 +15,9 @@
         }
         body {
             font-family: 'Noto Serif', serif;
+        }
+        .font-charm {
+            font-family: 'Charm', cursive;
         }
         .player-shadow {
             box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.7), 0 0 25px 10px rgba(59, 130, 246, 0.5);
@@ -157,6 +160,31 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+
+        /* Custom Scrollbar for a more thematic feel */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #b45309; /* amber-700 */
+            border-radius: 20px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background-color: #d97706; /* amber-600 */
+        }
+
+        .chat-history {
+            scrollbar-width: thin;
+            scrollbar-color: #b45309 transparent;
         }
     </style>
 <script type="importmap">

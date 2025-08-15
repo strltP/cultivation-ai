@@ -52,10 +52,10 @@ export const LINH_CAN_DATA: Record<LinhCanType, LinhCanDefinition> = {
     },
     THUY: {
         name: 'Thủy Linh Căn',
-        description: 'Tăng cường sự linh hoạt và trữ lượng chân khí. Chủ về biến hóa và khống chế.',
+        description: 'Tăng cường sự linh hoạt và trữ lượng linh lực. Chủ về biến hóa và khống chế.',
         icon: React.createElement(GiWaterDrop, { className: "text-blue-400" }),
         bonuses: [
-            { targetStat: 'maxQi', modifier: 'ADDITIVE', valuePerPurity: 2.0 },
+            { targetStat: 'maxMana', modifier: 'ADDITIVE', valuePerPurity: 0.8 },
             { targetStat: 'evasionRate', modifier: 'MULTIPLIER', valuePerPurity: 0.0005 }, // 5% at 100 purity
         ]
     },

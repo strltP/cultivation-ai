@@ -1,14 +1,16 @@
 import type React from 'react';
 import type { EquipmentSlot, WeaponType, EquipmentBonus } from './equipment';
 import type { SkillTier } from './skill';
+import type { LinhCanType } from './linhcan';
 
 export type ItemType = 'material' | 'consumable' | 'quest' | 'book' | 'equipment' | 'seed' | 'recipe' | 'tool';
 
-export type ConsumableEffectType = 'RESTORE_HP' | 'RESTORE_QI' | 'RESTORE_MANA' | 'TELEPORT' | 'OPEN_ALCHEMY_PANEL';
+export type ConsumableEffectType = 'RESTORE_HP' | 'RESTORE_QI' | 'RESTORE_MANA' | 'TELEPORT' | 'OPEN_ALCHEMY_PANEL' | 'INCREASE_LINH_CAN_PURITY';
 
 export interface ConsumableEffect {
     type: ConsumableEffectType;
     value: number;
+    linhCanType?: LinhCanType;
 }
 
 export interface Item {
