@@ -107,12 +107,13 @@ export const calculateAllStats = (
 
     // 4. Finally, add contributions from the final modified attributes to stats
     finalStats.maxHp += modifiedAttributes.canCot * 5;
-    finalStats.maxMana += modifiedAttributes.thanThuc * 3 + modifiedAttributes.ngoTinh * 3;
+    finalStats.maxMana += modifiedAttributes.thanThuc * 3 + modifiedAttributes.ngoTinh * 3 + modifiedAttributes.tamCanh * 4;
     finalStats.attackPower += modifiedAttributes.thanThuc * 1;
     finalStats.defensePower += Math.round(modifiedAttributes.canCot * 0.5);
     finalStats.speed += modifiedAttributes.thanPhap * 0.5;
-    finalStats.critRate += modifiedAttributes.thanThuc / 200;
-    finalStats.evasionRate += modifiedAttributes.thanPhap / 200;
+    finalStats.critRate += modifiedAttributes.thanThuc / 400 + modifiedAttributes.coDuyen / 800;
+    finalStats.critDamage += modifiedAttributes.coDuyen / 500;
+    finalStats.evasionRate += modifiedAttributes.thanPhap / 400;
     finalStats.maxQi = getRealmLevelInfo(cultivation)?.qiRequired || 0;
 
 

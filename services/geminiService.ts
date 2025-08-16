@@ -123,7 +123,7 @@ export const createChatSession = (playerState: PlayerState, npc: NPC, history?: 
 
 
     // 4. NPC self-awareness
-    const attributesString = `Căn Cốt: ${npc.attributes.canCot}, Thân Pháp: ${npc.attributes.thanPhap}, Thần Thức: ${npc.attributes.thanThuc}, Ngộ Tính: ${npc.attributes.ngoTinh}`;
+    const attributesString = `Căn Cốt: ${npc.attributes.canCot}, Thân Pháp: ${npc.attributes.thanPhap}, Thần Thức: ${npc.attributes.thanThuc}, Ngộ Tính: ${npc.attributes.ngoTinh}, Cơ Duyên: ${npc.attributes.coDuyen}, Tâm Cảnh: ${npc.attributes.tamCanh}`;
 
     const skillsString = npc.learnedSkills
         .map(ls => ALL_SKILLS.find(s => s.id === ls.skillId)?.name)
@@ -320,6 +320,8 @@ export interface GeneratedNpcData {
         thanPhap: number;
         thanThuc: number;
         ngoTinh: number;
+        coDuyen: number;
+        tamCanh: number;
     };
     linhCan: { type: string, purity: number }[];
     linhThach: number;
@@ -359,7 +361,7 @@ ${titleInstruction}
 5.  Một lời nhắc đối thoại ngắn gọn (1-2 câu) để mời tương tác.
 6.  Cảnh giới tu luyện (ví dụ: 'Trúc Cơ', 'Kim Đan').
 7.  Tiểu cảnh giới (ví dụ: 'Hậu Kì', 'Đỉnh Phong', hoặc 'Tầng 5' đối với Luyện Khí).
-8.  Các thuộc tính cơ bản (Căn Cốt, Thân Pháp, Thần Thức, Ngộ Tính). Đây là các chỉ số "thiên phú" ban đầu khi còn là phàm nhân, trước khi tu luyện. Hãy tạo ra các giá trị trong khoảng từ 5 đến 15 cho mỗi thuộc tính. Hãy phân bổ các điểm này để phản ánh vai trò của họ (ví dụ: pháp tu có Thần Thức và Ngộ Tính cao, hộ vệ có Căn Cốt cao).
+8.  Các thuộc tính cơ bản (Căn Cốt, Thân Pháp, Thần Thức, Ngộ Tính, Cơ Duyên, Tâm Cảnh). Đây là các chỉ số "thiên phú" ban đầu khi còn là phàm nhân, trước khi tu luyện. Hãy tạo ra các giá trị trong khoảng từ 5 đến 15 cho mỗi thuộc tính. Hãy phân bổ các điểm này để phản ánh vai trò của họ (ví dụ: pháp tu có Thần Thức và Ngộ Tính cao, hộ vệ có Căn Cốt cao).
 9.  Một danh sách từ 1 đến 5 Linh Căn. Mỗi Linh Căn bao gồm 'type' (loại) và 'purity' (độ thuần khiết, 10-100). Loại Linh Căn phải nằm trong danh sách sau: [${linhCanTypesString}]. Linh Căn phải phù hợp với vai trò và cảnh giới của NPC.
 10. Một danh sách ID kỹ năng đã học. Hãy chọn 1 Tâm Pháp từ danh sách sau: [${tamPhapInfo}]. Và chọn 1 hoặc 2 Công Pháp từ danh sách sau: [${congPhapInfo}]. Các kỹ năng phải phù hợp với vai trò và cảnh giới của họ.
 11. Một lượng Linh Thạch (ví dụ, 0 đến 100) mà họ có thể đánh rơi.
@@ -394,8 +396,10 @@ ${titleInstruction}
                                     thanPhap: { type: Type.INTEGER, description: "Thuộc tính Thân Pháp." },
                                     thanThuc: { type: Type.INTEGER, description: "Thuộc tính Thần Thức." },
                                     ngoTinh: { type: Type.INTEGER, description: "Thuộc tính Ngộ Tính." },
+                                    coDuyen: { type: Type.INTEGER, description: "Thuộc tính Cơ Duyên (Vận may)." },
+                                    tamCanh: { type: Type.INTEGER, description: "Thuộc tính Tâm Cảnh (Ý chí)." },
                                 },
-                                required: ["canCot", "thanPhap", "thanThuc", "ngoTinh"],
+                                required: ["canCot", "thanPhap", "thanThuc", "ngoTinh", "coDuyen", "tamCanh"],
                             },
                              linhCan: {
                                 type: Type.ARRAY,

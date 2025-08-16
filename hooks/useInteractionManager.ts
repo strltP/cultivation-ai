@@ -146,34 +146,37 @@ export const useInteractionManager = (
     }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, stopAllActions]);
 
     const handleSpiritFieldClick = useCallback((plot: Interactable) => {
-        const plantedPlot = playerState.plantedPlots.find(p => p.plotId === plot.id);
-
-        if (plantedPlot) {
-            const seedDef = ALL_ITEMS.find(i => i.id === plantedPlot.seedId);
-            if (!seedDef || !seedDef.growthTimeMinutes) {
-                setGameMessage("Cây trồng này có vấn đề, không thể xác định thời gian lớn.");
-                return;
-            }
-
-            const currentTimeMins = gameTimeToMinutes(playerState.time);
-            const plantedTimeMins = gameTimeToMinutes(plantedPlot.plantedAt);
-            const elapsedMins = currentTimeMins - plantedTimeMins;
-            const grownItemDef = ALL_ITEMS.find(i => i.id === seedDef.growsIntoItemId);
-
-            if (elapsedMins >= seedDef.growthTimeMinutes) {
-                if (!grownItemDef) {
-                    setGameMessage("Lỗi: Không tìm thấy vật phẩm trưởng thành từ hạt giống này.");
-                    return;
+        setActiveInteractionInteractable(null);
+        let shouldOpenPlantingMenu = false;
+    
+        updateAndPersistPlayerState(prev => {
+            if (!prev) return prev;
+    
+            const plantedPlot = prev.plantedPlots.find(p => p.plotId === plot.id);
+    
+            if (plantedPlot) {
+                const seedDef = ALL_ITEMS.find(i => i.id === plantedPlot.seedId);
+                if (!seedDef || !seedDef.growthTimeMinutes) {
+                    setGameMessage("Cây trồng này có vấn đề, không thể xác định thời gian lớn.");
+                    return prev;
                 }
-
-                updateAndPersistPlayerState(prev => {
-                    if (!prev) return prev;
-
+    
+                const currentTimeMins = gameTimeToMinutes(prev.time);
+                const plantedTimeMins = gameTimeToMinutes(plantedPlot.plantedAt);
+                const elapsedMins = currentTimeMins - plantedTimeMins;
+                const grownItemDef = ALL_ITEMS.find(i => i.id === seedDef.growsIntoItemId);
+    
+                if (elapsedMins >= seedDef.growthTimeMinutes) {
+                    if (!grownItemDef) {
+                        setGameMessage("Lỗi: Không tìm thấy vật phẩm trưởng thành từ hạt giống này.");
+                        return prev;
+                    }
+    
                     const newPlantedPlots = prev.plantedPlots.filter(p => p.plotId !== plot.id);
                     let newInventory: InventorySlot[] = JSON.parse(JSON.stringify(prev.inventory));
                     const lootMessages: string[] = [];
                     let inventoryIsFull = false;
-
+    
                     const harvestQuantity = Math.floor(Math.random() * 2) + 2; // Harvest 2-3 items
                     let remainingHarvest = harvestQuantity;
                     if (grownItemDef.stackable > 1) {
@@ -197,7 +200,7 @@ export const useInteractionManager = (
                         remainingHarvest -= amountForNewStack;
                     }
                     lootMessages.push(`${harvestQuantity}x ${grownItemDef.name}`);
-
+    
                     if (Math.random() < 0.5) { // 50% chance to get seed back
                         let remainingSeed = 1;
                         const seedDefId = seedDef.id;
@@ -219,25 +222,30 @@ export const useInteractionManager = (
                             }
                         }
                     }
-
+    
                     let finalMessage = `Thu hoạch thành công! Nhận được: ${lootMessages.join(', ')}.`;
                     if (inventoryIsFull) {
                         finalMessage += " Túi đồ đã đầy, một số vật phẩm có thể đã bị thất lạc.";
                     }
                     setGameMessage(finalMessage);
-
+    
                     const timeAdvanced = advanceTime(prev.time, 5); // Harvesting takes 5 minutes
                     return { ...prev, plantedPlots: newPlantedPlots, inventory: newInventory, time: timeAdvanced };
-                });
+                } else {
+                    const progress = Math.round((elapsedMins / seedDef.growthTimeMinutes) * 100);
+                    setGameMessage(`${grownItemDef?.name || 'Cây trồng'} đang phát triển. Tiến độ: ${progress}%`);
+                    return prev;
+                }
             } else {
-                const progress = Math.round((elapsedMins / seedDef.growthTimeMinutes) * 100);
-                setGameMessage(`${grownItemDef?.name || 'Cây trồng'} đang phát triển. Tiến độ: ${progress}%`);
+                shouldOpenPlantingMenu = true;
+                return prev;
             }
-        } else {
+        });
+    
+        if (shouldOpenPlantingMenu) {
             setPlantingPlot(plot);
         }
-        setActiveInteractionInteractable(null);
-    }, [playerState, setGameMessage, setPlantingPlot, updateAndPersistPlayerState]);
+    }, [updateAndPersistPlayerState, setGameMessage, setPlantingPlot]);
 
 
     const handleGenericInteraction = useCallback((target: NPC | Interactable | TeleportLocation | PointOfInterest, interactionFn: () => void) => {

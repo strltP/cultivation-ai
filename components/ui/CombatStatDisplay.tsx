@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { CombatStats } from '../../types/stats';
-import { GiCrossedSwords, GiShield, GiRunningShoe, GiTargetShot, GiWhirlwind } from 'react-icons/gi';
+import { GiCrossedSwords, GiShield, GiRunningShoe, GiTargetShot, GiWhirlwind, GiBullseye } from 'react-icons/gi';
 
 interface CombatStatDisplayProps {
     stats: CombatStats;
@@ -15,6 +15,7 @@ const CombatStatDisplay: React.FC<CombatStatDisplayProps> = ({ stats }) => {
         { name: 'Tốc Độ', value: stats.speed, icon: <GiRunningShoe title="Tốc Độ" /> },
         { name: 'Bạo Kích', value: `${(stats.critRate * 100).toFixed(0)}%`, icon: <GiTargetShot title="Tỉ Lệ Bạo Kích" /> },
         { name: 'Né Tránh', value: `${(stats.evasionRate * 100).toFixed(0)}%`, icon: <GiWhirlwind title="Tỉ Lệ Né Tránh" /> },
+        { name: 'ST B.Kích', value: `${(stats.critDamage * 100).toFixed(0)}%`, icon: <GiBullseye title="Sát Thương Bạo Kích" /> },
     ];
 
     return (

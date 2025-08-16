@@ -39,7 +39,7 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
     // --- Simulate level-ups to get accumulated attributes and rolled cultivationStats ---
     const baseAttributes: CharacterAttributes = { ...data.attributes }; // Start with base "talent" from Gemini
     const npcCultivationStats: Partial<CombatStats & CharacterAttributes> = {};
-    const accumulatedAttributes: CharacterAttributes = { canCot: 0, thanPhap: 0, thanThuc: 0, ngoTinh: 0};
+    const accumulatedAttributes: CharacterAttributes = { canCot: 0, thanPhap: 0, thanThuc: 0, ngoTinh: 0, coDuyen: 0, tamCanh: 0 };
 
     for (let r_idx = 0; r_idx <= cultivation.realmIndex; r_idx++) {
         const currentRealm = REALM_PROGRESSION[r_idx];
@@ -187,6 +187,8 @@ export function createMonsterFromData(template: MonsterDefinition, level: number
         thanPhap: Math.round(template.attributes.thanPhap * levelMultiplier),
         thanThuc: Math.round(template.attributes.thanThuc * levelMultiplier),
         ngoTinh: Math.round(template.attributes.ngoTinh * levelMultiplier),
+        coDuyen: Math.round(template.attributes.coDuyen * levelMultiplier),
+        tamCanh: Math.round(template.attributes.tamCanh * levelMultiplier),
     };
 
     const finalStats: CombatStats = {

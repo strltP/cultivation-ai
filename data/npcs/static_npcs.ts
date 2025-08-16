@@ -10,7 +10,7 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         prompt: 'Lão Mã đang cặm cụi bên lò rèn, mồ hôi nhễ nhại. Thấy bạn, lão chỉ gật đầu rồi lại tiếp tục công việc. "Cần rèn gì không, tiểu hữu?"',
         realmName: 'Luyện Khí',
         levelDescription: 'Tầng 9',
-        attributes: { canCot: 30, thanPhap: 5, thanThuc: 20, ngoTinh: 13 },
+        attributes: { canCot: 30, thanPhap: 5, thanThuc: 20, ngoTinh: 13, coDuyen: 10, tamCanh: 15 },
         age: 58,
         linhCan: [
             { type: 'HOA', purity: 45 },
@@ -34,7 +34,7 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         prompt: 'Lý Tiểu Nhị nhanh nhẹn lau bàn, thấy bạn liền đon đả mời chào. "Khách quan, ngài muốn dùng chút rượu hay đồ ăn gì không? Thiên Mã Tửu Lâu của chúng tôi có đủ cả."',
         realmName: 'Luyện Khí',
         levelDescription: 'Tầng 3',
-        attributes: { canCot: 8, thanPhap: 15, thanThuc: 14, ngoTinh: 18 },
+        attributes: { canCot: 8, thanPhap: 15, thanThuc: 14, ngoTinh: 18, coDuyen: 12, tamCanh: 10 },
         age: 19,
         linhCan: [
             { type: 'PHONG', purity: 70 },
@@ -56,7 +56,7 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         prompt: 'Vị chưởng quầy vuốt râu mỉm cười, ánh mắt tinh anh đảo qua người bạn. "Tiểu hữu muốn tìm bảo vật gì? Vạn Bảo Lâu của ta trên thông thiên văn, dưới tường địa lý, không gì không có."',
         realmName: 'Kim Đan',
         levelDescription: 'Sơ Kì',
-        attributes: { canCot: 50, thanPhap: 40, thanThuc: 100, ngoTinh: 110 },
+        attributes: { canCot: 50, thanPhap: 40, thanThuc: 100, ngoTinh: 110, coDuyen: 30, tamCanh: 40 },
         age: 450,
         linhCan: [
             { type: 'KIM', purity: 80 },
@@ -91,7 +91,7 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         prompt: 'Vị thôn trưởng già nua đang ngồi bên hiên nhà hút tẩu thuốc, ánh mắt hiền từ nhìn bạn. "Người trẻ tuổi, ngươi từ đâu tới? Lục Yên Thôn chúng ta đã lâu không có khách lạ ghé thăm."',
         realmName: 'Luyện Khí',
         levelDescription: 'Tầng 7',
-        attributes: { canCot: 25, thanPhap: 10, thanThuc: 15, ngoTinh: 20 },
+        attributes: { canCot: 25, thanPhap: 10, thanThuc: 15, ngoTinh: 20, coDuyen: 15, tamCanh: 25 },
         age: 72,
         linhCan: [
             { type: 'MOC', purity: 55 },

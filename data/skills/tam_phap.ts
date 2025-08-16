@@ -429,7 +429,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         enlightenmentCostPerLevel: 1500,
         bonuses: [
             { targetStat: 'attackPower', modifier: 'MULTIPLIER', valuePerLevel: 0.25 },
-            { targetStat: 'critRate', modifier: 'MULTIPLIER', valuePerLevel: 0.15 },
+            { targetStat: 'critRate', modifier: 'MULTIPLIER', valuePerLevel: 0.04 },
         ],
     },
     {
@@ -443,7 +443,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         enlightenmentCostPerLevel: 1300,
         bonuses: [
             { targetAttribute: 'thanPhap', modifier: 'MULTIPLIER', valuePerLevel: 0.2 },
-            { targetStat: 'evasionRate', modifier: 'MULTIPLIER', valuePerLevel: 0.25 },
+            { targetStat: 'evasionRate', modifier: 'MULTIPLIER', valuePerLevel: 0.05 },
         ],
     }
 ];

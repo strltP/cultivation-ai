@@ -142,7 +142,23 @@ export const useWorldManager = (
         const activeRespawningIds = new Set(playerState.respawningInteractables
             .filter(item => item.mapId === currentMapId)
             .map(item => item.originalId));
-        const interactablesForMap = (playerState.generatedInteractables[currentMapId] || []).filter(item => !activeRespawningIds.has(item.id));
+
+        // Create new objects for rendering to avoid state mutation and ensure visual state is reset.
+        const interactablesForMap = (playerState.generatedInteractables[currentMapId] || [])
+            .filter(item => !activeRespawningIds.has(item.id))
+            .map(item => {
+                 if (item.type === 'spirit_field') {
+                    // Create a new object and reset its dynamic properties
+                    return {
+                        ...item,
+                        isPlanted: false,
+                        isReady: false,
+                        growthPercent: undefined,
+                        plantName: undefined
+                    };
+                }
+                return { ...item }; // Shallow copy for others
+            });
         
         playerState.plantedPlots.forEach(plot => {
             if (plot.mapId === currentMapId) {

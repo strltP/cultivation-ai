@@ -54,6 +54,8 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         if (!parsed.cultivationStats) parsed.cultivationStats = {};
         if (parsed.cultivation.level === undefined || parsed.cultivation.level === null) parsed.cultivation.level = 0;
         if (parsed.attributes && parsed.attributes.linhLuc !== undefined) delete parsed.attributes.linhLuc; // Migration
+        if (parsed.attributes.coDuyen === undefined) parsed.attributes.coDuyen = 10;
+        if (parsed.attributes.tamCanh === undefined) parsed.attributes.tamCanh = 10;
         if (!parsed.learnedSkills) parsed.learnedSkills = [];
         if (!parsed.learnedRecipes) parsed.learnedRecipes = [];
         if (!parsed.inventory) parsed.inventory = [];

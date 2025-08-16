@@ -10,6 +10,8 @@ export interface CharacterAttributes {
   thanPhap: number;   // Thân Pháp (Agility)
   thanThuc: number;   // Thần Thức (Spiritual Sense)
   ngoTinh: number;     // Ngộ Tính (Comprehension)
+  coDuyen: number;     // Cơ Duyên (Fortune)
+  tamCanh: number;     // Tâm Cảnh (Willpower)
 }
 
 export interface CombatStats {
