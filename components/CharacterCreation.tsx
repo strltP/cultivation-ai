@@ -1,39 +1,47 @@
 
+
 import React, { useState } from 'react';
 import type { PlayerState } from '../types/character';
 import { importPlayerState, generateRandomLinhCan } from '../hooks/usePlayerPersistence';
 import type { LinhCan } from '../types/linhcan';
 import { LINH_CAN_DATA } from '../data/linhcan';
+import { getLinhCanTierInfo } from '../services/cultivationService';
 
 interface CharacterCreationProps {
   onCharacterCreate: (name: string, useRandomNames: boolean, linhCan: LinhCan[], gender: 'Nam' | 'Nữ') => void;
   setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>;
 }
 
-const LinhCanDisplay: React.FC<{ linhCan: LinhCan[] }> = ({ linhCan }) => (
-    <div className="flex flex-col gap-2">
-        <label className="text-lg text-blue-300 font-semibold">Tiên Thiên Linh Căn</label>
-        <div className="bg-gray-800/50 border-2 border-gray-600 rounded-md p-4 space-y-3">
-            {linhCan.map((lc) => {
-                const lcData = LINH_CAN_DATA[lc.type];
-                return (
-                    <div key={lc.type} className="flex items-center gap-4 animate-fade-in" title={lcData.description}>
-                        <div className="text-3xl w-8 text-center flex-shrink-0">{lcData.icon}</div>
-                        <div className="flex-grow">
-                            <div className="flex justify-between items-baseline mb-1">
-                                <span className="font-semibold text-white">{lcData.name}</span>
-                                <span className="text-sm text-gray-300">Độ Thuần Khiết: <span className="font-bold text-yellow-300">{lc.purity}</span></span>
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-full h-2.5">
-                                <div className="bg-gradient-to-r from-yellow-400 to-amber-500 h-2.5 rounded-full" style={{ width: `${lc.purity}%` }}></div>
+const LinhCanDisplay: React.FC<{ linhCan: LinhCan[] }> = ({ linhCan }) => {
+    const tierInfo = getLinhCanTierInfo(linhCan);
+    return (
+        <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-baseline">
+                <label className="text-lg text-blue-300 font-semibold">Tiên Thiên Linh Căn</label>
+                <span className={`text-lg font-semibold ${tierInfo.color}`}>{tierInfo.name}</span>
+            </div>
+            <div className="bg-gray-800/50 border-2 border-gray-600 rounded-md p-4 space-y-3">
+                {linhCan.map((lc) => {
+                    const lcData = LINH_CAN_DATA[lc.type];
+                    return (
+                        <div key={lc.type} className="flex items-center gap-4 animate-fade-in" title={lcData.description}>
+                            <div className="text-3xl w-8 text-center flex-shrink-0">{lcData.icon}</div>
+                            <div className="flex-grow">
+                                <div className="flex justify-between items-baseline mb-1">
+                                    <span className="font-semibold text-white">{lcData.name}</span>
+                                    <span className="text-sm text-gray-300">Độ Thuần Khiết: <span className="font-bold text-yellow-300">{lc.purity}</span></span>
+                                </div>
+                                <div className="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div className="bg-gradient-to-r from-yellow-400 to-amber-500 h-2.5 rounded-full" style={{ width: `${lc.purity}%` }}></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                );
-            })}
+                    );
+                })}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const CharacterCreation: React.FC<CharacterCreationProps> = ({ onCharacterCreate, setPlayerState }) => {
   const [name, setName] = useState('');

@@ -2,7 +2,7 @@
 import React from 'react';
 import type { LinhCanType } from '../types/linhcan';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
-import { GiMetalBar, GiSprout, GiWaterDrop, GiFire, GiStoneSphere, GiWindSlap, GiLightningTrio, GiSun } from 'react-icons/gi';
+import { GiMetalBar, GiSprout, GiWaterDrop, GiFire, GiStoneSphere, GiWindSlap, GiLightningTrio, GiSun, GiIceCube } from 'react-icons/gi';
 import { FaMoon } from 'react-icons/fa';
 
 interface LinhCanBonus {
@@ -29,6 +29,7 @@ export const LINH_CAN_ICONS: Record<LinhCanType, React.ReactNode> = {
     LOI: React.createElement(GiLightningTrio),
     QUANG: React.createElement(GiSun),
     AM: React.createElement(FaMoon),
+    BĂNG: React.createElement(GiIceCube),
 };
 
 export const LINH_CAN_DATA: Record<LinhCanType, LinhCanDefinition> = {
@@ -111,6 +112,15 @@ export const LINH_CAN_DATA: Record<LinhCanType, LinhCanDefinition> = {
         bonuses: [
             { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', valuePerPurity: 0.15 },
             { targetStat: 'critDamage', modifier: 'ADDITIVE', valuePerPurity: 0.005 }, // 50% crit damage at 100 purity
+        ]
+    },
+    BĂNG: {
+        name: 'Băng Linh Căn',
+        description: 'Linh căn biến dị từ Thủy và Kim, tăng cường khả năng khống chế và phòng ngự.',
+        icon: React.createElement(GiIceCube, { className: "text-cyan-300" }),
+        bonuses: [
+            { targetStat: 'defensePower', modifier: 'ADDITIVE', valuePerPurity: 0.2 }, // 20 def at 100
+            { targetStat: 'maxMana', modifier: 'MULTIPLIER', valuePerPurity: 0.0015 }, // +15% mana at 100
         ]
     }
 };

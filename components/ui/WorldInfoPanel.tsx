@@ -1,16 +1,18 @@
+
 import React, { useState } from 'react';
 import { FaBookDead, FaBook, FaBoxOpen } from 'react-icons/fa';
-import { GiDiamondHard } from 'react-icons/gi';
+import { GiDiamondHard, GiGalaxy } from 'react-icons/gi';
 import CongPhapTab from './world-info-panel/CongPhapTab';
 import TamPhapTab from './world-info-panel/TamPhapTab';
 import VatPhamTab from './world-info-panel/VatPhamTab';
 import TrangBiTab from './world-info-panel/TrangBiTab';
+import LinhCanWorldInfoTab from './world-info-panel/LinhCanTab';
 
 interface WorldInfoPanelProps {
   onClose: () => void;
 }
 
-type ActiveTab = 'congphap' | 'tamphap' | 'vatpham' | 'trangbi';
+type ActiveTab = 'congphap' | 'tamphap' | 'linhcan' | 'vatpham' | 'trangbi';
 
 const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({ onClose }) => {
     const [activeTab, setActiveTab] = useState<ActiveTab>('congphap');
@@ -18,6 +20,7 @@ const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({ onClose }) => {
     const tabs: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
         { id: 'congphap', label: 'Công Pháp', icon: <FaBookDead /> },
         { id: 'tamphap', label: 'Tâm Pháp', icon: <FaBook /> },
+        { id: 'linhcan', label: 'Linh Căn', icon: <GiGalaxy /> },
         { id: 'vatpham', label: 'Vật Phẩm', icon: <FaBoxOpen /> },
         { id: 'trangbi', label: 'Trang Bị', icon: <GiDiamondHard /> },
     ];
@@ -28,6 +31,8 @@ const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({ onClose }) => {
                 return <CongPhapTab />;
             case 'tamphap':
                 return <TamPhapTab />;
+            case 'linhcan':
+                return <LinhCanWorldInfoTab />;
             case 'vatpham':
                 return <VatPhamTab />;
             case 'trangbi':

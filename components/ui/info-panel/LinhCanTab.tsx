@@ -1,6 +1,8 @@
+
 import React from 'react';
 import type { PlayerState } from '../../../types/character';
 import { LINH_CAN_DATA } from '../../../data/linhcan';
+import { getLinhCanTierInfo } from '../../../services/cultivationService';
 
 interface LinhCanTabProps {
   playerState: PlayerState;
@@ -25,12 +27,15 @@ const ATTRIBUTE_NAMES: Record<string, string> = {
 
 const LinhCanTab: React.FC<LinhCanTabProps> = ({ playerState }) => {
   const { linhCan } = playerState;
+  const tierInfo = getLinhCanTierInfo(linhCan);
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold text-yellow-200 mb-4 pb-2 border-b-2 border-yellow-200/50">
+      <h2 className="text-2xl font-bold text-yellow-200 mb-2 pb-2 border-b-2 border-yellow-200/50">
         Tiên Thiên Linh Căn
       </h2>
+      <p className={`text-center text-xl font-semibold ${tierInfo.color} mb-4`}>{tierInfo.name}</p>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {linhCan.map(lc => {
           const lcData = LINH_CAN_DATA[lc.type];

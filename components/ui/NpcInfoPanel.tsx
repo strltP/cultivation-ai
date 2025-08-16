@@ -1,7 +1,8 @@
 
+
 import React from 'react';
 import type { NPC } from '../../types/character';
-import { getCultivationInfo } from '../../services/cultivationService';
+import { getCultivationInfo, getLinhCanTierInfo } from '../../services/cultivationService';
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
 import { ALL_SKILLS, SKILL_TIER_INFO } from '../../data/skills/skills';
@@ -73,6 +74,8 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
             })
             .filter((item): item is NonNullable<typeof item> => item !== null);
     }, [npc.inventory, npc.forSale, isMonster]);
+    
+    const linhCanTierInfo = !isMonster ? getLinhCanTierInfo(npc.linhCan) : null;
 
   return (
     <div
@@ -178,7 +181,10 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
             ) : (
             <>
                  <div className="mt-2 pt-4 border-t border-yellow-400/20">
-                    <h3 className="flex items-center gap-2 text-lg text-purple-300 font-semibold mb-2"><GiGalaxy /> Linh Căn</h3>
+                    <div className="flex justify-between items-center mb-2">
+                         <h3 className="flex items-center gap-2 text-lg text-purple-300 font-semibold"><GiGalaxy /> Linh Căn</h3>
+                         {linhCanTierInfo && <span className={`font-semibold ${linhCanTierInfo.color}`}>{linhCanTierInfo.name}</span>}
+                    </div>
                     <div className="space-y-2">
                         {npc.linhCan.map(lc => {
                             const lcData = LINH_CAN_DATA[lc.type];

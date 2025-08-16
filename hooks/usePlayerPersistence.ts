@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import type { PlayerState } from '../types/character';
 import { INITIAL_PLAYER_STATE as BASE_INITIAL_PLAYER_STATE, DAYS_PER_MONTH, MONTHS_PER_YEAR, REALM_PROGRESSION } from '../constants';
@@ -27,14 +28,51 @@ const getSeasonLegacy = (month: number): 'Xuân' | 'Hạ' | 'Thu' | 'Đông' => 
 };
 
 export const generateRandomLinhCan = (): LinhCan[] => {
-    const numberOfRoots = Math.floor(Math.random() * 5) + 1; // 1 to 5
-    const shuffledTypes = [...LINH_CAN_TYPES].sort(() => 0.5 - Math.random());
-    const selectedTypes = shuffledTypes.slice(0, numberOfRoots);
+    const BASE_ELEMENTS: LinhCanType[] = ['KIM', 'MOC', 'THUY', 'HOA', 'THO'];
+    
+    const VARIANT_COMBINATIONS: Record<string, LinhCanType> = {
+        'KIM-THUY': 'BĂNG', 'THUY-KIM': 'BĂNG',   // Kim sinh Thủy -> Băng
+        'MOC-HOA': 'LOI', 'HOA-MOC': 'LOI',     // Mộc sinh Hỏa -> Lôi
+        'KIM-MOC': 'PHONG', 'MOC-KIM': 'PHONG',   // Kim khắc Mộc -> Phong
+        'HOA-THO': 'QUANG', 'THO-HOA': 'QUANG',   // Hỏa sinh Thổ -> Quang
+        'THUY-THO': 'AM', 'THO-THUY': 'AM',       // Thổ khắc Thủy -> Ám
+    };
 
-    return selectedTypes.map(type => ({
+    const numBaseRoots = Math.floor(Math.random() * 5) + 1;
+    const shuffledBaseElements = [...BASE_ELEMENTS].sort(() => 0.5 - Math.random());
+    
+    const baseRoots: LinhCan[] = shuffledBaseElements.slice(0, numBaseRoots).map(type => ({
         type: type,
-        purity: Math.floor(Math.random() * 91) + 10, // Purity from 10 to 100
+        purity: Math.floor(Math.random() * 71) + 10, // Purity from 10 to 80 for base roots
     }));
+
+    let finalRoots: LinhCan[] = [...baseRoots];
+
+    // Dị linh căn chỉ có thể được tạo ra từ Chân Linh Căn (2 hoặc 3 linh căn ngũ hành)
+    const canHaveVariant = numBaseRoots >= 2 && numBaseRoots <= 3;
+    const hasVariantChance = 0.3; // 30% chance
+
+    if (canHaveVariant && Math.random() < hasVariantChance) {
+        // Chọn hai linh căn để kết hợp
+        const shuffledBaseRoots = [...baseRoots].sort(() => 0.5 - Math.random());
+        const root1 = shuffledBaseRoots[0];
+        const root2 = shuffledBaseRoots[1];
+        
+        const combinationKey = `${root1.type}-${root2.type}`;
+        const variantType = VARIANT_COMBINATIONS[combinationKey];
+
+        if (variantType) {
+            const newVariantRoot: LinhCan = {
+                type: variantType,
+                // Độ thuần khiết phải cao hơn hai linh căn gốc
+                purity: Math.min(100, Math.max(root1.purity, root2.purity) + Math.floor(Math.random() * 16) + 5) // +5 to 20 higher
+            };
+            // Thêm dị linh căn mới vào danh sách, KHÔNG thay thế các linh căn gốc.
+            finalRoots.push(newVariantRoot);
+        }
+    }
+
+    return finalRoots;
 };
 
 const processLoadedState = (parsed: any): PlayerState | null => {

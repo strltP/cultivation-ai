@@ -10,6 +10,61 @@ import type { LinhCan } from '../types/linhcan';
 import { LINH_CAN_DATA } from '../data/linhcan';
 import { ALL_SKILLS } from '../data/skills/skills';
 
+export const getLinhCanTierInfo = (linhCan: LinhCan[]): { name: string; qiMultiplier: number; color: string } => {
+    const count = linhCan.filter(lc => ['KIM', 'MOC', 'THUY', 'HOA', 'THO'].includes(lc.type)).length;
+    const totalCount = linhCan.length;
+    
+    let name = '';
+    let color = 'text-white';
+
+    if (totalCount === 0) {
+        return { name: 'Vô Linh Căn', qiMultiplier: 4.0, color: 'text-gray-500' };
+    }
+
+    if (count === 0 && totalCount > 0) { // All variant roots
+        name = 'Dị Linh Căn';
+        color = 'text-purple-300';
+    } else if (count === 1) {
+        name = 'Thiên Linh Căn';
+        color = 'text-yellow-300';
+    } else if (count >= 2 && count <= 3) {
+        name = 'Chân Linh Căn';
+        color = 'text-green-300';
+    } else if (count >= 4 && count <= 5) {
+        name = 'Ngụy Linh Căn';
+        color = 'text-gray-400';
+    }
+
+    const hasVariant = linhCan.some(lc => ['PHONG', 'LOI', 'QUANG', 'AM', 'BĂNG'].includes(lc.type));
+    if (hasVariant) {
+        name += ' (Biến Dị)';
+    }
+
+    // New balanced calculation
+    // 1. Base multiplier is determined by the number of roots. This is the most important factor.
+    const baseMultiplier: Record<number, number> = {
+        1: 1.0,  // Thiên
+        2: 1.5,  // Chân
+        3: 1.75, // Chân
+        4: 2.25, // Ngụy
+        5: 2.75, // Ngụy
+        6: 3.25, // Ngụy (Biến Dị)
+        7: 3.75  // Ngụy (Biến Dị)
+    };
+
+    // 2. Purity provides a bonus/penalty on top of the base.
+    // A penalty factor from 0 (at 100 purity) to 1 (at 0 purity).
+    const averagePurity = linhCan.reduce((sum, lc) => sum + lc.purity, 0) / totalCount;
+    const purityPenaltyFactor = (100 - averagePurity) / 100;
+
+    // The purity penalty will add a maximum of 0.5 to the multiplier at 0 purity.
+    // This ensures that a Thiên linh căn is ALWAYS better than a Chân linh căn, etc.
+    const qiMultiplier = (baseMultiplier[totalCount] || 3.0) + (purityPenaltyFactor * 0.5);
+
+    return { name, qiMultiplier, color };
+};
+
+
 export const calculateAllStats = (
     baseAttributes: CharacterAttributes, 
     cultivation: CultivationState,
@@ -113,7 +168,12 @@ export const calculateAllStats = (
     finalStats.critRate += modifiedAttributes.thanThuc / 3000 + modifiedAttributes.coDuyen / 6000;
     finalStats.critDamage += modifiedAttributes.coDuyen / 500;
     finalStats.armorPenetration = (modifiedAttributes.thanThuc / 3000) + (modifiedAttributes.coDuyen / 6000);
-    finalStats.maxQi = getRealmLevelInfo(cultivation)?.qiRequired || 0;
+    
+    // ** FIX: Calculate maxQi based on the NEXT level's requirement **
+    const { qiMultiplier } = getLinhCanTierInfo(linhCan);
+    const nextCultivation = getNextCultivationLevel(cultivation);
+    const baseMaxQi = nextCultivation ? getRealmLevelInfo(nextCultivation)?.qiRequired || 0 : getRealmLevelInfo(cultivation)?.qiRequired || 0;
+    finalStats.maxQi = Math.round(baseMaxQi * qiMultiplier);
 
 
     // Round the final stats to avoid floating point issues
