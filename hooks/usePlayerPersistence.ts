@@ -15,6 +15,7 @@ const CURRENT_SAVE_VERSION = '2.0';
 
 export const INITIAL_PLAYER_STATE: PlayerState = {
     ...BASE_INITIAL_PLAYER_STATE,
+    journal: [],
     saveVersion: CURRENT_SAVE_VERSION,
 };
 
@@ -76,6 +77,7 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         if (!parsed.gender) parsed.gender = 'Nam';
         if (!parsed.activeEffects) parsed.activeEffects = [];
         if (!parsed.targetPosition) parsed.targetPosition = parsed.position;
+        if (!parsed.journal) parsed.journal = [];
         
         // Add checks for numeric stats that might be missing in old saves.
         if (typeof parsed.hp !== 'number' || isNaN(parsed.hp)) parsed.hp = parsed.stats?.maxHp || 50;

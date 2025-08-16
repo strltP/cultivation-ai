@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useMemo, useEffect, ReactNode } from 'react';
-import type { PlayerState, NPC, ChatMessage } from '../types/character';
+import type { PlayerState, NPC, ChatMessage, JournalEntry } from '../types/character';
 import type { Position } from '../types/common';
 import type { GameMap, MapArea, PointOfInterest, TeleportLocation, MapID } from '../types/map';
 import type { Dialogue, Interactable } from '../types/interaction';
@@ -30,6 +30,8 @@ interface IUIContext {
     setIsMapOpen: React.Dispatch<React.SetStateAction<boolean>>;
     isInfoPanelOpen: boolean;
     setIsInfoPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    isJournalOpen: boolean;
+    setIsJournalOpen: React.Dispatch<React.SetStateAction<boolean>>;
     isWorldInfoPanelOpen: boolean;
     setIsWorldInfoPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
     isTeleportUIOpen: boolean;
@@ -195,9 +197,24 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         }
     }, [setGameMessageObject]);
 
+    const addJournalEntry = useCallback((message: string) => {
+        updateAndPersistPlayerState((p: PlayerState) => {
+            if (!p) return p;
+            const newEntry: JournalEntry = {
+                time: p.time,
+                message: message
+            };
+            return {
+                ...p,
+                journal: [...(p.journal || []), newEntry]
+            };
+        });
+    }, [updateAndPersistPlayerState]);
+
     // --- UI Panel State ---
     const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
     const [isInfoPanelOpen, setIsInfoPanelOpen] = useState<boolean>(false);
+    const [isJournalOpen, setIsJournalOpen] = useState<boolean>(false);
     const [isWorldInfoPanelOpen, setIsWorldInfoPanelOpen] = useState<boolean>(false);
     const [isTeleportUIOpen, setIsTeleportUIOpen] = useState<boolean>(false);
     const [teleportingWithItemIndex, setTeleportingWithItemIndex] = useState<number | null>(null);
@@ -241,6 +258,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         playerState,
         updateAndPersistPlayerState,
         setGameMessage,
+        addJournalEntry,
         openTeleportUIWithItem,
         () => setIsAlchemyPanelOpen(true)
     );
@@ -251,10 +269,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         teleportGates: effectiveTeleportGates,
     });
 
-    const playerActions = usePlayerActionsManager(updateAndPersistPlayerState, setGameMessage, stopAllActions);
+    const playerActions = usePlayerActionsManager(updateAndPersistPlayerState, setGameMessage, addJournalEntry, stopAllActions);
 
     const combatManager = useCombatManager(
-        playerState, updateAndPersistPlayerState, setGameMessage, stopAllActions,
+        playerState, updateAndPersistPlayerState, setGameMessage, addJournalEntry, stopAllActions,
         inventoryManager.handleAddItemToInventory,
         inventoryManager.handleAddLinhThach
     );
@@ -283,6 +301,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
             handleInitiateTrade: handleInitiateTrade,
             setPlantingPlot,
             setIsAlchemyPanelOpen,
+            addJournalEntry,
             allMaps
         },
         stopAllActions
@@ -409,7 +428,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                 plantedAt: prev.time,
             });
 
-            setGameMessage(`Đã gieo trồng ${seedDef.name}.`);
+            const message = `Đã gieo trồng ${seedDef.name}.`;
+            setGameMessage(message);
+            addJournalEntry(message);
             setPlantingPlot(null);
 
             return {
@@ -418,7 +439,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                 plantedPlots: newPlantedPlots,
             };
         });
-    }, [updateAndPersistPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage, addJournalEntry]);
     
     const handleCraftItem = useCallback((recipeId: string) => {
         updateAndPersistPlayerState(prev => {
@@ -476,14 +497,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                         newState.inventory.push({ itemId: resultItemDef.id, quantity: amountForNewStack });
                         remainingQuantity -= amountForNewStack;
                      }
-                    setGameMessage(`Luyện đan thành công! Nhận được ${quantity}x ${resultItemDef.name}.`);
+                    const message = `Luyện đan thành công! Nhận được ${quantity}x ${resultItemDef.name}.`;
+                    setGameMessage(message);
+                    addJournalEntry(message);
                 }
             } else {
-                setGameMessage("Luyện đan thất bại! Tất cả nguyên liệu đã bị hủy.");
+                const message = "Luyện đan thất bại! Tất cả nguyên liệu đã bị hủy.";
+                setGameMessage(message);
+                addJournalEntry(message);
             }
             return newState;
         });
-    }, [updateAndPersistPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage, addJournalEntry]);
 
 
     // --- CONTEXT VALUES ---
@@ -494,13 +519,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         isGameReady, isGeneratingNames, allMaps,
         isMapOpen, setIsMapOpen,
         isInfoPanelOpen, setIsInfoPanelOpen,
+        isJournalOpen, setIsJournalOpen,
         isWorldInfoPanelOpen, setIsWorldInfoPanelOpen,
         isTeleportUIOpen, setIsTeleportUIOpen,
         teleportingWithItemIndex, setTeleportingWithItemIndex,
         isAlchemyPanelOpen, setIsAlchemyPanelOpen,
         tradingNpc, setTradingNpc,
         plantingPlot, setPlantingPlot,
-    }), [playerState, updateAndPersistPlayerState, isGameReady, isGeneratingNames, allMaps, isMapOpen, isInfoPanelOpen, isWorldInfoPanelOpen, isTeleportUIOpen, teleportingWithItemIndex, isAlchemyPanelOpen, tradingNpc, plantingPlot]);
+    }), [playerState, updateAndPersistPlayerState, isGameReady, isGeneratingNames, allMaps, isMapOpen, isInfoPanelOpen, isJournalOpen, isWorldInfoPanelOpen, isTeleportUIOpen, teleportingWithItemIndex, isAlchemyPanelOpen, tradingNpc, plantingPlot]);
 
     const worldContextValue: IWorldContext = useMemo(() => ({
         gameMessage: gameMessageObject,

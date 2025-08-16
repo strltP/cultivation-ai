@@ -10,6 +10,7 @@ import { INITIAL_PLAYER_STATE } from '../hooks/usePlayerPersistence';
 export const usePlayerActions = (
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
+    addJournalEntry: (message: string) => void,
     stopAllActions: React.MutableRefObject<() => void>
 ) => {
     const [isMeditating, setIsMeditating] = useState<boolean>(false);
@@ -120,8 +121,10 @@ export const usePlayerActions = (
                 prev.linhCan
             );
             const timeAdvanced = advanceTime(prev.time, 12 * 60); // Breakthrough takes 12 hours
-
-            setGameMessage(`Chúc mừng! Đã đột phá đến ${nextCultivationInfo.name}! ${breakthroughMessages.join(', ')}. (Tốn 12 giờ)`);
+            
+            const message = `Chúc mừng! Đã đột phá đến ${nextCultivationInfo.name}! ${breakthroughMessages.join(', ')}. (Tốn 12 giờ)`;
+            setGameMessage(message);
+            addJournalEntry(message);
 
             return {
                 ...prev,
@@ -134,7 +137,7 @@ export const usePlayerActions = (
                 time: timeAdvanced,
             };
         });
-    }, [updateAndPersistPlayerState, setGameMessage, stopAllActions]);
+    }, [updateAndPersistPlayerState, setGameMessage, stopAllActions, addJournalEntry]);
 
     const handleToggleMeditation = useCallback(() => {
         if (isMeditating) {
@@ -185,8 +188,10 @@ export const usePlayerActions = (
                 s.skillId === skillId ? { ...s, currentLevel: s.currentLevel + 1 } : s
             );
             const { finalStats, finalAttributes } = calculateAllStats(prev.attributes, prev.cultivation, prev.cultivationStats, newLearnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
-
-            setGameMessage(`"${skillDef.name}" đã được tu luyện tới tầng ${skillToLevelUp.currentLevel + 1}! (Tiêu tốn ${cost} Cảm Ngộ và 2 giờ)`);
+            
+            const message = `"${skillDef.name}" đã được tu luyện tới tầng ${skillToLevelUp.currentLevel + 1}! (Tiêu tốn ${cost} Cảm Ngộ và 2 giờ)`;
+            setGameMessage(message);
+            addJournalEntry(message);
             return {
                 ...prev,
                 learnedSkills: newLearnedSkills,
@@ -197,7 +202,7 @@ export const usePlayerActions = (
                 time: timeAdvanced,
             };
         });
-    }, [updateAndPersistPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage, addJournalEntry]);
     
     return {
         isMeditating,

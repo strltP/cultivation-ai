@@ -19,6 +19,7 @@ type InteractionDependencies = {
     handleInitiateTrade: (npc: NPC) => void;
     setPlantingPlot: (plot: Interactable | null) => void;
     setIsAlchemyPanelOpen: (isOpen: boolean) => void;
+    addJournalEntry: (message: string) => void;
     allMaps: Record<string, GameMap>;
 };
 
@@ -51,7 +52,7 @@ export const useInteractionManager = (
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
     
-    const { handleAddItemToInventory, handleAddLinhThach, handleRemoveAndRespawn, handleChallenge, handleInitiateTrade, setPlantingPlot, setIsAlchemyPanelOpen, allMaps } = dependencies;
+    const { handleAddItemToInventory, handleAddLinhThach, handleRemoveAndRespawn, handleChallenge, handleInitiateTrade, setPlantingPlot, setIsAlchemyPanelOpen, addJournalEntry, allMaps } = dependencies;
 
     const processInteraction = useCallback(async (target: Interactable) => {
         stopAllActions.current();
@@ -79,8 +80,10 @@ export const useInteractionManager = (
 
         setActiveDialogue({ title: target.name, text: response.dialogue });
         
+        const lootMessages: string[] = [];
         if (response.linhThach && response.linhThach > 0) {
             handleAddLinhThach(response.linhThach);
+            lootMessages.push(`${response.linhThach} Linh Thạch`);
         }
 
         if (response.loot && response.loot.length > 0) {
@@ -88,16 +91,21 @@ export const useInteractionManager = (
                 const itemDef = ALL_ITEMS.find(i => i.name === itemLoot.itemName);
                 if (itemDef) {
                     handleAddItemToInventory(itemDef.id, itemLoot.quantity);
+                    lootMessages.push(`${itemLoot.quantity}x ${itemDef.name}`);
                 } else {
                     console.warn(`Received unknown item from Gemini: ${itemLoot.itemName}`);
                 }
             });
         }
+
+        if(lootMessages.length > 0) {
+            addJournalEntry(`Mở ${target.name} và nhận được: ${lootMessages.join(', ')}.`);
+        }
         
         if (target.type === 'chest') {
             handleRemoveAndRespawn(target as Interactable);
         }
-    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, handleAddLinhThach, handleAddItemToInventory, handleRemoveAndRespawn, stopAllActions]);
+    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, handleAddLinhThach, handleAddItemToInventory, handleRemoveAndRespawn, stopAllActions, addJournalEntry]);
 
     const handleTeleport = useCallback((gate: TeleportLocation) => {
         stopAllActions.current();
@@ -228,6 +236,7 @@ export const useInteractionManager = (
                         finalMessage += " Túi đồ đã đầy, một số vật phẩm có thể đã bị thất lạc.";
                     }
                     setGameMessage(finalMessage);
+                    addJournalEntry(finalMessage);
     
                     const timeAdvanced = advanceTime(prev.time, 5); // Harvesting takes 5 minutes
                     return { ...prev, plantedPlots: newPlantedPlots, inventory: newInventory, time: timeAdvanced };
@@ -245,7 +254,7 @@ export const useInteractionManager = (
         if (shouldOpenPlantingMenu) {
             setPlantingPlot(plot);
         }
-    }, [updateAndPersistPlayerState, setGameMessage, setPlantingPlot]);
+    }, [updateAndPersistPlayerState, setGameMessage, setPlantingPlot, addJournalEntry]);
 
 
     const handleGenericInteraction = useCallback((target: NPC | Interactable | TeleportLocation | PointOfInterest, interactionFn: () => void) => {
@@ -313,12 +322,14 @@ export const useInteractionManager = (
         }
         
         if (!somethingFound) {
-            setGameMessage("Thu thập thất bại, bạn không tìm thấy gì cả.");
+            const message = `Thu thập từ ${interactable.name} nhưng không tìm thấy gì cả.`;
+            setGameMessage(message);
+            addJournalEntry(message);
         }
         
         handleRemoveAndRespawn(interactable);
 
-    }, [handleAddItemToInventory, handleRemoveAndRespawn, setGameMessage, updateAndPersistPlayerState, handleSpiritFieldClick, setIsAlchemyPanelOpen]);
+    }, [handleAddItemToInventory, handleRemoveAndRespawn, setGameMessage, updateAndPersistPlayerState, handleSpiritFieldClick, setIsAlchemyPanelOpen, addJournalEntry]);
     
     const handleViewInfoInteractable = useCallback((interactable: Interactable) => {
         setActiveInteractionInteractable(null);
@@ -329,9 +340,11 @@ export const useInteractionManager = (
     const handleDestroyInteractable = useCallback((interactable: Interactable) => {
         setActiveInteractionInteractable(null);
         updateAndPersistPlayerState(p => p ? {...p, time: advanceTime(p.time, 2)} : p); // Destroying takes 2 minutes
-        setGameMessage(`Bạn đã phá hủy ${interactable.name}. Thời gian hồi phục sẽ lâu hơn.`);
+        const message = `Bạn đã phá hủy ${interactable.name}. Thời gian hồi phục sẽ lâu hơn.`;
+        setGameMessage(message);
+        addJournalEntry(message);
         handleRemoveAndRespawn(interactable, 4); // 4x respawn time multiplier
-    }, [handleRemoveAndRespawn, setGameMessage, updateAndPersistPlayerState]);
+    }, [handleRemoveAndRespawn, setGameMessage, updateAndPersistPlayerState, addJournalEntry]);
 
     const handleStartChat = useCallback((npcToChatWith: NPC) => {
         // Find the most up-to-date version of the NPC from the player state to prevent using a stale object.

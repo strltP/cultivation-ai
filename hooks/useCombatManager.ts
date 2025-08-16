@@ -18,6 +18,7 @@ export const useCombatManager = (
     playerState: PlayerState,
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
+    addJournalEntry: (message: string) => void,
     stopAllActions: React.MutableRefObject<() => void>,
     handleAddItemToInventory: (itemId: string, quantity: number) => void,
     handleAddLinhThach: (amount: number) => void
@@ -61,6 +62,7 @@ export const useCombatManager = (
 
         stopAllActions.current();
         setGameMessage(null);
+        addJournalEntry(`Bạn đã khiêu chiến với ${npc.name}.`);
         setCombatState({
             player: { ...playerState, activeEffects: [] },
             npc: { ...npc, activeEffects: [] }, // Create a copy for combat
@@ -70,7 +72,7 @@ export const useCombatManager = (
             combatEnded: false,
             isProcessing: false,
         });
-    }, [playerState, setGameMessage, stopAllActions]);
+    }, [playerState, setGameMessage, stopAllActions, addJournalEntry]);
     
     const closeCombatScreen = useCallback(() => {
         const cs = combatState;
@@ -86,7 +88,9 @@ export const useCombatManager = (
 
     const handlePlayerDeathAndRespawn = useCallback(() => {
         const linhThachLost = playerState.linhThach - Math.floor(playerState.linhThach / 2);
-        setGameMessage(`Bạn đã mất ${linhThachLost.toLocaleString()} Linh Thạch!`);
+        const message = `Bạn đã bị đánh bại và trọng thương! Mất ${linhThachLost.toLocaleString()} Linh Thạch và bị đưa trở về Tân Thủ Thôn.`
+        setGameMessage(message);
+        addJournalEntry(message);
         
         updateAndPersistPlayerState(prev => {
             if (!prev) return prev;
@@ -102,7 +106,7 @@ export const useCombatManager = (
             };
         });
         setCombatState(null);
-    }, [playerState, updateAndPersistPlayerState, setGameMessage]);
+    }, [playerState, updateAndPersistPlayerState, setGameMessage, addJournalEntry]);
 
     const handleKillNpc = useCallback(() => {
         if (!combatState || !combatState.npc) return;
@@ -211,9 +215,10 @@ export const useCombatManager = (
         // The timeout gives React a moment to process the state update before closing the combat screen, preventing a race condition.
         setTimeout(() => {
             setGameMessage(gameWinMessage);
+            addJournalEntry(gameWinMessage);
             setCombatState(null);
         }, 100);
-    }, [combatState, updateAndPersistPlayerState, setGameMessage]);
+    }, [combatState, updateAndPersistPlayerState, setGameMessage, addJournalEntry]);
     
     const handleSpareNpc = useCallback(() => {
         if (!combatState || !combatState.npc || combatState.npc.npcType === 'monster') return;
@@ -258,9 +263,10 @@ export const useCombatManager = (
         // The timeout gives React a moment to process the state update before closing the combat screen, preventing a race condition.
         setTimeout(() => {
             setGameMessage(message);
+            addJournalEntry(message);
             setCombatState(null);
         }, 100);
-    }, [combatState, setGameMessage, updateAndPersistPlayerState]);
+    }, [combatState, setGameMessage, updateAndPersistPlayerState, addJournalEntry]);
 
     const processCombatEnd = useCallback((winner: 'player' | 'npc') => {
         setCombatState(cs => {
@@ -438,6 +444,7 @@ export const useCombatManager = (
                 if (Math.random() < fleeChance) {
                     addCombatLog('Bỏ chạy thành công!', 'info');
                     setGameMessage('Bạn đã trốn thoát khỏi trận chiến.');
+                    addJournalEntry(`Bạn đã trốn thoát khỏi trận chiến với ${cs.npc.name}.`);
                     setTimeout(() => closeCombatScreen(), 500);
                     return { ...cs, combatEnded: true, isProcessing: true };
                 } else {
@@ -460,7 +467,7 @@ export const useCombatManager = (
             // --- Set state to trigger NPC turn via useEffect ---
             return { ...cs, player: finalPlayerState, npc: updatedNpcState, isPlayerTurn: false, isProcessing: false };
         });
-    }, [processTurn, processCombatEnd, addCombatLog, processAndTickEffects, setGameMessage, closeCombatScreen]);
+    }, [processTurn, processCombatEnd, addCombatLog, processAndTickEffects, setGameMessage, closeCombatScreen, addJournalEntry]);
 
     useEffect(() => {
         if (combatState && !combatState.isPlayerTurn && !combatState.isProcessing && !combatState.combatEnded) {

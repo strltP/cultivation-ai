@@ -17,6 +17,7 @@ import TradePanel from './TradePanel';
 import TeleportationTalismanUI from './TeleportationTalismanUI';
 import PlantingMenu from './PlantingMenu';
 import AlchemyPanel from './AlchemyPanel';
+import JournalPanel from './JournalPanel';
 
 
 interface UIManagerProps {
@@ -42,6 +43,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
     const {
         isMapOpen, setIsMapOpen,
         isInfoPanelOpen, setIsInfoPanelOpen,
+        isJournalOpen, setIsJournalOpen,
         isWorldInfoPanelOpen, setIsWorldInfoPanelOpen,
         isTeleportUIOpen, setIsTeleportUIOpen,
         isAlchemyPanelOpen, setIsAlchemyPanelOpen,
@@ -111,6 +113,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
     }, [isMapOpen, setIsMapOpen]);
     
     const onToggleInfoPanel = useCallback(() => setIsInfoPanelOpen(prev => !prev), [setIsInfoPanelOpen]);
+    const onToggleJournalPanel = useCallback(() => setIsJournalOpen(prev => !prev), [setIsJournalOpen]);
     const onToggleWorldInfoPanel = useCallback(() => setIsWorldInfoPanelOpen(prev => !prev), [setIsWorldInfoPanelOpen]);
 
     const handleCloseTeleportUI = useCallback(() => {
@@ -132,6 +135,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                     onToggleMap={onToggleMap}
                     onToggleMeditation={handleToggleMeditation}
                     onToggleInfoPanel={onToggleInfoPanel}
+                    onToggleJournalPanel={onToggleJournalPanel}
                     onToggleWorldInfoPanel={onToggleWorldInfoPanel}
                     isMeditating={isMeditating}
                 />
@@ -181,6 +185,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                 currentTeleportGates={currentTeleportGates}
             />}
             {isInfoPanelOpen && <InfoPanel playerState={playerState} setPlayerState={updateAndPersistPlayerState} onClose={onToggleInfoPanel} onLevelUpSkill={handleLevelUpSkill} onUseItem={handleUseItem} />}
+            {isJournalOpen && <JournalPanel playerState={playerState} onClose={onToggleJournalPanel} />}
             {isWorldInfoPanelOpen && <WorldInfoPanel onClose={onToggleWorldInfoPanel} />}
             {tradingNpc && <TradePanel playerState={playerState} setPlayerState={updateAndPersistPlayerState} npc={tradingNpc} setNpc={setTradingNpc} onClose={() => setTradingNpc(null)} />}
             {isTeleportUIOpen && (

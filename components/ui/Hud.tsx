@@ -3,7 +3,7 @@ import type { PlayerState } from '../../types/character';
 import type { GameMap } from '../../types/map';
 import { getCultivationInfo } from '../../services/cultivationService';
 import { FaMapMarkedAlt, FaCompass, FaYinYang, FaEye, FaEyeSlash, FaBookOpen, FaGem, FaIdCard, FaHourglassHalf } from 'react-icons/fa';
-import { GiGalaxy, GiBrain } from 'react-icons/gi';
+import { GiGalaxy, GiBrain, GiScrollQuill } from 'react-icons/gi';
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
 import TimeDisplay from './TimeDisplay';
@@ -19,11 +19,12 @@ interface HudProps {
   onToggleMap: () => void;
   onToggleMeditation: () => void;
   onToggleInfoPanel: () => void;
+  onToggleJournalPanel: () => void;
   onToggleWorldInfoPanel: () => void;
   isMeditating: boolean;
 }
 
-const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoading, currentArea, currentZone, onBreakthrough, onToggleMap, onToggleMeditation, onToggleInfoPanel, onToggleWorldInfoPanel, isMeditating }) => {
+const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoading, currentArea, currentZone, onBreakthrough, onToggleMap, onToggleMeditation, onToggleInfoPanel, onToggleJournalPanel, onToggleWorldInfoPanel, isMeditating }) => {
   const [visibleMessage, setVisibleMessage] = useState<string | null>(null);
   const [isPlayerInfoVisible, setIsPlayerInfoVisible] = useState(true);
 
@@ -168,6 +169,14 @@ const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoadi
             title="Mở Bảng Thông Tin Nhân Vật"
         >
             <FaIdCard size={30} />
+        </button>
+        <button
+            onClick={onToggleJournalPanel}
+            className="hud-action-button"
+            aria-label="Nhật Ký"
+            title="Mở Nhật Ký Tu Luyện"
+        >
+            <GiScrollQuill size={30} />
         </button>
         <button
             onClick={onToggleWorldInfoPanel}

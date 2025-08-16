@@ -13,6 +13,11 @@ export interface ChatMessage {
   text: string;
 }
 
+export interface JournalEntry {
+    time: GameTime;
+    message: string;
+}
+
 export interface NPC {
   id: string;
   name: string;
@@ -107,6 +112,7 @@ export interface PlayerState {
   }[];
   chatHistories?: Record<string, ChatMessage[]>;
   lastPopCheck?: Record<string, GameTime>; // Key: mapId-areaId for monster population, Value: last check time
+  journal?: JournalEntry[];
   
   // Game Time
   time: GameTime;

@@ -61,6 +61,7 @@ const GameWorld: React.FC = () => {
         isGeneratingNames,
         allMaps,
         isMapOpen,
+        isJournalOpen,
         plantingPlot,
         isAlchemyPanelOpen,
     } = useUI(); // playerState is now from context
@@ -96,7 +97,7 @@ const GameWorld: React.FC = () => {
     }, [playerState?.time.year, playerState?.stats.maxThoNguyen, updateAndPersistPlayerState]);
 
     // --- GAME LOOP ---
-    const isPaused = !isGameReady || isMapOpen || isLoading || !!combatState || isGameOver || !!chatTargetNpc || !!plantingPlot || isAlchemyPanelOpen;
+    const isPaused = !isGameReady || isMapOpen || isJournalOpen || isLoading || !!combatState || isGameOver || !!chatTargetNpc || !!plantingPlot || isAlchemyPanelOpen;
     useGameLoop(playerState!, updateAndPersistPlayerState, isPaused, isMeditating, pendingInteraction);
     
     // --- CAMERA ---
@@ -111,7 +112,7 @@ const GameWorld: React.FC = () => {
     
     // --- EVENT HANDLERS ---
     const handleWorldClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (isLoading || isMapOpen || !gameContainerRef.current || combatState || plantingPlot || isAlchemyPanelOpen || chatTargetNpc) return;
+        if (isLoading || isMapOpen || isJournalOpen || !gameContainerRef.current || combatState || plantingPlot || isAlchemyPanelOpen || chatTargetNpc) return;
         
         setActiveInteractionNpc(null);
         setActiveInteractionInteractable(null);

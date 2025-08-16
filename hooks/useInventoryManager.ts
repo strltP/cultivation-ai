@@ -9,6 +9,7 @@ export const useInventoryManager = (
     playerState: PlayerState,
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
+    addJournalEntry: (message: string) => void,
     openTeleportUI: (itemIndex: number) => void,
     openAlchemyPanel: () => void,
 ) => {
@@ -18,10 +19,12 @@ export const useInventoryManager = (
         updateAndPersistPlayerState(prev => {
             if (!prev) return prev;
             // Use setGameMessage inside to avoid overwriting other messages too quickly
-            setGameMessage(`Nhận được ${amount.toLocaleString()} Linh Thạch!`);
+            const message = `Nhận được ${amount.toLocaleString()} Linh Thạch!`;
+            setGameMessage(message);
+            addJournalEntry(message);
             return { ...prev, linhThach: prev.linhThach + amount };
         });
-    }, [updateAndPersistPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage, addJournalEntry]);
 
     const handleAddItemToInventory = useCallback((itemIdToAdd: string, quantityToAdd: number) => {
         updateAndPersistPlayerState(prev => {
@@ -58,11 +61,13 @@ export const useInventoryManager = (
                 setGameMessage("Túi Càn Khôn đã đầy!");
             }
             
-            setGameMessage(`Nhận được: ${quantityToAdd}x ${itemDef.name}`);
+            const message = `Nhận được: ${quantityToAdd}x ${itemDef.name}`;
+            setGameMessage(message);
+            addJournalEntry(message);
     
             return { ...prev, inventory: newInventory };
         });
-    }, [updateAndPersistPlayerState, setGameMessage]);
+    }, [updateAndPersistPlayerState, setGameMessage, addJournalEntry]);
 
     const handleUseItem = useCallback((itemIndex: number) => {
         const inventorySlot = playerState.inventory[itemIndex];
@@ -158,7 +163,9 @@ export const useInventoryManager = (
             }
 
             if (messages.length > 0) {
-                setGameMessage(`Sử dụng ${currentItemDef.name}, ${messages.join(' và ')}.`);
+                const message = `Sử dụng ${currentItemDef.name}, ${messages.join(' và ')}.`;
+                setGameMessage(message);
+                addJournalEntry(message);
             } else {
                  setGameMessage(`Sử dụng ${currentItemDef.name}, nhưng không có hiệu quả.`);
             }
@@ -184,7 +191,7 @@ export const useInventoryManager = (
         if (isAlchemy) {
             openAlchemyPanel();
         }
-    }, [playerState, updateAndPersistPlayerState, setGameMessage, openTeleportUI, openAlchemyPanel]);
+    }, [playerState, updateAndPersistPlayerState, setGameMessage, addJournalEntry, openTeleportUI, openAlchemyPanel]);
 
     return {
         handleAddLinhThach,
