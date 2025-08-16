@@ -1,6 +1,4 @@
 
-
-
 import { REALM_PROGRESSION } from '../constants';
 import { INITIAL_PLAYER_STATE as BASE_INITIAL_PLAYER_STATE } from '../hooks/usePlayerPersistence';
 import type { CultivationState, CharacterAttributes, CombatStats } from '../types/stats';
@@ -21,9 +19,9 @@ export const calculateAllStats = (
     allItems: Item[],
     linhCan: LinhCan[]
 ): { finalStats: CombatStats; finalAttributes: CharacterAttributes } => {
-    // 1. Start with absolute base stats of a mortal and add pre-rolled cultivation stats
+    // 1. Start with absolute base stats of a mortal. This is the crucial fix to prevent compounding bonuses.
     const finalStats: Required<Mutable<Partial<CombatStats>>> = { ...BASE_INITIAL_PLAYER_STATE.stats };
-    const modifiedAttributes: CharacterAttributes = { ...baseAttributes };
+    const modifiedAttributes: CharacterAttributes = { ...BASE_INITIAL_PLAYER_STATE.attributes };
 
     // Apply pre-rolled stats from cultivation
     for(const key in baseCultivationStats) {
@@ -123,6 +121,12 @@ export const calculateAllStats = (
         if (statKey !== 'critRate' && statKey !== 'critDamage' && statKey !== 'evasionRate') {
             finalStats[statKey] = Math.round(finalStats[statKey]);
         }
+    });
+
+    // Also round the final attributes to ensure they are integers
+    Object.keys(modifiedAttributes).forEach(key => {
+        const attrKey = key as keyof CharacterAttributes;
+        modifiedAttributes[attrKey] = Math.round(modifiedAttributes[attrKey]);
     });
 
     return { finalStats, finalAttributes: modifiedAttributes };
