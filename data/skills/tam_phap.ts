@@ -109,14 +109,14 @@ export const ALL_TAM_PHAP: Skill[] = [
     {
         id: 'tam-phap-hoang-9',
         name: 'Linh Hầu Bộ',
-        description: 'Bước chân nhanh nhẹn khó đoán như loài vượn, tăng nhẹ tỉ lệ né tránh.',
+        description: 'Bước chân nhanh nhẹn khó đoán như loài vượn, tăng tốc độ chiến đấu.',
         type: 'TAM_PHAP',
         tier: 'HOANG',
         maxLevel: 5,
         enlightenmentBaseCost: 80,
         enlightenmentCostPerLevel: 20,
         bonuses: [
-            { targetStat: 'evasionRate', modifier: 'ADDITIVE', valuePerLevel: 0.002 }, // +0.2% per level
+            { targetStat: 'speed', modifier: 'ADDITIVE', valuePerLevel: 1 },
         ],
     },
     {
@@ -443,7 +443,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         enlightenmentCostPerLevel: 1300,
         bonuses: [
             { targetAttribute: 'thanPhap', modifier: 'MULTIPLIER', valuePerLevel: 0.2 },
-            { targetStat: 'evasionRate', modifier: 'MULTIPLIER', valuePerLevel: 0.05 },
+            { targetStat: 'speed', modifier: 'MULTIPLIER', valuePerLevel: 0.05 },
         ],
     }
 ];

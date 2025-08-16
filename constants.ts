@@ -106,7 +106,7 @@ export const INITIAL_PLAYER_STATE: Omit<PlayerState, 'saveVersion'> = {
   // Chỉ số của phàm nhân.
   stats: {
     maxHp: 50, maxQi: 0, maxMana: 10, maxThoNguyen: 80, attackPower: 5, defensePower: 2,
-    speed: 10, critRate: 0.01, critDamage: 1.5, evasionRate: 0.01,
+    speed: 10, critRate: 0.01, critDamage: 1.5, armorPenetration: 0.0,
   },
   cultivationStats: {}, // Chỉ số gốc từ tu luyện sẽ được lưu ở đây
   linhCan: [],

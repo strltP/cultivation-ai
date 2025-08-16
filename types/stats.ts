@@ -24,5 +24,5 @@ export interface CombatStats {
   speed: number;
   critRate: number;
   critDamage: number; // as a multiplier, e.g., 1.5
-  evasionRate: number;
+  armorPenetration: number; // Tỉ lệ xuyên giáp, e.g., 0.1 for 10%
 }

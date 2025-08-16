@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { CombatStats } from '../../types/stats';
-import { GiCrossedSwords, GiShield, GiRunningShoe, GiTargetShot, GiWhirlwind, GiBullseye } from 'react-icons/gi';
+import { GiCrossedSwords, GiShield, GiRunningShoe, GiTargetShot, GiBullseye, GiCrosshair } from 'react-icons/gi';
 
 interface CombatStatDisplayProps {
     stats: CombatStats;
@@ -13,8 +13,8 @@ const CombatStatDisplay: React.FC<CombatStatDisplayProps> = ({ stats }) => {
         { name: 'Lực Công', value: stats.attackPower, icon: <GiCrossedSwords title="Lực Công" /> },
         { name: 'Lực Thủ', value: stats.defensePower, icon: <GiShield title="Lực Thủ" /> },
         { name: 'Tốc Độ', value: stats.speed, icon: <GiRunningShoe title="Tốc Độ" /> },
-        { name: 'Bạo Kích', value: `${(stats.critRate * 100).toFixed(0)}%`, icon: <GiTargetShot title="Tỉ Lệ Bạo Kích" /> },
-        { name: 'Né Tránh', value: `${(stats.evasionRate * 100).toFixed(0)}%`, icon: <GiWhirlwind title="Tỉ Lệ Né Tránh" /> },
+        { name: 'Bạo Kích', value: `${(stats.critRate * 100).toFixed(1)}%`, icon: <GiTargetShot title="Tỉ Lệ Bạo Kích" /> },
+        { name: 'Xuyên Giáp', value: `${(stats.armorPenetration * 100).toFixed(1)}%`, icon: <GiCrosshair title="Tỉ Lệ Xuyên Giáp" /> },
         { name: 'ST B.Kích', value: `${(stats.critDamage * 100).toFixed(0)}%`, icon: <GiBullseye title="Sát Thương Bạo Kích" /> },
     ];
 

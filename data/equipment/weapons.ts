@@ -119,7 +119,7 @@ export const WEAPONS: Item[] = [
         bonuses: [
             { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 65 },
             { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 30 },
-            { targetStat: 'evasionRate', modifier: 'ADDITIVE', value: 0.03 } // 3% evasion
+            { targetStat: 'speed', modifier: 'ADDITIVE', value: 5 }
         ]
     },
     

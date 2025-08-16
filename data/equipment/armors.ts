@@ -65,7 +65,7 @@ export const ARMORS: Item[] = [
         value: 3000,
         bonuses: [
             { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 45 },
-            { targetStat: 'evasionRate', modifier: 'ADDITIVE', value: 0.05 }, // 5% evasion
+            { targetStat: 'speed', modifier: 'ADDITIVE', value: 10 },
             { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 15 }
         ]
     },

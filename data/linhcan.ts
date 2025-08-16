@@ -56,7 +56,7 @@ export const LINH_CAN_DATA: Record<LinhCanType, LinhCanDefinition> = {
         icon: React.createElement(GiWaterDrop, { className: "text-blue-400" }),
         bonuses: [
             { targetStat: 'maxMana', modifier: 'MULTIPLIER', valuePerPurity: 0.0015 }, // +15% at 100 purity
-            { targetStat: 'evasionRate', modifier: 'MULTIPLIER', valuePerPurity: 0.0005 }, // 5% at 100 purity
+            { targetStat: 'speed', modifier: 'ADDITIVE', valuePerPurity: 0.05 }, // 5 speed at 100 purity
         ]
     },
     HOA: {

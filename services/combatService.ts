@@ -13,24 +13,26 @@ export interface DamageResult {
 }
 
 export const calculateDamage = (attacker: { stats: CombatStats }, defender: { stats: CombatStats }): DamageResult => {
-    // 1. Check for evasion
-    if (Math.random() < defender.stats.evasionRate) {
+    // 1. Calculate evasion chance based on speed
+    const dodgeChance = (defender.stats.speed / (defender.stats.speed + attacker.stats.speed * 3.5));
+
+    // 2. Check if the attack hits
+    if (Math.random() < dodgeChance) {
         return { damage: 0, isCritical: false, isEvaded: true };
     }
 
-    // 2. Check for critical hit
+    // 3. Check for critical hit
     const isCritical = Math.random() < attacker.stats.critRate;
     
-    // 3. Calculate base damage with some randomness (+/- 10%)
+    // 4. Calculate base damage with some randomness (+/- 10%)
     const baseDamage = attacker.stats.attackPower * (1 + (Math.random() * 0.2 - 0.1));
 
-    // 4. Apply critical multiplier if it's a critical hit
+    // 5. Apply critical multiplier if it's a critical hit
     const criticalDamage = isCritical ? baseDamage * attacker.stats.critDamage : baseDamage;
 
-    // 5. Apply defense mitigation using a damage reduction formula
-    // Damage Reduction = Defense / (Defense + K), where K is a balancing constant.
-    // K = 100 means 100 defense = 50% damage reduction.
-    const damageReduction = defender.stats.defensePower / (defender.stats.defensePower + 100);
+    // 6. Apply defense mitigation using the new armor penetration formula
+    const effectiveDefense = defender.stats.defensePower * (1 - attacker.stats.armorPenetration);
+    const damageReduction = effectiveDefense / (effectiveDefense + 100);
     const finalDamage = Math.max(1, Math.round(criticalDamage * (1 - damageReduction)));
     
     return { damage: finalDamage, isCritical, isEvaded: false };
@@ -46,8 +48,9 @@ export const calculateSkillDamage = (
     const { damage: damageDef } = skill;
     if (!damageDef) return { damage: 0, isCritical: false, isEvaded: false };
 
-    // 1. Check for evasion
-    if (Math.random() < defender.state.stats.evasionRate) {
+    // 1. Evasion check based on speed
+    const dodgeChance = (defender.state.stats.speed / (defender.state.stats.speed + caster.state.stats.speed * 3.5));
+    if (Math.random() < dodgeChance) {
         return { damage: 0, isCritical: false, isEvaded: true };
     }
 
@@ -86,8 +89,9 @@ export const calculateSkillDamage = (
     // 6. Apply critical multiplier
     const criticalDamage = isCritical ? baseDamage * caster.state.stats.critDamage : baseDamage;
     
-    // 7. Apply defense mitigation using a damage reduction formula
-    const damageReduction = defender.state.stats.defensePower / (defender.state.stats.defensePower + 100);
+    // 7. Apply defense mitigation with armor penetration
+    const effectiveDefense = defender.state.stats.defensePower * (1 - caster.state.stats.armorPenetration);
+    const damageReduction = effectiveDefense / (effectiveDefense + 100);
     const finalDamage = Math.max(1, Math.round(criticalDamage * (1 - damageReduction)));
 
     // 8. Apply weapon incompatibility penalty

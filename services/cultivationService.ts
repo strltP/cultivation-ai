@@ -1,4 +1,5 @@
 
+
 import { REALM_PROGRESSION } from '../constants';
 import { INITIAL_PLAYER_STATE as BASE_INITIAL_PLAYER_STATE } from '../hooks/usePlayerPersistence';
 import type { CultivationState, CharacterAttributes, CombatStats } from '../types/stats';
@@ -19,9 +20,9 @@ export const calculateAllStats = (
     allItems: Item[],
     linhCan: LinhCan[]
 ): { finalStats: CombatStats; finalAttributes: CharacterAttributes } => {
-    // 1. Start with absolute base stats of a mortal. This is the crucial fix to prevent compounding bonuses.
+    // 1. Start with absolute base stats of a mortal.
     const finalStats: Required<Mutable<Partial<CombatStats>>> = { ...BASE_INITIAL_PLAYER_STATE.stats };
-    const modifiedAttributes: CharacterAttributes = { ...BASE_INITIAL_PLAYER_STATE.attributes };
+    const modifiedAttributes: CharacterAttributes = { ...baseAttributes }; // FIX: Use passed-in base attributes for NPCs
 
     // Apply pre-rolled stats from cultivation
     for(const key in baseCultivationStats) {
@@ -109,16 +110,16 @@ export const calculateAllStats = (
     finalStats.attackPower += modifiedAttributes.thanThuc * 1;
     finalStats.defensePower += Math.round(modifiedAttributes.canCot * 0.5);
     finalStats.speed += modifiedAttributes.thanPhap * 0.5;
-    finalStats.critRate += modifiedAttributes.thanThuc / 400 + modifiedAttributes.coDuyen / 800;
+    finalStats.critRate += modifiedAttributes.thanThuc / 3000 + modifiedAttributes.coDuyen / 6000;
     finalStats.critDamage += modifiedAttributes.coDuyen / 500;
-    finalStats.evasionRate += modifiedAttributes.thanPhap / 400;
+    finalStats.armorPenetration = (modifiedAttributes.thanThuc / 4000) + (modifiedAttributes.coDuyen / 8000);
     finalStats.maxQi = getRealmLevelInfo(cultivation)?.qiRequired || 0;
 
 
     // Round the final stats to avoid floating point issues
     Object.keys(finalStats).forEach(key => {
         const statKey = key as keyof CombatStats;
-        if (statKey !== 'critRate' && statKey !== 'critDamage' && statKey !== 'evasionRate') {
+        if (statKey !== 'critRate' && statKey !== 'critDamage' && statKey !== 'armorPenetration') {
             finalStats[statKey] = Math.round(finalStats[statKey]);
         }
     });
@@ -129,7 +130,7 @@ export const calculateAllStats = (
         modifiedAttributes[attrKey] = Math.round(modifiedAttributes[attrKey]);
     });
 
-    return { finalStats, finalAttributes: modifiedAttributes };
+    return { finalStats: finalStats as CombatStats, finalAttributes: modifiedAttributes };
 };
 
 type Mutable<T> = {

@@ -5,6 +5,7 @@ import { ALL_SKILLS } from '../data/skills/skills';
 import { advanceTime } from '../services/timeService';
 import { ALL_ITEMS } from '../data/items/index';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
+import { INITIAL_PLAYER_STATE } from '../hooks/usePlayerPersistence';
 
 export const usePlayerActions = (
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
@@ -108,7 +109,16 @@ export const usePlayerActions = (
             }
             
             const nextCultivationInfo = getCultivationInfo(nextCultivation);
-            const { finalStats, finalAttributes } = calculateAllStats(prev.attributes, nextCultivation, newCultivationStats, prev.learnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
+            const { finalStats, finalAttributes } = calculateAllStats(
+                INITIAL_PLAYER_STATE.attributes, 
+                nextCultivation, 
+                newCultivationStats, 
+                prev.learnedSkills, 
+                ALL_SKILLS, 
+                prev.equipment, 
+                ALL_ITEMS, 
+                prev.linhCan
+            );
             const timeAdvanced = advanceTime(prev.time, 12 * 60); // Breakthrough takes 12 hours
 
             setGameMessage(`Chúc mừng! Đã đột phá đến ${nextCultivationInfo.name}! ${breakthroughMessages.join(', ')}. (Tốn 12 giờ)`);

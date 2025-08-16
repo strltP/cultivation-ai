@@ -36,11 +36,10 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
 
     const cultivation = { realmIndex: realmIndex !== -1 ? realmIndex : 0, level };
     
-    // --- Simulate level-ups to get accumulated attributes and rolled cultivationStats ---
-    const baseAttributes: CharacterAttributes = { ...data.attributes }; // Start with base "talent" from Gemini
-    const npcCultivationStats: Partial<CombatStats & CharacterAttributes> = {};
-    const accumulatedAttributes: CharacterAttributes = { canCot: 0, thanPhap: 0, thanThuc: 0, ngoTinh: 0, coDuyen: 0, tamCanh: 0 };
-
+    // --- Simulate level-ups to get accumulated bonuses ---
+    const mortalAttributes: CharacterAttributes = { ...data.attributes }; // Start with base "talent" from Gemini
+    const npcCultivationBonuses: Partial<CombatStats & CharacterAttributes> = {};
+    
     for (let r_idx = 0; r_idx <= cultivation.realmIndex; r_idx++) {
         const currentRealm = REALM_PROGRESSION[r_idx];
         if (!currentRealm) continue;
@@ -62,23 +61,12 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
                     }
 
                     if (rolledValue !== 0) {
-                        // If the bonus is for a base attribute, add it to the accumulator for base attributes.
-                        if (statKey in accumulatedAttributes) {
-                             (accumulatedAttributes as any)[statKey] += rolledValue;
-                        } else {
-                        // Otherwise, add it to the combat stats accumulator.
-                             (npcCultivationStats as any)[statKey] = ((npcCultivationStats as any)[statKey] || 0) + rolledValue;
-                        }
+                       (npcCultivationBonuses as any)[statKey] = ((npcCultivationBonuses as any)[statKey] || 0) + rolledValue;
                     }
                 }
             }
         }
     }
-    // Add accumulated cultivation bonuses to base talent
-    baseAttributes.canCot += accumulatedAttributes.canCot;
-    baseAttributes.thanPhap += accumulatedAttributes.thanPhap;
-    baseAttributes.thanThuc += accumulatedAttributes.thanThuc;
-    baseAttributes.ngoTinh += accumulatedAttributes.ngoTinh;
     // --- End of simulation ---
 
     const learnedSkillIds = ('learnedSkillIds' in data && data.learnedSkillIds) ? data.learnedSkillIds : [];
@@ -138,7 +126,10 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
         linhCan.push({ type: 'THO', purity: 20 });
     }
 
-    const { finalStats, finalAttributes } = calculateAllStats(baseAttributes, cultivation, npcCultivationStats, learnedSkills, ALL_SKILLS, equipment, ALL_ITEMS, linhCan);
+    const { finalStats, finalAttributes } = calculateAllStats(mortalAttributes, cultivation, npcCultivationBonuses, learnedSkills, ALL_SKILLS, equipment, ALL_ITEMS, linhCan);
+    
+    // Pass the cultivation bonuses directly, which is now named npcCultivationBonuses
+    const npcCultivationStats = npcCultivationBonuses;
     
     let age = 0;
     if ('age' in data && data.age) {
@@ -198,7 +189,7 @@ export function createMonsterFromData(template: MonsterDefinition, level: number
         speed: Math.round(template.baseStats.speed * levelMultiplier),
         critRate: template.baseStats.critRate + (level - 1) * 0.005,
         critDamage: template.baseStats.critDamage + (level - 1) * 0.05,
-        evasionRate: template.baseStats.evasionRate + (level - 1) * 0.005,
+        armorPenetration: template.baseStats.armorPenetration + (level - 1) * 0.001,
         maxQi: 0,
         maxMana: 0,
         maxThoNguyen: 0,

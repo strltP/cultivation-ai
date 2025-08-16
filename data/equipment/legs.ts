@@ -64,7 +64,7 @@ export const LEGS: Item[] = [
         bonuses: [
             { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 20 },
             { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 25 },
-            { targetStat: 'evasionRate', modifier: 'ADDITIVE', value: 0.05 } // 5% evasion
+            { targetStat: 'speed', modifier: 'ADDITIVE', value: 15 }
         ]
     },
     

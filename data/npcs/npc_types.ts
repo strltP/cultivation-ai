@@ -1,5 +1,5 @@
 import type { Position } from '../../types/common';
-import type { CharacterAttributes } from '../../types/stats';
+import type { CharacterAttributes, CombatStats } from '../../types/stats';
 import type { InventorySlot } from '../../types/item';
 import type { EquipmentSlot } from '../../types/equipment';
 
@@ -52,15 +52,7 @@ export interface MonsterDefinition {
     baseId: string;
     name: string; // Species name
     attributes: CharacterAttributes; // Base for Lvl 1
-    baseStats: { // Base for Lvl 1
-        maxHp: number;
-        attackPower: number;
-        defensePower: number;
-        speed: number;
-        critRate: number;
-        critDamage: number;
-        evasionRate: number;
-    };
+    baseStats: Omit<CombatStats, 'maxQi' | 'maxMana' | 'maxThoNguyen'>; // Base for Lvl 1, some stats are irrelevant for monsters
     lootTable: { itemId: string; chance: number; quantity: [number, number]; }[];
     respawnTimeMinutes: [number, number];
 }
