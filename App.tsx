@@ -64,6 +64,7 @@ const GameWorld: React.FC = () => {
         isJournalOpen,
         plantingPlot,
         isAlchemyPanelOpen,
+        isSeclusionPanelOpen,
     } = useUI(); // playerState is now from context
     const { combatState } = useCombat();
     const { isLoading, currentPois, currentNpcs, currentInteractables, currentTeleportGates, currentMapAreas } = useWorld();
@@ -97,7 +98,7 @@ const GameWorld: React.FC = () => {
     }, [playerState?.time.year, playerState?.stats.maxThoNguyen, updateAndPersistPlayerState]);
 
     // --- GAME LOOP ---
-    const isPaused = !isGameReady || isMapOpen || isJournalOpen || isLoading || !!combatState || isGameOver || !!chatTargetNpc || !!plantingPlot || isAlchemyPanelOpen;
+    const isPaused = !isGameReady || isMapOpen || isJournalOpen || isLoading || !!combatState || isGameOver || !!chatTargetNpc || !!plantingPlot || isAlchemyPanelOpen || isSeclusionPanelOpen;
     useGameLoop(playerState!, updateAndPersistPlayerState, isPaused, isMeditating, pendingInteraction);
     
     // --- CAMERA ---
@@ -112,7 +113,7 @@ const GameWorld: React.FC = () => {
     
     // --- EVENT HANDLERS ---
     const handleWorldClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (isLoading || isMapOpen || isJournalOpen || !gameContainerRef.current || combatState || plantingPlot || isAlchemyPanelOpen || chatTargetNpc) return;
+        if (isLoading || isMapOpen || isJournalOpen || !gameContainerRef.current || combatState || plantingPlot || isAlchemyPanelOpen || chatTargetNpc || isSeclusionPanelOpen) return;
         
         setActiveInteractionNpc(null);
         setActiveInteractionInteractable(null);

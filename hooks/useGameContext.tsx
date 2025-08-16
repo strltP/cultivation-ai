@@ -40,6 +40,8 @@ interface IUIContext {
     setTeleportingWithItemIndex: React.Dispatch<React.SetStateAction<number | null>>;
     isAlchemyPanelOpen: boolean;
     setIsAlchemyPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    isSeclusionPanelOpen: boolean;
+    setIsSeclusionPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
     tradingNpc: NPC | null;
     setTradingNpc: React.Dispatch<React.SetStateAction<NPC | null>>;
     plantingPlot: Interactable | null;
@@ -65,6 +67,7 @@ interface IPlayerActionsContext {
     handleUseItem: (itemIndex: number) => void;
     handleTalismanTeleport: (targetMap: MapID) => void;
     handleCraftItem: (recipeId: string) => void;
+    handleStartSeclusion: (months: number) => void;
 }
 
 interface ICombatContext {
@@ -219,6 +222,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
     const [isTeleportUIOpen, setIsTeleportUIOpen] = useState<boolean>(false);
     const [teleportingWithItemIndex, setTeleportingWithItemIndex] = useState<number | null>(null);
     const [isAlchemyPanelOpen, setIsAlchemyPanelOpen] = useState<boolean>(false);
+    const [isSeclusionPanelOpen, setIsSeclusionPanelOpen] = useState<boolean>(false);
     const [tradingNpc, setTradingNpc] = useState<NPC | null>(null);
     const [plantingPlot, setPlantingPlot] = useState<Interactable | null>(null);
 
@@ -318,6 +322,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         setTeleportingWithItemIndex(null);
         setPlantingPlot(null);
         setIsAlchemyPanelOpen(false);
+        setIsSeclusionPanelOpen(false);
         interactionManager.handleCloseChat();
     }, [playerActions, interactionManager]);
 
@@ -524,9 +529,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         isTeleportUIOpen, setIsTeleportUIOpen,
         teleportingWithItemIndex, setTeleportingWithItemIndex,
         isAlchemyPanelOpen, setIsAlchemyPanelOpen,
+        isSeclusionPanelOpen, setIsSeclusionPanelOpen,
         tradingNpc, setTradingNpc,
         plantingPlot, setPlantingPlot,
-    }), [playerState, updateAndPersistPlayerState, isGameReady, isGeneratingNames, allMaps, isMapOpen, isInfoPanelOpen, isJournalOpen, isWorldInfoPanelOpen, isTeleportUIOpen, teleportingWithItemIndex, isAlchemyPanelOpen, tradingNpc, plantingPlot]);
+    }), [playerState, updateAndPersistPlayerState, isGameReady, isGeneratingNames, allMaps, isMapOpen, isInfoPanelOpen, isJournalOpen, isWorldInfoPanelOpen, isTeleportUIOpen, teleportingWithItemIndex, isAlchemyPanelOpen, isSeclusionPanelOpen, tradingNpc, plantingPlot]);
 
     const worldContextValue: IWorldContext = useMemo(() => ({
         gameMessage: gameMessageObject,
@@ -547,6 +553,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         handleUseItem: inventoryManager.handleUseItem,
         handleTalismanTeleport,
         handleCraftItem,
+        handleStartSeclusion: playerActions.handleStartSeclusion,
     }), [playerActions, inventoryManager, handleTalismanTeleport, handleCraftItem]);
 
     const combatContextValue: ICombatContext = useMemo(() => ({

@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, useCallback } from 'react';
 import type { PlayerState } from '../types/character';
 import { INITIAL_PLAYER_STATE as BASE_INITIAL_PLAYER_STATE, DAYS_PER_MONTH, MONTHS_PER_YEAR, REALM_PROGRESSION } from '../constants';
@@ -19,6 +20,8 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
     journal: [],
     saveVersion: CURRENT_SAVE_VERSION,
 };
+export { DAYS_PER_MONTH };
+
 
 const getSeasonLegacy = (month: number): 'Xuân' | 'Hạ' | 'Thu' | 'Đông' => {
     if (month >= 1 && month <= 3) return 'Xuân';

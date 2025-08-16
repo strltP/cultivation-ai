@@ -18,6 +18,7 @@ import TeleportationTalismanUI from './TeleportationTalismanUI';
 import PlantingMenu from './PlantingMenu';
 import AlchemyPanel from './AlchemyPanel';
 import JournalPanel from './JournalPanel';
+import SeclusionPanel from './SeclusionPanel';
 
 
 interface UIManagerProps {
@@ -47,6 +48,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
         isWorldInfoPanelOpen, setIsWorldInfoPanelOpen,
         isTeleportUIOpen, setIsTeleportUIOpen,
         isAlchemyPanelOpen, setIsAlchemyPanelOpen,
+        isSeclusionPanelOpen, setIsSeclusionPanelOpen,
         tradingNpc, setTradingNpc,
         plantingPlot, setPlantingPlot,
         updateAndPersistPlayerState, // Get the atomic state updater
@@ -63,6 +65,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
         handleUseItem,
         handleTalismanTeleport,
         handleCraftItem,
+        handleStartSeclusion,
     } = usePlayerActions();
 
     const {
@@ -115,6 +118,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
     const onToggleInfoPanel = useCallback(() => setIsInfoPanelOpen(prev => !prev), [setIsInfoPanelOpen]);
     const onToggleJournalPanel = useCallback(() => setIsJournalOpen(prev => !prev), [setIsJournalOpen]);
     const onToggleWorldInfoPanel = useCallback(() => setIsWorldInfoPanelOpen(prev => !prev), [setIsWorldInfoPanelOpen]);
+    const onToggleSeclusionPanel = useCallback(() => setIsSeclusionPanelOpen(prev => !prev), [setIsSeclusionPanelOpen]);
 
     const handleCloseTeleportUI = useCallback(() => {
         setIsTeleportUIOpen(false);
@@ -137,6 +141,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                     onToggleInfoPanel={onToggleInfoPanel}
                     onToggleJournalPanel={onToggleJournalPanel}
                     onToggleWorldInfoPanel={onToggleWorldInfoPanel}
+                    onToggleSeclusionPanel={onToggleSeclusionPanel}
                     isMeditating={isMeditating}
                 />
             )}
@@ -201,6 +206,13 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                     playerState={playerState}
                     onClose={() => setIsAlchemyPanelOpen(false)}
                     onCraft={handleCraftItem}
+                />
+            )}
+            {isSeclusionPanelOpen && (
+                <SeclusionPanel 
+                    playerState={playerState}
+                    onClose={onToggleSeclusionPanel}
+                    onStart={handleStartSeclusion}
                 />
             )}
 

@@ -3,7 +3,7 @@ import type { PlayerState } from '../../types/character';
 import type { GameMap } from '../../types/map';
 import { getCultivationInfo } from '../../services/cultivationService';
 import { FaMapMarkedAlt, FaCompass, FaYinYang, FaEye, FaEyeSlash, FaBookOpen, FaGem, FaIdCard, FaHourglassHalf } from 'react-icons/fa';
-import { GiGalaxy, GiBrain, GiScrollQuill } from 'react-icons/gi';
+import { GiGalaxy, GiBrain, GiScrollQuill, GiCaveEntrance } from 'react-icons/gi';
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
 import TimeDisplay from './TimeDisplay';
@@ -21,10 +21,11 @@ interface HudProps {
   onToggleInfoPanel: () => void;
   onToggleJournalPanel: () => void;
   onToggleWorldInfoPanel: () => void;
+  onToggleSeclusionPanel: () => void;
   isMeditating: boolean;
 }
 
-const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoading, currentArea, currentZone, onBreakthrough, onToggleMap, onToggleMeditation, onToggleInfoPanel, onToggleJournalPanel, onToggleWorldInfoPanel, isMeditating }) => {
+const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoading, currentArea, currentZone, onBreakthrough, onToggleMap, onToggleMeditation, onToggleInfoPanel, onToggleJournalPanel, onToggleWorldInfoPanel, onToggleSeclusionPanel, isMeditating }) => {
   const [visibleMessage, setVisibleMessage] = useState<string | null>(null);
   const [isPlayerInfoVisible, setIsPlayerInfoVisible] = useState(true);
 
@@ -161,6 +162,14 @@ const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoadi
             title={isMeditating ? "Dừng đả toạ" : "Đả Toạ (Hồi Chân Khí & Cảm Ngộ)"}
         >
             <FaYinYang size={32} className={isMeditating ? 'animate-spin' : ''} />
+        </button>
+        <button
+            onClick={onToggleSeclusionPanel}
+            className="hud-action-button"
+            aria-label="Bế Quan"
+            title="Bế Quan Tu Luyện"
+        >
+            <GiCaveEntrance size={32} />
         </button>
          <button
             onClick={onToggleInfoPanel}

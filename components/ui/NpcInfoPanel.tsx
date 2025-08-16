@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import type { NPC } from '../../types/character';
 import { getCultivationInfo, getLinhCanTierInfo } from '../../services/cultivationService';
@@ -26,6 +27,7 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
 
   const hpPercentage = (npc.hp / npc.stats.maxHp) * 100;
   const manaPercentage = (npc.mana / npc.stats.maxMana) * 100;
+  const qiPercentage = (npc.qi / npc.stats.maxQi) * 100;
 
   const tamPhapList = npc.learnedSkills
     .map(ls => ({ learned: ls, def: ALL_SKILLS.find(s => s.id === ls.skillId) }))
@@ -132,15 +134,26 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
                 </div>
             </div>
             {!isMonster && (
-                <div>
-                    <p className="text-xs text-indigo-200 mb-1 text-right">{npc.mana} / {npc.stats.maxMana} Linh Lực</p>
-                    <div className="w-full bg-gray-700/50 rounded-full h-3.5 border border-black/20">
-                        <div
-                            className="bg-indigo-500 h-full rounded-full"
-                            style={{ width: `${manaPercentage}%`, filter: 'drop-shadow(0 0 4px #6366f1)' }}
-                        ></div>
+                <>
+                    <div>
+                        <p className="text-xs text-indigo-200 mb-1 text-right">{npc.mana} / {npc.stats.maxMana} Linh Lực</p>
+                        <div className="w-full bg-gray-700/50 rounded-full h-3.5 border border-black/20">
+                            <div
+                                className="bg-indigo-500 h-full rounded-full"
+                                style={{ width: `${manaPercentage}%`, filter: 'drop-shadow(0 0 4px #6366f1)' }}
+                            ></div>
+                        </div>
                     </div>
-                </div>
+                     <div>
+                        <p className="text-xs text-cyan-200 mb-1 text-right">{npc.qi} / {npc.stats.maxQi} Chân Khí</p>
+                        <div className="w-full bg-gray-700/50 rounded-full h-3.5 border border-black/20">
+                            <div
+                                className="bg-cyan-400 h-full rounded-full qi-bar-glow"
+                                style={{ width: `${qiPercentage}%` }}
+                            ></div>
+                        </div>
+                    </div>
+                </>
             )}
         </div>
 

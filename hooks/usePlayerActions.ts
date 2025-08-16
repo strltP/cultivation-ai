@@ -5,7 +5,7 @@ import { ALL_SKILLS } from '../data/skills/skills';
 import { advanceTime } from '../services/timeService';
 import { ALL_ITEMS } from '../data/items/index';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
-import { INITIAL_PLAYER_STATE } from '../hooks/usePlayerPersistence';
+import { INITIAL_PLAYER_STATE, DAYS_PER_MONTH } from '../hooks/usePlayerPersistence';
 
 export const usePlayerActions = (
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
@@ -44,7 +44,7 @@ export const usePlayerActions = (
                 
                 const HP_RECOVERY_RATE_PER_MINUTE = 0.001; // 0.1% max HP / min
                 const MANA_RECOVERY_RATE_PER_MINUTE = 0.002; // 0.2% max Mana / min
-                const QI_PER_MINUTE = 0.5;
+                const QI_PER_MINUTE = 0.05; // Nerfed from 0.5
                 const CAM_NGO_PER_MINUTE = Math.round(1 + prev.attributes.ngoTinh / 20);
 
                 // Ensure recovery amounts are integers
@@ -139,6 +139,35 @@ export const usePlayerActions = (
         });
     }, [updateAndPersistPlayerState, setGameMessage, stopAllActions, addJournalEntry]);
 
+    const handleStartSeclusion = useCallback((months: number) => {
+        stopAllActions.current();
+        updateAndPersistPlayerState(prev => {
+            if (!prev || months <= 0) return prev;
+
+            const totalMinutesToAdvance = months * DAYS_PER_MONTH * 24 * 60;
+            
+            const SECLUSION_QI_PER_MINUTE_BASE = 0.1;
+            const realmMultiplier = 1 + (prev.cultivation.realmIndex * 0.15);
+            const qiPerMinute = (SECLUSION_QI_PER_MINUTE_BASE + (prev.attributes.ngoTinh / 100)) * realmMultiplier;
+            const totalQiGained = Math.round(qiPerMinute * totalMinutesToAdvance);
+
+            const newQi = Math.min(prev.stats.maxQi, prev.qi + totalQiGained);
+            const newTime = advanceTime(prev.time, totalMinutesToAdvance);
+
+            const message = `Bế quan ${months} tháng kết thúc. Chân khí tăng ${totalQiGained.toLocaleString()}, đạt tới ${newQi.toLocaleString()}. Toàn bộ sinh lực và linh lực đã hồi phục.`;
+            setGameMessage(message);
+            addJournalEntry(message);
+
+            return {
+                ...prev,
+                time: newTime,
+                qi: newQi,
+                hp: prev.stats.maxHp,
+                mana: prev.stats.maxMana,
+            };
+        });
+    }, [updateAndPersistPlayerState, setGameMessage, addJournalEntry, stopAllActions]);
+
     const handleToggleMeditation = useCallback(() => {
         if (isMeditating) {
             setIsMeditating(false);
@@ -210,5 +239,6 @@ export const usePlayerActions = (
         handleBreakthrough,
         handleToggleMeditation,
         handleLevelUpSkill,
+        handleStartSeclusion,
     };
 };
