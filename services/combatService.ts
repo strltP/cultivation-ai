@@ -14,7 +14,7 @@ export interface DamageResult {
 
 export const calculateDamage = (attacker: { stats: CombatStats }, defender: { stats: CombatStats }): DamageResult => {
     // 1. Calculate evasion chance based on speed
-    const dodgeChance = (defender.stats.speed / (defender.stats.speed + attacker.stats.speed * 3.5));
+    const dodgeChance = (defender.stats.speed / (defender.stats.speed + attacker.stats.speed * 4.5));
 
     // 2. Check if the attack hits
     if (Math.random() < dodgeChance) {
@@ -49,7 +49,7 @@ export const calculateSkillDamage = (
     if (!damageDef) return { damage: 0, isCritical: false, isEvaded: false };
 
     // 1. Evasion check based on speed
-    const dodgeChance = (defender.state.stats.speed / (defender.state.stats.speed + caster.state.stats.speed * 3.5));
+    const dodgeChance = (defender.state.stats.speed / (defender.state.stats.speed + caster.state.stats.speed * 4.5));
     if (Math.random() < dodgeChance) {
         return { damage: 0, isCritical: false, isEvaded: true };
     }

@@ -112,7 +112,7 @@ export const calculateAllStats = (
     finalStats.speed += modifiedAttributes.thanPhap * 0.5;
     finalStats.critRate += modifiedAttributes.thanThuc / 3000 + modifiedAttributes.coDuyen / 6000;
     finalStats.critDamage += modifiedAttributes.coDuyen / 500;
-    finalStats.armorPenetration = (modifiedAttributes.thanThuc / 4000) + (modifiedAttributes.coDuyen / 8000);
+    finalStats.armorPenetration = (modifiedAttributes.thanThuc / 3000) + (modifiedAttributes.coDuyen / 6000);
     finalStats.maxQi = getRealmLevelInfo(cultivation)?.qiRequired || 0;
 
 
