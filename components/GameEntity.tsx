@@ -1,6 +1,6 @@
 
 import React from 'react';
-import type { NPC } from '../types/character';
+import type { NPC, PlayerState } from '../types/character';
 import type { Interactable } from '../types/interaction';
 import { FaUserSecret, FaLeaf, FaCube, FaBoxOpen, FaMale, FaFemale } from 'react-icons/fa';
 import { GiSprout, GiPlantSeed, GiHerbsBundle, GiFireBowl, GiWyvern } from 'react-icons/gi';
@@ -9,11 +9,12 @@ import { getCultivationInfo } from '../services/cultivationService';
 interface GameEntityProps {
   entity: NPC | Interactable;
   onClick: () => void;
+  playerState: PlayerState;
 }
 
 const isNpc = (entity: NPC | Interactable): entity is NPC => 'cultivation' in entity || 'npcType' in entity;
 
-const GameEntity: React.FC<GameEntityProps> = ({ entity, onClick }) => {
+const GameEntity: React.FC<GameEntityProps> = ({ entity, onClick, playerState }) => {
   const baseClasses = "absolute flex items-center justify-center w-10 h-10 rounded-full cursor-pointer transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 transition-transform duration-200";
   
   let entityStyle = '';
@@ -31,7 +32,8 @@ const GameEntity: React.FC<GameEntityProps> = ({ entity, onClick }) => {
             ? <FaFemale className="text-yellow-900" size={20} /> 
             : <FaMale className="text-yellow-900" size={20} />;
         const cultivationInfo = getCultivationInfo(entity.cultivation!);
-        title = `${entity.name}${entity.title ? ` «${entity.title}»` : ''}\nGiới tính: ${entity.gender}\nChức vụ: ${entity.role}\nCảnh giới: ${cultivationInfo.name}\nTuổi: ${entity.age}\nHP: ${entity.hp}/${entity.stats.maxHp}`;
+        const age = playerState.time.year - entity.birthTime.year;
+        title = `${entity.name}${entity.title ? ` «${entity.title}»` : ''}\nGiới tính: ${entity.gender}\nChức vụ: ${entity.role}\nCảnh giới: ${cultivationInfo.name}\nTuổi: ${age}\nHP: ${entity.hp}/${entity.stats.maxHp}`;
     }
   } else {
     const interactable = entity as Interactable;

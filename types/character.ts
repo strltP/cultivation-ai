@@ -30,7 +30,7 @@ export interface NPC {
   cannotChallengeUntil?: GameTime;
   position: Position;
   prompt: string;
-  age: number;
+  birthTime: GameTime;
 
   // NPC stats
   cultivation?: CultivationState;

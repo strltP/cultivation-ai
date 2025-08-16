@@ -88,8 +88,8 @@ const WorldRenderer: React.FC<WorldRendererProps> = (props) => {
             <TimeOfDayOverlay gameHour={playerState.time.hour} />
             {currentPois.map(poi => <PointOfInterestComponent key={poi.id} poi={poi} onClick={() => onPoiInteraction(poi)} />)}
             <Player ref={playerRef} position={playerState.position} isMeditating={isMeditating} />
-            {currentNpcs.map(npc => <GameEntity key={npc.id} entity={npc} onClick={() => onNpcInteraction(npc)} />)}
-            {currentInteractables.map(item => <GameEntity key={item.id} entity={item} onClick={() => onInteractableInteraction(item)} />)}
+            {currentNpcs.map(npc => <GameEntity key={npc.id} entity={npc} onClick={() => onNpcInteraction(npc)} playerState={playerState} />)}
+            {currentInteractables.map(item => <GameEntity key={item.id} entity={item} onClick={() => onInteractableInteraction(item)} playerState={playerState} />)}
             {currentTeleportGates.map(gate => <TeleportGate key={gate.id} gate={gate} allMaps={allMaps} onClick={() => onTeleportInteraction(gate)} />)}
         </div>
     );

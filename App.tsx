@@ -181,6 +181,7 @@ const GameWorld: React.FC = () => {
                     isLoading={isChatLoading}
                     onSendMessage={handleSendMessage}
                     onClose={handleCloseChat}
+                    playerState={playerState}
                 />
             )}
 

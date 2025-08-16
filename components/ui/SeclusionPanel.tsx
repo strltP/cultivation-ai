@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import type { PlayerState } from '../../types/character';
 import { FaTimes } from 'react-icons/fa';
 import { GiCaveEntrance, GiSandsOfTime, GiGalaxy } from 'react-icons/gi';
+import { DAYS_PER_MONTH } from '../../hooks/usePlayerPersistence';
+
 
 interface SeclusionPanelProps {
     playerState: PlayerState;
@@ -20,11 +22,16 @@ const SeclusionPanel: React.FC<SeclusionPanelProps> = ({ playerState, onClose, o
     };
 
     const estimatedQiGain = useMemo(() => {
-        const totalMinutes = months * 30 * 24 * 60;
-        const SECLUSION_QI_PER_MINUTE_BASE = 0.1;
+        // This calculation MUST match handleStartSeclusion in usePlayerActions.ts
+        const totalHoursToAdvance = months * DAYS_PER_MONTH * 24;
+        
+        const SECLUSION_QI_PER_HOUR_BASE = 2;
+        const NGO_TINH_FACTOR = 0.05;
         const realmMultiplier = 1 + (playerState.cultivation.realmIndex * 0.15);
-        const qiPerMinute = (SECLUSION_QI_PER_MINUTE_BASE + (playerState.attributes.ngoTinh / 100)) * realmMultiplier;
-        return Math.floor(qiPerMinute * totalMinutes);
+        
+        const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (playerState.attributes.ngoTinh * NGO_TINH_FACTOR)) * realmMultiplier;
+        
+        return Math.floor(qiPerHour * totalHoursToAdvance);
     }, [months, playerState.attributes.ngoTinh, playerState.cultivation.realmIndex]);
 
     const yearsPassed = Math.floor(months / 12);

@@ -1,8 +1,7 @@
 
 
-
 import React from 'react';
-import type { NPC } from '../../types/character';
+import type { NPC, PlayerState } from '../../types/character';
 import { getCultivationInfo, getLinhCanTierInfo } from '../../services/cultivationService';
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
@@ -17,12 +16,14 @@ import { LINH_CAN_DATA } from '../../data/linhcan';
 interface NpcInfoPanelProps {
   npc: NPC;
   onClose: () => void;
+  playerState: PlayerState;
 }
 
-const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
+const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }) => {
   const isMonster = npc.npcType === 'monster';
   const cultivationInfo = !isMonster ? getCultivationInfo(npc.cultivation!) : null;
-  const agePercentage = (npc.age / npc.stats.maxThoNguyen) * 100;
+  const age = playerState.time.year - npc.birthTime.year;
+  const agePercentage = (age / npc.stats.maxThoNguyen) * 100;
   const ageColorClass = agePercentage > 90 ? 'text-red-400 animate-pulse' : agePercentage > 75 ? 'text-yellow-400' : 'text-gray-400';
 
   const hpPercentage = (npc.hp / npc.stats.maxHp) * 100;
@@ -101,7 +102,7 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
                          {npc.stats.maxThoNguyen > 0 && (
                             <div className={`flex items-center gap-x-2 text-sm mt-1 ${ageColorClass}`} title="Tuổi / Thọ Nguyên Tối Đa">
                                 <FaHourglassHalf className={agePercentage > 90 ? 'text-red-400' : agePercentage > 75 ? 'text-yellow-400' : 'text-purple-300'} />
-                                <span>Tuổi: {npc.age} / {npc.stats.maxThoNguyen}</span>
+                                <span>Tuổi: {age} / {npc.stats.maxThoNguyen}</span>
                             </div>
                         )}
                     </>

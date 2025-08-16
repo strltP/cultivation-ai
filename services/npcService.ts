@@ -1,4 +1,4 @@
-import type { NPC } from '../types/character';
+import type { NPC, GameTime } from '../types/character';
 import type { MapID, PointOfInterest } from '../types/map';
 import type { LearnedSkill } from '../types/skill';
 import type { InventorySlot } from '../types/item';
@@ -17,7 +17,7 @@ import type { LinhCan, LinhCanType } from '../types/linhcan';
 import { LINH_CAN_TYPES } from '../types/linhcan';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
 
-function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: string, position: {x:number, y:number}): NPC {
+function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: string, position: {x:number, y:number}, gameTime: GameTime): NPC {
     const realmIndex = REALM_PROGRESSION.findIndex(r => r.name === data.realmName);
     const realm = realmIndex !== -1 ? REALM_PROGRESSION[realmIndex] : REALM_PROGRESSION[0];
     
@@ -142,6 +142,15 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
         age = Math.floor(Math.random() * (maxAgeForRealm - minAge + 1)) + minAge;
     }
 
+    const birthTime: GameTime = {
+        year: gameTime.year - age,
+        season: 'Xuân',
+        month: 1,
+        day: 1,
+        hour: 0,
+        minute: 0
+    };
+
 
     return {
         name: data.name,
@@ -152,7 +161,7 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
         prompt: data.prompt,
         id,
         position,
-        age,
+        birthTime,
         cultivation,
         attributes: finalAttributes,
         stats: finalStats,
@@ -170,7 +179,7 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
     };
 }
 
-export function createMonsterFromData(template: MonsterDefinition, level: number, id: string, position: {x:number, y:number}, spawnRuleId?: string): NPC {
+export function createMonsterFromData(template: MonsterDefinition, level: number, id: string, position: {x:number, y:number}, spawnRuleId: string | undefined, gameTime: GameTime): NPC {
     const levelMultiplier = Math.pow(1.15, level - 1);
 
     const finalAttributes: CharacterAttributes = {
@@ -195,6 +204,16 @@ export function createMonsterFromData(template: MonsterDefinition, level: number
         maxThoNguyen: 0,
     };
     
+    const age = Math.floor(Math.random() * 10) + 1; // a random age for monsters
+    const birthTime: GameTime = {
+        year: gameTime.year - age,
+        season: 'Xuân',
+        month: 1,
+        day: 1,
+        hour: 0,
+        minute: 0
+    };
+
     return {
         id,
         baseId: template.baseId,
@@ -211,7 +230,7 @@ export function createMonsterFromData(template: MonsterDefinition, level: number
         hp: finalStats.maxHp,
         qi: 0,
         mana: 0,
-        age: Math.floor(Math.random() * 10) + 1, // a random age for monsters
+        birthTime,
         cultivationStats: {},
         linhCan: [],
         activeEffects: [],
@@ -224,7 +243,7 @@ export function createMonsterFromData(template: MonsterDefinition, level: number
 }
 
 
-export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, PointOfInterest[]>): Promise<NPC[]> => {
+export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, PointOfInterest[]>, gameTime: GameTime): Promise<NPC[]> => {
     const spawnDefinitions = NPC_SPAWN_DEFINITIONS_BY_MAP[mapId] || [];
     if (!spawnDefinitions.length) return [];
 
@@ -240,7 +259,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
     for (const spawn of staticSpawns) {
         const template = staticNpcTemplates.get(spawn.baseId);
         if (template) {
-            finalNpcs.push(createNpcFromData(template, spawn.id, spawn.position));
+            finalNpcs.push(createNpcFromData(template, spawn.id, spawn.position, gameTime));
         } else {
             console.warn(`Could not find static NPC template for baseId: ${spawn.baseId}`);
         }
@@ -263,7 +282,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
             const id = `proc-monster-${mapId}-${baseId}-${Date.now()}-${i}`;
             
             const spawnRuleId = `${mapId}-${rule.areaId}`;
-            finalNpcs.push(createMonsterFromData(template, level, id, {x, y}, spawnRuleId));
+            finalNpcs.push(createMonsterFromData(template, level, id, {x, y}, spawnRuleId, gameTime));
         }
     }
 
@@ -293,7 +312,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
                             y = Math.random() * mapData.size.height;
                         }
                         const id = `proc-npc-${mapId}-${roleDef.role.replace(/\s/g, '')}-${Date.now()}-${index}`;
-                        return createNpcFromData(npcData, id, { x, y });
+                        return createNpcFromData(npcData, id, { x, y }, gameTime);
                     });
                 });
             generationPromises.push(promise);

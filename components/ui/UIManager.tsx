@@ -180,7 +180,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                 />
             )}
 
-            {viewingNpc && <NpcInfoPanel npc={viewingNpc} onClose={() => setViewingNpc(null)} />}
+            {viewingNpc && <NpcInfoPanel npc={viewingNpc} onClose={() => setViewingNpc(null)} playerState={playerState} />}
             {isMapOpen && <WorldMap 
                 allMaps={allMaps} 
                 playerState={playerState} 

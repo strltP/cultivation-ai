@@ -123,6 +123,45 @@ export const useWorldManager = (
              return; // Let the effect re-run with the updated state
         }
         
+        // --- NPC Old Age Death Check ---
+        const npcsOnCurrentMap = playerState.generatedNpcs[currentMapId] || [];
+        const deadNpcIds: string[] = [];
+        const deadNpcMessages: string[] = [];
+        
+        if (npcsOnCurrentMap.length > 0) {
+             npcsOnCurrentMap.forEach(npc => {
+                if (npc.npcType === 'cultivator' && npc.stats.maxThoNguyen > 0) {
+                    const age = playerState.time.year - npc.birthTime.year;
+                    if (age >= npc.stats.maxThoNguyen) {
+                        // Check if the NPC is not already marked as defeated
+                        if (!playerState.defeatedNpcIds.includes(npc.id)) {
+                             deadNpcIds.push(npc.id);
+                             deadNpcMessages.push(`${npc.name} (${npc.role}) đã sống hết thọ mệnh, thân tử đạo tiêu.`);
+                        }
+                    }
+                }
+            });
+        }
+        
+        if (deadNpcIds.length > 0) {
+            updateAndPersistPlayerState(p => {
+                if (!p) return null as any;
+                const newDefeatedIds = [...new Set([...p.defeatedNpcIds, ...deadNpcIds])];
+                
+                const newJournalEntries = deadNpcMessages.map(message => ({
+                    time: p.time,
+                    message
+                }));
+
+                return {
+                    ...p,
+                    defeatedNpcIds: newDefeatedIds,
+                    journal: [...(p.journal || []), ...newJournalEntries]
+                };
+            });
+            return; // Let the effect re-run with the updated state
+        }
+        
         // --- Respawn Logic ---
         const now = gameTimeToMinutes(playerState.time);
         const newlyRespawnedInteractableIds = new Set(playerState.respawningInteractables
@@ -189,7 +228,7 @@ export const useWorldManager = (
             if (!playerState.generatedNpcs[currentMapId] && !isLoading) {
                 setIsLoading(true);
                 try {
-                    const newNpcs = await loadNpcsForMap(currentMapId, POIS_BY_MAP);
+                    const newNpcs = await loadNpcsForMap(currentMapId, POIS_BY_MAP, playerState.time);
                     updateAndPersistPlayerState(prev => {
                         if (!prev || prev.currentMap !== currentMapId) return prev;
                         const newGeneratedNpcs = { ...prev.generatedNpcs, [currentMapId]: newNpcs };
@@ -247,7 +286,7 @@ export const useWorldManager = (
                                     const x = area.position.x - area.size.width / 2 + Math.random() * area.size.width;
                                     const y = area.position.y - area.size.height / 2 + Math.random() * area.size.height;
                                     const id = `proc-monster-${currentMapId}-${baseId}-${Date.now()}-${i}`;
-                                    newMonsters.push(createMonsterFromData(template, level, id, {x, y}, ruleKey));
+                                    newMonsters.push(createMonsterFromData(template, level, id, {x, y}, ruleKey, p.time));
                                 }
                             }
                         }

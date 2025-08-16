@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { NPC } from '../../types/character';
+import type { NPC, PlayerState } from '../../types/character';
 import type { ChatMessage } from '../../types/character';
 import { FaTimes, FaHourglassHalf, FaVenusMars, FaUserTag } from 'react-icons/fa';
 import { GiPaintBrush, GiScrollQuill, GiGalaxy } from 'react-icons/gi';
@@ -11,13 +11,15 @@ interface ChatPanelProps {
     onSendMessage: (message: string) => void;
     onClose: () => void;
     isLoading: boolean;
+    playerState: PlayerState;
 }
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ npc, history, onSendMessage, onClose, isLoading }) => {
+const ChatPanel: React.FC<ChatPanelProps> = ({ npc, history, onSendMessage, onClose, isLoading, playerState }) => {
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const cultivationInfo = getCultivationInfo(npc.cultivation!);
+    const age = playerState.time.year - npc.birthTime.year;
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,7 +62,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ npc, history, onSendMessage, onCl
                         </div>
                         <div className="flex items-center justify-center gap-2 p-1 bg-black/20 rounded" title="Tuổi Tác">
                             <FaHourglassHalf className="text-lg" />
-                            <span>{npc.age} Tuổi</span>
+                            <span>{age} Tuổi</span>
                         </div>
                         <div className="flex items-center justify-center gap-2 p-1 bg-black/20 rounded" title={cultivationInfo.name}>
                             <GiGalaxy className="text-lg" />

@@ -13,7 +13,7 @@ import type { CharacterAttributes, CombatStats } from '../types/stats';
 import { MAPS } from '../mapdata';
 
 const PLAYER_STATE_STORAGE_KEY = 'tu_tien_player_state_v3';
-const CURRENT_SAVE_VERSION = '2.0';
+const CURRENT_SAVE_VERSION = '2.1';
 
 export const INITIAL_PLAYER_STATE: PlayerState = {
     ...BASE_INITIAL_PLAYER_STATE,
