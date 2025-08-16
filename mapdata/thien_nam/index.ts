@@ -3,21 +3,22 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'THIEN_NAM',
     name: 'Thiên Nam Đại Lục',
+    type: 'continent',
     size: { width: 10000, height: 8000 }, // Expanded map size
     backgroundStyle: { background: 'radial-gradient(ellipse at center, rgba(34,197,94,0.15) 0%, rgba(34,197,94,0) 70%), linear-gradient(to bottom, #2a3a2b, #1a2a1b)' }
 };
 
 export const mapAreas: MapArea[] = [
     // Top - Made wider
-    { id: 'area-1', name: 'Thương Lan Đế Quốc', position: { x: 5000, y: 1250 }, size: { width: 4000, height: 2500 }, style: { borderColor: 'rgba(139, 92, 246, 0.4)', backgroundColor: 'rgba(139, 92, 246, 0.05)' } },
+    { id: 'area-1', name: 'Thương Lan Đế Quốc', type: 'nation', position: { x: 5000, y: 1250 }, size: { width: 4000, height: 2500 }, style: { borderColor: 'rgba(139, 92, 246, 0.4)', backgroundColor: 'rgba(139, 92, 246, 0.05)' } },
     // Right - Made taller
-    { id: 'area-2', name: 'Vô Tận Thảo Nguyên', position: { x: 8500, y: 4000 }, size: { width: 3000, height: 5000 }, style: { borderColor: 'rgba(74, 222, 128, 0.4)', backgroundColor: 'rgba(74, 222, 128, 0.05)' } },
+    { id: 'area-2', name: 'Vô Tận Thảo Nguyên', type: 'region', position: { x: 8500, y: 4000 }, size: { width: 3000, height: 5000 }, style: { borderColor: 'rgba(74, 222, 128, 0.4)', backgroundColor: 'rgba(74, 222, 128, 0.05)' } },
     // Center - Made smaller and more focused
-    { id: 'area-3', name: 'Thiên Nguyên Sơn', position: { x: 5000, y: 4000 }, size: { width: 2500, height: 2500 }, style: { borderColor: 'rgba(148, 163, 184, 0.4)', backgroundColor: 'rgba(148, 163, 184, 0.05)' } },
+    { id: 'area-3', name: 'Thiên Nguyên Sơn', type: 'region', position: { x: 5000, y: 4000 }, size: { width: 2500, height: 2500 }, style: { borderColor: 'rgba(148, 163, 184, 0.4)', backgroundColor: 'rgba(148, 163, 184, 0.05)' } },
     // Bottom - Different rectangular shape
-    { id: 'area-4', name: 'Thủy Nguyệt Đế Quốc', position: { x: 5000, y: 6750 }, size: { width: 3500, height: 2500 }, style: { borderColor: 'rgba(59, 130, 246, 0.4)', backgroundColor: 'rgba(59, 130, 246, 0.05)' } },
+    { id: 'area-4', name: 'Thủy Nguyệt Đế Quốc', type: 'nation', position: { x: 5000, y: 6750 }, size: { width: 3500, height: 2500 }, style: { borderColor: 'rgba(59, 130, 246, 0.4)', backgroundColor: 'rgba(59, 130, 246, 0.05)' } },
     // Left - Made taller
-    { id: 'area-5', name: 'Hoa Phong Châu', position: { x: 1500, y: 4000 }, size: { width: 3000, height: 4000 }, style: { borderColor: 'rgba(217, 70, 239, 0.4)', backgroundColor: 'rgba(217, 70, 239, 0.05)' } },
+    { id: 'area-5', name: 'Hoa Phong Châu', type: 'province', position: { x: 1500, y: 4000 }, size: { width: 3000, height: 4000 }, style: { borderColor: 'rgba(217, 70, 239, 0.4)', backgroundColor: 'rgba(217, 70, 239, 0.05)' } },
 ];
 
 

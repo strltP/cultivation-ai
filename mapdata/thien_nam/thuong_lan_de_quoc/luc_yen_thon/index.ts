@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'LUC_YEN_THON',
     name: 'Lục Yên Thôn',
+    type: 'village_map',
     size: { width: 2000, height: 1500 },
     backgroundStyle: {
         background: 'linear-gradient(to bottom, #3a5a40, #2a4a30)',
@@ -11,7 +12,7 @@ export const mapDefinition: GameMap = {
 };
 
 export const mapAreas: MapArea[] = [
-    { id: 'lyt-area-main', name: 'Lục Yên Thôn', position: { x: 1000, y: 750 }, size: { width: 1800, height: 1300 }, style: { borderColor: 'rgba(74, 222, 128, 0.2)', backgroundColor: 'rgba(74, 222, 128, 0.02)' } }
+    { id: 'lyt-area-main', name: 'Lục Yên Thôn', type: 'zone', position: { x: 1000, y: 750 }, size: { width: 1800, height: 1300 }, style: { borderColor: 'rgba(74, 222, 128, 0.2)', backgroundColor: 'rgba(74, 222, 128, 0.02)' } }
 ];
 
 export const pois: PointOfInterest[] = [

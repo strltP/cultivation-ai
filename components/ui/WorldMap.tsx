@@ -20,7 +20,6 @@ const POI_ICONS: Record<PointOfInterestType, React.ReactNode> = {
     dungeon: <FaSkullCrossbones />,
     landmark: <FaLandmark />,
     building: <FaUniversity />,
-    nation: <div />, // Nation is now a MapArea, so no icon needed for POI
 };
 
 const MIN_SCALE = 0.1;
@@ -164,7 +163,6 @@ const WorldMap: React.FC<WorldMapProps> = ({ allMaps, playerState, onClose, curr
                 ))}
                 
                 {currentPois.map(poi => {
-                  if (poi.type === 'nation') return null;
                   const iconSize = getClampedSize(24, 10, 120);
                   const fontSize = getClampedSize(16, 8, 80);
                   return (

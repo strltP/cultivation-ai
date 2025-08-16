@@ -15,13 +15,10 @@ const POI_STYLES: { [key in PointOfInterestType]: { icon: React.ReactNode; color
     dungeon: { icon: <FaSkullCrossbones size={32}/>, color: 'text-red-400', shadow: 'drop-shadow(0 0 8px #f87171)' },
     landmark: { icon: <FaLandmark size={32}/>, color: 'text-gray-300', shadow: 'drop-shadow(0 0 8px #d1d5db)' },
     building: { icon: <FaUniversity size={32}/>, color: 'text-purple-300', shadow: 'drop-shadow(0 0 8px #c084fc)'},
-    nation: { icon: <div/>, color: '', shadow: '' } // Nation is a MapArea, not rendered here.
 };
 
 
 const PointOfInterestComponent: React.FC<PointOfInterestProps> = ({ poi, onClick }) => {
-    if (poi.type === 'nation') return null; // Do not render nations as POIs
-
     const style = POI_STYLES[poi.type];
     const isInteractive = !!(poi.targetMap && onClick);
 

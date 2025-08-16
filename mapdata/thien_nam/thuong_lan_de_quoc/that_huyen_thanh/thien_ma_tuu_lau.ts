@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'THIEN_MA_TUU_LAU',
     name: 'Thiên Mã Tửu Lâu',
+    type: 'building_interior',
     size: { width: 2800, height: 2000 },
     backgroundStyle: { background: 'linear-gradient(to bottom, #503c2c, #5b4a34)' }
 };

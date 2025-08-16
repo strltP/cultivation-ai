@@ -3,13 +3,14 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'BAC_VUC',
     name: 'Bắc Vực Băng Giá',
+    type: 'continent',
     size: { width: 5000, height: 4000 },
     backgroundStyle: { background: 'radial-gradient(ellipse at center, rgba(118, 169, 255, 0.15) 0%, rgba(118, 169, 255, 0) 70%), linear-gradient(to bottom, #1a2a3a, #0a1a2a)' }
 };
 
 export const mapAreas: MapArea[] = [
-    { id: 'bv-area-1', name: 'Vân Hàn Sơn', position: { x: 2500, y: 1000 }, size: { width: 4800, height: 2000 }, style: { borderColor: 'rgba(203, 213, 225, 0.4)', backgroundColor: 'rgba(203, 213, 225, 0.05)' } },
-    { id: 'bv-area-2', name: 'Thương Vân Châu', position: { x: 2500, y: 3000 }, size: { width: 4800, height: 1800 }, style: { borderColor: 'rgba(107, 114, 128, 0.4)', backgroundColor: 'rgba(107, 114, 128, 0.05)' } },
+    { id: 'bv-area-1', name: 'Vân Hàn Sơn', type: 'region', position: { x: 2500, y: 1000 }, size: { width: 4800, height: 2000 }, style: { borderColor: 'rgba(203, 213, 225, 0.4)', backgroundColor: 'rgba(203, 213, 225, 0.05)' } },
+    { id: 'bv-area-2', name: 'Thương Vân Châu', type: 'province', position: { x: 2500, y: 3000 }, size: { width: 4800, height: 1800 }, style: { borderColor: 'rgba(107, 114, 128, 0.4)', backgroundColor: 'rgba(107, 114, 128, 0.05)' } },
 ];
 
 export const pois: PointOfInterest[] = [

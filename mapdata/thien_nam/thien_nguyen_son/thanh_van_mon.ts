@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'THANH_VAN_MON',
     name: 'Thanh Vân Môn',
+    type: 'sect_map',
     size: { width: 3000, height: 4000 },
     backgroundStyle: { 
         background: 'linear-gradient(to bottom, #4a6a8a, #7a9aa9)',
@@ -14,6 +15,7 @@ export const mapAreas: MapArea[] = [
     { 
         id: 'tvm-area-1', 
         name: 'Ngoại Vi Tông Môn', 
+        type: 'zone',
         position: { x: 1500, y: 2000 }, 
         size: { width: 2800, height: 3800 }, 
         style: { borderColor: 'rgba(74, 222, 128, 0.2)', backgroundColor: 'rgba(74, 222, 128, 0.02)' } 

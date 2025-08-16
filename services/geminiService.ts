@@ -101,8 +101,6 @@ export const createChatSession = (playerState: PlayerState, npc: NPC, history?: 
         const pois = POIS_BY_MAP[mapId] || [];
 
         pois.forEach(poi => {
-            if (poi.type === 'nation') return;
-
             const parentArea = areas.find(area => 
                 poi.position.x >= area.position.x - area.size.width / 2 &&
                 poi.position.x <= area.position.x + area.size.width / 2 &&

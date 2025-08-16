@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'LUU_LY_TONG',
     name: 'Lưu Ly Tông',
+    type: 'sect_map',
     size: { width: 3200, height: 2400 },
     backgroundStyle: { background: 'linear-gradient(to bottom, #2c3e50, #34495e)' }
 };

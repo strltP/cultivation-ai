@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'DAI_HOANG',
     name: 'Đại Hoang Cổ Lão',
+    type: 'continent',
     size: { width: 8000, height: 6000 },
     backgroundStyle: { background: 'radial-gradient(ellipse at center, rgba(255, 169, 118, 0.1) 0%, rgba(255, 169, 118, 0) 70%), linear-gradient(to bottom, #3a2a1a, #2a1a0a)' }
 };
@@ -11,6 +12,7 @@ export const mapAreas: MapArea[] = [
     { 
         id: 'dh-area-1', 
         name: 'Phong Sa Châu', 
+        type: 'region',
         position: { x: 2000, y: 3000 }, 
         size: { width: 3800, height: 5800 }, 
         style: { borderColor: 'rgba(234, 179, 8, 0.4)', backgroundColor: 'rgba(234, 179, 8, 0.05)' } 
@@ -18,6 +20,7 @@ export const mapAreas: MapArea[] = [
     { 
         id: 'dh-area-2', 
         name: 'Hoàng Long Vực', 
+        type: 'region',
         position: { x: 6000, y: 3000 }, 
         size: { width: 3800, height: 5800 }, 
         style: { borderColor: 'rgba(249, 115, 22, 0.4)', backgroundColor: 'rgba(249, 115, 22, 0.05)' } 

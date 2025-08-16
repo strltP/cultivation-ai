@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'HUYEN_NGOC_THANH',
     name: 'Huyền Ngọc Thành',
+    type: 'city_map',
     size: { width: 4000, height: 3500 },
     backgroundStyle: { 
         backgroundColor: '#2d3748',
