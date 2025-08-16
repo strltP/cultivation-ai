@@ -42,28 +42,31 @@ export const usePlayerActions = (
 
                 const MINUTES_PER_TICK = 30;
                 
+                // Advance time first to use it for Qi calculation
+                const newTime = advanceTime(prev.time, MINUTES_PER_TICK);
+
+                // Calculate Qi gain: 1 Qi every 2 hours
+                let qiGained = 0;
+                if (!isQiFull) {
+                    // Check if the hour has changed and if the new hour is an even number
+                    if (newTime.hour !== prev.time.hour && newTime.hour % 2 === 0) {
+                        qiGained = 1;
+                    }
+                }
+                
                 // Keep HP, Mana, Cam Ngo gains per minute as before.
                 const HP_RECOVERY_RATE_PER_MINUTE = 0.001; // 0.1% max HP / min
                 const MANA_RECOVERY_RATE_PER_MINUTE = 0.002; // 0.2% max Mana / min
                 const CAM_NGO_PER_MINUTE = Math.round(1 + prev.attributes.ngoTinh / 20);
 
-                // **NEW**: Qi gain is now calculated per hour.
-                const QI_PER_HOUR = 2;
-
                 // Ensure recovery amounts are integers
                 const hpGained = isHpFull ? 0 : Math.ceil(prev.stats.maxHp * HP_RECOVERY_RATE_PER_MINUTE * MINUTES_PER_TICK);
                 const manaGained = isManaFull ? 0 : Math.ceil(prev.stats.maxMana * MANA_RECOVERY_RATE_PER_MINUTE * MINUTES_PER_TICK);
                 const camNgoGained = Math.round(CAM_NGO_PER_MINUTE * MINUTES_PER_TICK);
-                
-                // **NEW**: Calculate Qi gain based on hours passed.
-                const HOURS_PER_TICK = MINUTES_PER_TICK / 60.0;
-                const qiGained = isQiFull ? 0 : Math.round(QI_PER_HOUR * HOURS_PER_TICK);
 
                 const newHp = Math.min(prev.stats.maxHp, prev.hp + hpGained);
                 const newMana = Math.min(prev.stats.maxMana, prev.mana + manaGained);
                 const newQi = Math.min(prev.stats.maxQi, prev.qi + qiGained);
-                
-                const newTime = advanceTime(prev.time, MINUTES_PER_TICK);
                 
                 return {
                     ...prev,
@@ -153,7 +156,7 @@ export const usePlayerActions = (
             const totalMinutesToAdvance = months * DAYS_PER_MONTH * 24 * 60;
             const totalHoursToAdvance = months * DAYS_PER_MONTH * 24;
             
-            const SECLUSION_QI_PER_HOUR_BASE = 2;
+            const SECLUSION_QI_PER_HOUR_BASE = 1.5;
             const NGO_TINH_FACTOR = 0.05;
             const realmMultiplier = 1 + (prev.cultivation.realmIndex * 0.15);
             const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (prev.attributes.ngoTinh * NGO_TINH_FACTOR)) * realmMultiplier;

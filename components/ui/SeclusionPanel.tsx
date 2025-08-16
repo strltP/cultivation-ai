@@ -25,7 +25,7 @@ const SeclusionPanel: React.FC<SeclusionPanelProps> = ({ playerState, onClose, o
         // This calculation MUST match handleStartSeclusion in usePlayerActions.ts
         const totalHoursToAdvance = months * DAYS_PER_MONTH * 24;
         
-        const SECLUSION_QI_PER_HOUR_BASE = 2;
+        const SECLUSION_QI_PER_HOUR_BASE = 1.5;
         const NGO_TINH_FACTOR = 0.05;
         const realmMultiplier = 1 + (playerState.cultivation.realmIndex * 0.15);
         
