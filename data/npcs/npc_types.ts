@@ -29,18 +29,23 @@ export interface StaticNpcSpawn {
     position: Position;
 }
 
-// ProceduralNpcRule is now a discriminated union.
-// It can either use the new role-based spawning system or the old prompt-based one.
-export type ProceduralNpcRule = {
-    type: 'procedural';
-    poiIds: string[]; // Spawns NPCs within the bounds of these POIs
-} & ({
-    usePoiRoles: true; // Use the definitions from poi_roles.ts
-} | {
-    usePoiRoles?: false; // Explicitly use the old system
-    npcGenerationPrompt: string;
+// Role definition used within a procedural spawn rule.
+export interface RoleDefinition {
+    role: string;
     count: number;
-});
+    generationPrompt: string;
+    poiIds: string[]; // Spawns NPCs for this role within the bounds of these POIs. Can be an empty array to spawn anywhere on the map.
+}
+
+
+// A single, unified rule for procedural NPC generation.
+export interface ProceduralNpcRule {
+    type: 'procedural';
+    // An array of role definitions. Allows spawning multiple types of NPCs
+    // with different prompts and in different locations within a single rule.
+    roles: RoleDefinition[];
+}
+
 
 export interface MonsterDefinition {
     baseId: string;
