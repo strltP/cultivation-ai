@@ -23,7 +23,7 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         forSale: [
             { itemId: 'weapon_thiet_kiem', stock: 5, priceModifier: 1.2 },
             { itemId: 'armor_thiet_giap', stock: 3, priceModifier: 1.2 },
-            { itemId: 'material_huyen_thiet', stock: -1, priceModifier: 1.4 },
+            { itemId: 'material_huyen_thiet', stock: 99, priceModifier: 1.4 },
         ]
     },
     {
@@ -68,8 +68,8 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         learnedSkillIds: ['tam-phap-dia-2', 'cong-phap-huyen-1'],
         linhThach: 100000,
         forSale: [
-            { itemId: 'material_linh_thao', stock: -1, priceModifier: 1.5 },
-            { itemId: 'material_huyen_thiet', stock: -1, priceModifier: 1.5 },
+            { itemId: 'material_linh_thao', stock: 999, priceModifier: 1.5 },
+            { itemId: 'material_huyen_thiet', stock: 999, priceModifier: 1.5 },
             { itemId: 'consumable_tu_khi_dan', stock: 50, priceModifier: 2 },
             { itemId: 'consumable_hoi_xuan_dan', stock: 50, priceModifier: 2 },
             { itemId: 'consumable_truyen_tong_phu', stock: 5, priceModifier: 2.5 },

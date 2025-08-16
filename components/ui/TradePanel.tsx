@@ -57,7 +57,7 @@ const TradePanel: React.FC<TradePanelProps> = ({ playerState, setPlayerState, np
 
         let currentMaxBuy = 0;
         if (selectedItem.type === 'npc' && npcSaleItem && currentBuyPrice > 0) {
-            const maxByStock = npcSaleItem.stock === -1 ? Infinity : npcSaleItem.stock;
+            const maxByStock = npcSaleItem.stock;
             const maxByMoney = Math.floor(playerState.linhThach / currentBuyPrice);
             
             const spaceInExistingStacks = playerState.inventory

@@ -151,7 +151,7 @@ export const createChatSession = (playerState: PlayerState, npc: NPC, history?: 
     const forSaleString = (npc.forSale || [])
         .map(saleItem => {
              const itemName = ALL_ITEMS.find(i => i.id === saleItem.itemId)?.name;
-             return itemName ? `${itemName} (còn ${saleItem.stock === -1 ? 'vô hạn' : saleItem.stock})` : null;
+             return itemName ? `${itemName} (còn ${saleItem.stock})` : null;
         })
         .filter(Boolean)
         .join(', ') || "Không bán gì";
@@ -358,7 +358,7 @@ Hãy tạo ra ${count} NPC độc đáo. Đối với mỗi NPC, hãy cung cấp
 11. Một lượng Linh Thạch (ví dụ, 0 đến 100) mà họ có thể đánh rơi.
 12. Một bộ trang bị (equipment) từ danh sách sau, phù hợp với vai trò và cảnh giới. Chỉ cung cấp itemId. Không trang bị cho tất cả. Danh sách trang bị: [${equipmentInfo}]
 13. Một túi đồ (inventory) chứa một vài vật phẩm từ danh sách sau. Có thể là một mảng rỗng. Danh sách vật phẩm: [${sellableItemsInfo}]
-14. Một danh sách các vật phẩm để bán (forSale), phù hợp với vai trò của NPC (ví dụ: thợ rèn bán khoáng thạch, dược sư bán thảo dược). Có thể là một mảng rỗng. Mỗi vật phẩm bao gồm: 'itemId', 'stock' (số lượng, -1 là vô hạn), và có thể có 'priceModifier' (hệ số giá, ví dụ 1.5 là bán đắt hơn 50%). Danh sách vật phẩm có thể bán: [${sellableItemsInfo}]`;
+14. Một danh sách các vật phẩm để bán (forSale), phù hợp với vai trò của NPC (ví dụ: thợ rèn bán khoáng thạch, dược sư bán thảo dược). Có thể là một mảng rỗng. Mỗi vật phẩm bao gồm: 'itemId', 'stock' (một số lượng hữu hạn, ví dụ 5-50), và có thể có 'priceModifier' (hệ số giá, ví dụ 1.5 là bán đắt hơn 50%). Không bao giờ sử dụng số lượng vô hạn hoặc -1. Danh sách vật phẩm có thể bán: [${sellableItemsInfo}]`;
 
         const response = await client.models.generateContent({
             model: "gemini-2.5-flash",
@@ -442,7 +442,7 @@ Hãy tạo ra ${count} NPC độc đáo. Đối với mỗi NPC, hãy cung cấp
                                     type: Type.OBJECT,
                                     properties: {
                                         itemId: { type: Type.STRING, description: "ID vật phẩm để bán." },
-                                        stock: { type: Type.INTEGER, description: "Số lượng trong kho (-1 là vô hạn)." },
+                                        stock: { type: Type.INTEGER, description: "Số lượng hữu hạn trong kho." },
                                         priceModifier: { type: Type.NUMBER, description: "Hệ số giá bán (ví dụ 1.5). Mặc định là 1.", nullable: true }
                                     },
                                     required: ["itemId", "stock"]

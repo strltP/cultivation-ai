@@ -82,15 +82,19 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
             
             if (itemMap.has(saleItem.itemId)) {
                 const existingItem = itemMap.get(saleItem.itemId)!;
+                // Don't modify equipped items, but for anything else,
+                // update it to reflect its for-sale status.
                 if(existingItem.status !== 'EQUIPPED') {
                     existingItem.status = 'FOR_SALE';
                     existingItem.price = price;
-                    existingItem.quantity = saleItem.stock === -1 ? Infinity : saleItem.stock;
+                    // The stock count is the most relevant quantity for an item that is for sale.
+                    existingItem.quantity = saleItem.stock;
                 }
             } else {
-                 itemMap.set(saleItem.itemId, {
+                // If it's not in their personal/equipped inventory, show it from the forSale list.
+                itemMap.set(saleItem.itemId, {
                     itemId: saleItem.itemId,
-                    quantity: saleItem.stock === -1 ? Infinity : saleItem.stock,
+                    quantity: saleItem.stock,
                     status: 'FOR_SALE',
                     price: price,
                 });
@@ -226,7 +230,7 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
                                 if (!itemDef) return null;
 
                                 const tierColor = itemDef.tier ? SKILL_TIER_INFO[itemDef.tier].color : 'text-gray-400';
-                                const quantityText = displayItem.quantity === Infinity ? '∞' : displayItem.quantity;
+                                const quantityText = displayItem.quantity;
                                 let titleText = `${itemDef.name} x${quantityText}`;
                                 if (displayItem.status === 'EQUIPPED') titleText += `\n(Đang trang bị: ${EQUIPMENT_SLOT_NAMES[displayItem.slot!]})`;
                                 else if (displayItem.status === 'FOR_SALE') titleText += `\nGiá: ${displayItem.price} Linh Thạch`;
