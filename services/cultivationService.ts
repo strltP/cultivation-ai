@@ -11,7 +11,7 @@ import type { LinhCan } from '../types/linhcan';
 import { LINH_CAN_DATA } from '../data/linhcan';
 import { ALL_SKILLS } from '../data/skills/skills';
 
-export const calculateCombatStats = (
+export const calculateAllStats = (
     baseAttributes: CharacterAttributes, 
     cultivation: CultivationState,
     baseCultivationStats: Partial<CombatStats & CharacterAttributes>,
@@ -20,7 +20,7 @@ export const calculateCombatStats = (
     equipment: Partial<Record<EquipmentSlot, InventorySlot>>,
     allItems: Item[],
     linhCan: LinhCan[]
-): CombatStats => {
+): { finalStats: CombatStats; finalAttributes: CharacterAttributes } => {
     // 1. Start with absolute base stats of a mortal and add pre-rolled cultivation stats
     const finalStats: Required<Mutable<Partial<CombatStats>>> = { ...BASE_INITIAL_PLAYER_STATE.stats };
     const modifiedAttributes: CharacterAttributes = { ...baseAttributes };
@@ -124,7 +124,7 @@ export const calculateCombatStats = (
         }
     });
 
-    return finalStats;
+    return { finalStats, finalAttributes: modifiedAttributes };
 };
 
 type Mutable<T> = {

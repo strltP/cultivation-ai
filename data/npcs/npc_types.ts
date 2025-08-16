@@ -35,6 +35,7 @@ export interface RoleDefinition {
     count: number;
     generationPrompt: string;
     poiIds: string[]; // Spawns NPCs for this role within the bounds of these POIs. Can be an empty array to spawn anywhere on the map.
+    titleChance?: number;
 }
 
 

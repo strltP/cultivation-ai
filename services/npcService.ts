@@ -9,7 +9,7 @@ import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, Procedural
 import { generateNpcs, GeneratedNpcData } from './geminiService';
 import { REALM_PROGRESSION } from '../constants';
 import { MAPS, MAP_AREAS_BY_MAP } from '../mapdata';
-import { calculateCombatStats } from './cultivationService';
+import { calculateAllStats } from './cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { ALL_ITEMS } from '../data/items/index';
 import { EquipmentSlot } from '../types/equipment';
@@ -35,10 +35,12 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
     level = Math.max(0, Math.min(level, realm.levels.length - 1));
 
     const cultivation = { realmIndex: realmIndex !== -1 ? realmIndex : 0, level };
-    const attributes = data.attributes;
     
-    // --- Simulate level-ups to get rolled cultivationStats ---
+    // --- Simulate level-ups to get accumulated attributes and rolled cultivationStats ---
+    const baseAttributes: CharacterAttributes = { ...data.attributes }; // Start with base "talent" from Gemini
     const npcCultivationStats: Partial<CombatStats & CharacterAttributes> = {};
+    const accumulatedAttributes: CharacterAttributes = { canCot: 0, thanPhap: 0, thanThuc: 0, ngoTinh: 0};
+
     for (let r_idx = 0; r_idx <= cultivation.realmIndex; r_idx++) {
         const currentRealm = REALM_PROGRESSION[r_idx];
         if (!currentRealm) continue;
@@ -60,12 +62,23 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
                     }
 
                     if (rolledValue !== 0) {
-                        (npcCultivationStats as any)[statKey] = ((npcCultivationStats as any)[statKey] || 0) + rolledValue;
+                        // If the bonus is for a base attribute, add it to the accumulator for base attributes.
+                        if (statKey in accumulatedAttributes) {
+                             (accumulatedAttributes as any)[statKey] += rolledValue;
+                        } else {
+                        // Otherwise, add it to the combat stats accumulator.
+                             (npcCultivationStats as any)[statKey] = ((npcCultivationStats as any)[statKey] || 0) + rolledValue;
+                        }
                     }
                 }
             }
         }
     }
+    // Add accumulated cultivation bonuses to base talent
+    baseAttributes.canCot += accumulatedAttributes.canCot;
+    baseAttributes.thanPhap += accumulatedAttributes.thanPhap;
+    baseAttributes.thanThuc += accumulatedAttributes.thanThuc;
+    baseAttributes.ngoTinh += accumulatedAttributes.ngoTinh;
     // --- End of simulation ---
 
     const learnedSkillIds = ('learnedSkillIds' in data && data.learnedSkillIds) ? data.learnedSkillIds : [];
@@ -125,7 +138,7 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
         linhCan.push({ type: 'THO', purity: 20 });
     }
 
-    const stats = calculateCombatStats(attributes, cultivation, npcCultivationStats, learnedSkills, ALL_SKILLS, equipment, ALL_ITEMS, linhCan);
+    const { finalStats, finalAttributes } = calculateAllStats(baseAttributes, cultivation, npcCultivationStats, learnedSkills, ALL_SKILLS, equipment, ALL_ITEMS, linhCan);
     
     let age = 0;
     if ('age' in data && data.age) {
@@ -134,7 +147,7 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
         // Generate a plausible random age based on realm for procedural NPCs
         const realmAgeMin = [16, 50, 150, 400, 1000, 2000]; // Min age for Luyen Khi, Truc Co, Ket Tinh, etc.
         const minAge = realmAgeMin[cultivation.realmIndex] || 16;
-        const maxAgeForRealm = stats.maxThoNguyen * 0.8; // Don't spawn NPCs about to die of old age
+        const maxAgeForRealm = finalStats.maxThoNguyen * 0.8; // Don't spawn NPCs about to die of old age
         age = Math.floor(Math.random() * (maxAgeForRealm - minAge + 1)) + minAge;
     }
 
@@ -150,14 +163,14 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
         position,
         age,
         cultivation,
-        attributes,
-        stats,
+        attributes: finalAttributes,
+        stats: finalStats,
         cultivationStats: npcCultivationStats,
         linhCan,
         activeEffects: [],
-        hp: stats.maxHp,
-        qi: stats.maxQi,
-        mana: stats.maxMana,
+        hp: finalStats.maxHp,
+        qi: finalStats.maxQi,
+        mana: finalStats.maxMana,
         linhThach: 'linhThach' in data && typeof data.linhThach === 'number' ? data.linhThach : 0,
         learnedSkills,
         inventory,
@@ -267,7 +280,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
 
     for (const rule of proceduralRules) {
         for (const roleDef of rule.roles) {
-             const promise = generateNpcs(roleDef.generationPrompt, roleDef.count)
+             const promise = generateNpcs(roleDef.generationPrompt, roleDef.count, roleDef.titleChance)
                 .then(generatedData => {
                     const spawnablePOIs = roleDef.poiIds.map(id => poisForMap.find(p => p.id === id)).filter((p): p is PointOfInterest => !!p);
                     

@@ -5,7 +5,7 @@ import type { EquipmentSlot } from '../../../types/equipment';
 import { ALL_ITEMS } from '../../../data/items/index';
 import { INVENTORY_SIZE } from '../../../constants';
 import { EQUIPMENT_SLOT_NAMES } from '../../../types/equipment';
-import { calculateCombatStats } from '../../../services/cultivationService';
+import { calculateAllStats } from '../../../services/cultivationService';
 import { ALL_SKILLS } from '../../../data/skills/skills';
 import { FaPlus } from 'react-icons/fa';
 import { GiBroadsword, GiLeatherArmor, GiLegArmor, GiCrystalEarrings } from 'react-icons/gi';
@@ -67,9 +67,9 @@ const EquipmentTab: React.FC<EquipmentTabProps> = ({ playerState, setPlayerState
             // Place new item in equipment slot
             newEquipment[itemDef.slot!] = itemInInventory;
 
-            const newStats = calculateCombatStats(prev.attributes, prev.cultivation, prev.cultivationStats, prev.learnedSkills, ALL_SKILLS, newEquipment, ALL_ITEMS, prev.linhCan);
+            const { finalStats, finalAttributes } = calculateAllStats(prev.attributes, prev.cultivation, prev.cultivationStats, prev.learnedSkills, ALL_SKILLS, newEquipment, ALL_ITEMS, prev.linhCan);
 
-            return { ...prev, inventory: newInventory, equipment: newEquipment, stats: newStats, hp: Math.min(prev.hp, newStats.maxHp) };
+            return { ...prev, inventory: newInventory, equipment: newEquipment, stats: finalStats, attributes: finalAttributes, hp: Math.min(prev.hp, finalStats.maxHp) };
         });
         setSelectedInventoryIndex(null);
     };
@@ -90,9 +90,9 @@ const EquipmentTab: React.FC<EquipmentTabProps> = ({ playerState, setPlayerState
             const newEquipment = { ...prev.equipment };
             delete newEquipment[slot];
 
-            const newStats = calculateCombatStats(prev.attributes, prev.cultivation, prev.cultivationStats, prev.learnedSkills, ALL_SKILLS, newEquipment, ALL_ITEMS, prev.linhCan);
+            const { finalStats, finalAttributes } = calculateAllStats(prev.attributes, prev.cultivation, prev.cultivationStats, prev.learnedSkills, ALL_SKILLS, newEquipment, ALL_ITEMS, prev.linhCan);
             
-            return { ...prev, inventory: newInventory, equipment: newEquipment, stats: newStats, hp: Math.min(prev.hp, newStats.maxHp) };
+            return { ...prev, inventory: newInventory, equipment: newEquipment, stats: finalStats, attributes: finalAttributes, hp: Math.min(prev.hp, finalStats.maxHp) };
         });
         setSelectedEquipmentSlot(null);
     };

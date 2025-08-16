@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { PlayerState } from '../types/character';
-import { getNextCultivationLevel, getCultivationInfo, calculateCombatStats, getRealmLevelInfo } from '../services/cultivationService';
+import { getNextCultivationLevel, getCultivationInfo, calculateAllStats, getRealmLevelInfo } from '../services/cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { advanceTime } from '../services/timeService';
 import { ALL_ITEMS } from '../data/items/index';
@@ -108,7 +108,7 @@ export const usePlayerActions = (
             }
             
             const nextCultivationInfo = getCultivationInfo(nextCultivation);
-            const newStats = calculateCombatStats(prev.attributes, nextCultivation, newCultivationStats, prev.learnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
+            const { finalStats, finalAttributes } = calculateAllStats(prev.attributes, nextCultivation, newCultivationStats, prev.learnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
             const timeAdvanced = advanceTime(prev.time, 12 * 60); // Breakthrough takes 12 hours
 
             setGameMessage(`Chúc mừng! Đã đột phá đến ${nextCultivationInfo.name}! ${breakthroughMessages.join(', ')}. (Tốn 12 giờ)`);
@@ -116,9 +116,10 @@ export const usePlayerActions = (
             return {
                 ...prev,
                 cultivation: nextCultivation,
-                stats: newStats,
+                attributes: finalAttributes,
+                stats: finalStats,
                 cultivationStats: newCultivationStats,
-                hp: newStats.maxHp,
+                hp: finalStats.maxHp,
                 qi: 0,
                 time: timeAdvanced,
             };
@@ -173,15 +174,16 @@ export const usePlayerActions = (
             const newLearnedSkills = prev.learnedSkills.map(s => 
                 s.skillId === skillId ? { ...s, currentLevel: s.currentLevel + 1 } : s
             );
-            const newStats = calculateCombatStats(prev.attributes, prev.cultivation, prev.cultivationStats, newLearnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
+            const { finalStats, finalAttributes } = calculateAllStats(prev.attributes, prev.cultivation, prev.cultivationStats, newLearnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
 
             setGameMessage(`"${skillDef.name}" đã được tu luyện tới tầng ${skillToLevelUp.currentLevel + 1}! (Tiêu tốn ${cost} Cảm Ngộ và 2 giờ)`);
             return {
                 ...prev,
                 learnedSkills: newLearnedSkills,
-                stats: newStats,
+                attributes: finalAttributes,
+                stats: finalStats,
                 camNgo: prev.camNgo - cost,
-                hp: Math.round(prev.hp / prev.stats.maxHp * newStats.maxHp),
+                hp: Math.round(prev.hp / prev.stats.maxHp * finalStats.maxHp),
                 time: timeAdvanced,
             };
         });

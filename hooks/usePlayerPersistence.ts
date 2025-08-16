@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { PlayerState } from '../types/character';
 import { INITIAL_PLAYER_STATE as BASE_INITIAL_PLAYER_STATE, DAYS_PER_MONTH, MONTHS_PER_YEAR, REALM_PROGRESSION } from '../constants';
-import { calculateCombatStats } from '../services/cultivationService';
+import { calculateAllStats } from '../services/cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { advanceTime } from '../services/timeService';
 import { ALL_ITEMS } from '../data/items/index';
@@ -127,7 +127,7 @@ const processLoadedState = (parsed: any): PlayerState | null => {
             : [];
 
         // Always recalculate stats on load to apply balancing changes and new properties.
-        const recalculatedStats = calculateCombatStats(
+        const { finalStats, finalAttributes } = calculateAllStats(
             parsed.attributes, 
             parsed.cultivation, 
             parsed.cultivationStats,
@@ -137,12 +137,13 @@ const processLoadedState = (parsed: any): PlayerState | null => {
             ALL_ITEMS, 
             parsed.linhCan || []
         );
-        parsed.stats = recalculatedStats;
+        parsed.stats = finalStats;
+        parsed.attributes = finalAttributes;
 
         // Cap current values to new max values
-        parsed.hp = Math.min(parsed.hp, recalculatedStats.maxHp);
-        parsed.mana = Math.min(parsed.mana, recalculatedStats.maxMana);
-        parsed.qi = Math.min(parsed.qi, recalculatedStats.maxQi);
+        parsed.hp = Math.min(parsed.hp, finalStats.maxHp);
+        parsed.mana = Math.min(parsed.mana, finalStats.maxMana);
+        parsed.qi = Math.min(parsed.qi, finalStats.maxQi);
 
         return parsed as PlayerState;
     } catch (error) {
@@ -229,7 +230,7 @@ export const createNewPlayer = (name: string, useRandomNames: boolean, linhCan: 
     newPlayerState.cultivationStats = initialCultivationStats;
     
     // Recalculate stats for the new character based on initial state
-    const newStats = calculateCombatStats(
+    const { finalStats, finalAttributes } = calculateAllStats(
         newPlayerState.attributes, 
         newPlayerState.cultivation, 
         newPlayerState.cultivationStats,
@@ -240,9 +241,10 @@ export const createNewPlayer = (name: string, useRandomNames: boolean, linhCan: 
         newPlayerState.linhCan
     );
     
-    newPlayerState.stats = newStats;
-    newPlayerState.hp = newStats.maxHp;
-    newPlayerState.mana = newStats.maxMana;
+    newPlayerState.stats = finalStats;
+    newPlayerState.attributes = finalAttributes;
+    newPlayerState.hp = finalStats.maxHp;
+    newPlayerState.mana = finalStats.maxMana;
     newPlayerState.qi = 0; // Start with 0 Qi, need to meditate
 
     return newPlayerState;

@@ -118,25 +118,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             ]
         }
     ],
-    BAC_VUC: [
-        {
-            type: 'procedural',
-            roles: [
-                {
-                    role: 'Môn Phái Đệ Tử',
-                    count: 10,
-                    generationPrompt: 'Tạo ra các đệ tử và trưởng lão của các môn phái tu tiên tại vùng núi Vân Hàn Sơn lạnh giá. Họ có thể đang tuần tra, tu luyện, hoặc trao đổi với nhau. Cảnh giới từ Trúc Cơ đến Kết Tinh.',
-                    poiIds: ['bv-poi-ctm', 'bv-poi-htkt', 'bv-poi-ttm'],
-                },
-                {
-                    role: 'Thị Dân',
-                    count: 15,
-                    generationPrompt: 'Tạo ra các thị dân, thương nhân, và tán tu sinh sống trong các thành trì và thôn trấn của Bắc Vực. Họ có thể đang buôn bán, trò chuyện, hoặc vội vã đi lại. Cảnh giới chủ yếu là Luyện Khí.',
-                    poiIds: ['bv-poi-tlt', 'bv-poi-dnt', 'bv-poi-tlth', 'bv-poi-hnth', 'bv-poi-dlth'],
-                }
-            ]
-        }
-    ],
+    BAC_VUC: [],
     HUYEN_NGOC_THANH: [
         {
             type: 'procedural',
@@ -158,7 +140,8 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                     role: 'Môn Chủ',
                     count: 1,
                     generationPrompt: `Tạo ra Môn Chủ của Thanh Vân Môn. Đây là một đại năng uy nghiêm, cảnh giới Kim Đan Hậu Kì hoặc Đỉnh Phong. Ngài mặc đạo bào lộng lẫy, khí chất phi phàm. Prompt của ngài phải thể hiện quyền uy và sự uyên bác của một người đứng đầu tông môn.`,
-                    poiIds: ['tvm-poi-1'] // Chính Điện
+                    poiIds: ['tvm-poi-1'], // Chính Điện
+                    titleChance: 0.3,
                 },
                 {
                     role: 'Phó Môn Chủ',
@@ -182,7 +165,8 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                     role: 'Chân Truyền Đệ Tử',
                     count: 2,
                     generationPrompt: `Tạo ra Chân Truyền Đệ Tử của Thanh Vân Môn, đang ở Tàng Kinh Các để tìm đọc công pháp. Họ là những thiên tài Trúc Cơ Kỳ, kiêu ngạo và tài năng.`,
-                    poiIds: ['tvm-poi-2'] // Tàng Kinh Các
+                    poiIds: ['tvm-poi-2'], // Tàng Kinh Các
+                    titleChance: 0.05,
                 },
                 {
                     role: 'Nội Môn Đệ Tử',
@@ -199,19 +183,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             ]
         }
     ],
-    DAI_HOANG: [
-        {
-            type: 'procedural',
-            roles: [
-                {
-                    role: 'Thương Nhân Sa Mạc',
-                    count: 8,
-                    generationPrompt: `Tạo ra các tu sĩ và thương nhân tại một ốc đảo sa mạc. Họ là những người gan dạ, có thể là tán tu, thương nhân buôn bán vật liệu đặc biệt, hoặc những người tìm kiếm cơ hội trong vùng đất khắc nghiệt. Cảnh giới từ Trúc Cơ đến Kết Tinh.`,
-                    poiIds: ['dh-poi-2'], // Lạc Đà Trấn
-                }
-            ]
-        }
-    ],
+    DAI_HOANG: [],
     DONG_HAI: [],
     LUU_LY_TONG: [],
     DUOC_VIEN: [

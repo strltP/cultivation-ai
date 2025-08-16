@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { PlayerState } from '../../../types/character';
 import { ALL_ITEMS } from '../../../data/items/index';
 import { INVENTORY_SIZE } from '../../../constants';
-import { calculateCombatStats } from '../../../services/cultivationService';
+import { calculateAllStats } from '../../../services/cultivationService';
 import { ALL_SKILLS } from '../../../data/skills/skills';
 import { FaBookOpen, FaPlusCircle } from 'react-icons/fa';
 import { GiBrain, GiFireBowl } from 'react-icons/gi';
@@ -56,7 +56,7 @@ const ItemsTab: React.FC<ItemsTabProps> = ({ playerState, setPlayerState, onUseI
             }
             
             const newLearnedSkills = [...prev.learnedSkills, { skillId, currentLevel: 1 }];
-            const newStats = calculateCombatStats(prev.attributes, prev.cultivation, prev.cultivationStats, newLearnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
+            const { finalStats, finalAttributes } = calculateAllStats(prev.attributes, prev.cultivation, prev.cultivationStats, newLearnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
             
             setSelectedSlotIndex(null);
 
@@ -64,8 +64,9 @@ const ItemsTab: React.FC<ItemsTabProps> = ({ playerState, setPlayerState, onUseI
                 ...prev,
                 learnedSkills: newLearnedSkills,
                 inventory: newInventory,
-                stats: newStats,
-                hp: Math.min(prev.hp, newStats.maxHp), // Adjust HP to new maxHP if it changed
+                attributes: finalAttributes,
+                stats: finalStats,
+                hp: Math.min(prev.hp, finalStats.maxHp), // Adjust HP to new maxHP if it changed
             };
         });
     };

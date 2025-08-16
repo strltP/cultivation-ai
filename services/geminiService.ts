@@ -329,7 +329,7 @@ export interface GeneratedNpcData {
     forSale?: { itemId: string, stock: number, priceModifier?: number }[];
 }
 
-export const generateNpcs = async (generationPrompt: string, count: number): Promise<GeneratedNpcData[]> => {
+export const generateNpcs = async (generationPrompt: string, count: number, titleChance?: number): Promise<GeneratedNpcData[]> => {
     try {
         const client = getAIClient();
         const tamPhapSkills = ALL_SKILLS.filter(s => s.type === 'TAM_PHAP');
@@ -342,17 +342,24 @@ export const generateNpcs = async (generationPrompt: string, count: number): Pro
         const inventoryItems = ALL_ITEMS.filter(i => i.type === 'material' || i.type === 'consumable');
         const sellableItemsInfo = ALL_ITEMS.filter(i => i.value && i.value > 0).map(i => `id: ${i.id}, name: '${i.name}', type: ${i.type}`).join('; ');
         const linhCanTypesString = LINH_CAN_TYPES.join(', ');
+        
+        let titleInstruction = '';
+        if (titleChance !== undefined && titleChance > 0) {
+            titleInstruction = `4.  Một danh hiệu (title) tu tiên tùy chọn. Có ${Math.round(titleChance * 100)}% khả năng NPC này sẽ có danh hiệu. Danh hiệu phải mang tính chất hào nhoáng (ví dụ: 'Kiếm Thánh', 'Huyết Ma', 'Bách Thảo Tiên Tử'). Nếu không có danh hiệu, hãy để trống trường này hoặc đặt là null.`;
+        } else {
+            titleInstruction = `4.  Danh hiệu (title): Để trống trường này. NPC này không có danh hiệu.`;
+        }
 
         const prompt = `${generationPrompt}
 Hãy tạo ra ${count} NPC độc đáo. Đối với mỗi NPC, hãy cung cấp:
 1.  Một cái tên tiếng Việt đậm chất tiên hiệp, huyền huyễn (ví dụ: Mặc Trần, Lãnh Nguyệt Hàn, Tiêu Viêm, Liễu Thanh Ca). Tên phải có cả Họ và Tên.
 2.  Giới tính ('Nam' hoặc 'Nữ').
 3.  Một chức vụ (role) phù hợp (ví dụ: 'Lão Dược Sư', 'Kiếm Tu Lãng Du', 'Trưởng Lão Tông Môn').
-4.  Một danh hiệu (title) tu tiên tùy chọn, không bắt buộc, mang tính chất hào nhoáng (ví dụ: 'Kiếm Thánh', 'Huyết Ma', 'Bách Thảo Tiên Tử'). Để trống nếu không phù hợp.
+${titleInstruction}
 5.  Một lời nhắc đối thoại ngắn gọn (1-2 câu) để mời tương tác.
 6.  Cảnh giới tu luyện (ví dụ: 'Trúc Cơ', 'Kim Đan').
 7.  Tiểu cảnh giới (ví dụ: 'Hậu Kì', 'Đỉnh Phong', hoặc 'Tầng 5' đối với Luyện Khí).
-8.  Các thuộc tính cơ bản (Căn Cốt, Thân Pháp, Thần Thức, Ngộ Tính). Giá trị của thuộc tính phải phù hợp với cảnh giới của họ. Ví dụ: Luyện Khí (giá trị từ 10-30), Trúc Cơ (20-50), Kết Tinh (30-60), Kim Đan (40-80). Hãy phân bổ các điểm này để phản ánh vai trò của họ (ví dụ: pháp tu có Thần Thức và Ngộ Tính cao, hộ vệ có Căn Cốt cao).
+8.  Các thuộc tính cơ bản (Căn Cốt, Thân Pháp, Thần Thức, Ngộ Tính). Đây là các chỉ số "thiên phú" ban đầu khi còn là phàm nhân, trước khi tu luyện. Hãy tạo ra các giá trị trong khoảng từ 5 đến 15 cho mỗi thuộc tính. Hãy phân bổ các điểm này để phản ánh vai trò của họ (ví dụ: pháp tu có Thần Thức và Ngộ Tính cao, hộ vệ có Căn Cốt cao).
 9.  Một danh sách từ 1 đến 5 Linh Căn. Mỗi Linh Căn bao gồm 'type' (loại) và 'purity' (độ thuần khiết, 10-100). Loại Linh Căn phải nằm trong danh sách sau: [${linhCanTypesString}]. Linh Căn phải phù hợp với vai trò và cảnh giới của NPC.
 10. Một danh sách ID kỹ năng đã học. Hãy chọn 1 Tâm Pháp từ danh sách sau: [${tamPhapInfo}]. Và chọn 1 hoặc 2 Công Pháp từ danh sách sau: [${congPhapInfo}]. Các kỹ năng phải phù hợp với vai trò và cảnh giới của họ.
 11. Một lượng Linh Thạch (ví dụ, 0 đến 100) mà họ có thể đánh rơi.
