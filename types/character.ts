@@ -22,6 +22,7 @@ export interface NPC {
   title?: string; // Danh hiệu, ví dụ: "Kiếm Thánh" (Optional)
   spawnRuleId?: string; // For procedural monsters, to link them to their spawn rule
   role: string;   // Chức vụ, ví dụ: "Trưởng Lão" (Required)
+  cannotChallengeUntil?: GameTime;
   position: Position;
   prompt: string;
   age: number;

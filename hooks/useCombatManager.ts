@@ -11,7 +11,7 @@ import { ALL_ITEMS } from '../data/items/index';
 import type { InventorySlot } from '../types/item';
 import { INVENTORY_SIZE } from '../constants';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
-import { advanceTime } from '../services/timeService';
+import { advanceTime, gameTimeToMinutes } from '../services/timeService';
 
 
 export const useCombatManager = (
@@ -45,6 +45,16 @@ export const useCombatManager = (
         if (!freshNpc || playerState.defeatedNpcIds.includes(freshNpc.id)) {
             setGameMessage(`${npcToChallenge.name} đã không còn ở đây.`);
             return;
+        }
+
+        if (freshNpc.cannotChallengeUntil) {
+            const now = gameTimeToMinutes(playerState.time);
+            const availableAt = gameTimeToMinutes(freshNpc.cannotChallengeUntil);
+            if (now < availableAt) {
+                const { year, season, month, day } = freshNpc.cannotChallengeUntil;
+                setGameMessage(`${freshNpc.name} đang dưỡng thương, không thể khiêu chiến cho đến ngày ${day} tháng ${month} năm ${year}.`);
+                return;
+            }
         }
 
         const npc = freshNpc; // Use the fresh data for combat initiation.
@@ -101,6 +111,8 @@ export const useCombatManager = (
 
         // --- Calculate Loot ---
         const allLootItems: InventorySlot[] = [];
+        const linhThachDropped = Math.floor((npc.linhThach || 0) * (Math.random() * 0.3 + 0.7)); // 70-100%
+        
         if (isMonster && npc.lootTable) {
             npc.lootTable.forEach(loot => {
                 if (Math.random() < loot.chance) {
@@ -109,19 +121,40 @@ export const useCombatManager = (
                 }
             });
         } else if (!isMonster) {
-             const lootableInventory = [...npc.inventory];
+            const potentialLoot: { itemSlot: InventorySlot; isEquipped: boolean }[] = [];
+            // Add inventory items
+            npc.inventory.forEach(item => {
+                potentialLoot.push({ itemSlot: item, isEquipped: false });
+            });
+            // Add equipped items
             Object.values(npc.equipment).forEach(equippedItem => {
-                if (equippedItem && !lootableInventory.find(i => i.itemId === equippedItem.itemId)) {
-                    lootableInventory.push(equippedItem);
+                if (equippedItem) {
+                     potentialLoot.push({ itemSlot: equippedItem, isEquipped: true });
                 }
             });
-            allLootItems.push(...lootableInventory);
+
+            potentialLoot.forEach(lootItem => {
+                const { itemSlot, isEquipped } = lootItem;
+                const dropChance = isEquipped ? 0.7 : 0.9; // 70% for equipped, 90% for inventory
+
+                if (Math.random() < dropChance) {
+                    // Drop 50% to 100% of the quantity
+                    const quantityToDrop = Math.max(1, Math.ceil(itemSlot.quantity * (Math.random() * 0.5 + 0.5)));
+                    
+                    const existingLoot = allLootItems.find(l => l.itemId === itemSlot.itemId);
+                    if (existingLoot) {
+                        existingLoot.quantity += quantityToDrop;
+                    } else {
+                        allLootItems.push({ itemId: itemSlot.itemId, quantity: quantityToDrop });
+                    }
+                }
+            });
         }
         
         // --- Create Loot Message ---
         const lootMessages: string[] = [];
-        if (npc.linhThach > 0) {
-            lootMessages.push(`${npc.linhThach.toLocaleString()} Linh Thạch`);
+        if (linhThachDropped > 0) {
+            lootMessages.push(`${linhThachDropped.toLocaleString()} Linh Thạch`);
         }
         allLootItems.forEach(itemLoot => {
             const itemDef = ALL_ITEMS.find(i => i.id === itemLoot.itemId);
@@ -169,7 +202,7 @@ export const useCombatManager = (
                 camNgo: p.camNgo + camNgoGained,
                 activeEffects: [],
                 defeatedNpcIds: [...new Set([...p.defeatedNpcIds, npc.id])],
-                linhThach: p.linhThach + (npc.linhThach || 0),
+                linhThach: p.linhThach + linhThachDropped,
                 inventory: newInventory,
             };
         });
@@ -192,17 +225,33 @@ export const useCombatManager = (
         updateAndPersistPlayerState(p => {
             if (!p) return p;
             
-            const newPlayerState = { ...p };
+            // Calculate the challenge cooldown time (1 month)
+            const oneMonthInMinutes = 30 * 24 * 60;
+            const cannotChallengeUntil = advanceTime(p.time, oneMonthInMinutes);
             
-            // Update player stats from combat
+            // Find and update the NPC in the master list
+            const newGeneratedNpcs = JSON.parse(JSON.stringify(p.generatedNpcs));
+            const npcsOnMap = newGeneratedNpcs[p.currentMap] || [];
+            const npcIndex = npcsOnMap.findIndex((n: NPC) => n.id === npc.id);
+    
+            if (npcIndex !== -1) {
+                npcsOnMap[npcIndex].hp = 1;
+                npcsOnMap[npcIndex].mana = npc.mana;
+                npcsOnMap[npcIndex].cannotChallengeUntil = cannotChallengeUntil;
+            } else {
+                console.warn("Could not find spared NPC in master list to update.");
+            }
+            
+            // Update player state
+            const newPlayerState = { ...p };
             newPlayerState.hp = playerInCombat.hp;
             newPlayerState.mana = playerInCombat.mana;
             newPlayerState.camNgo = p.camNgo + camNgoGained;
             newPlayerState.activeEffects = [];
-    
-            // Add the spared NPC to the defeated list to make them disappear.
-            newPlayerState.defeatedNpcIds = [...new Set([...p.defeatedNpcIds, npc.id])];
-    
+            newPlayerState.generatedNpcs = newGeneratedNpcs;
+            
+            // The spared NPC is NOT added to defeatedNpcIds so they don't disappear.
+            
             return newPlayerState;
         });
     

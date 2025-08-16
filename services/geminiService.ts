@@ -345,7 +345,7 @@ export const generateNpcs = async (generationPrompt: string, count: number): Pro
 
         const prompt = `${generationPrompt}
 Hãy tạo ra ${count} NPC độc đáo. Đối với mỗi NPC, hãy cung cấp:
-1.  Tên tiếng Việt.
+1.  Một cái tên tiếng Việt đậm chất tiên hiệp, huyền huyễn (ví dụ: Mặc Trần, Lãnh Nguyệt Hàn, Tiêu Viêm, Liễu Thanh Ca). Tên phải có cả Họ và Tên.
 2.  Giới tính ('Nam' hoặc 'Nữ').
 3.  Một chức vụ (role) phù hợp (ví dụ: 'Lão Dược Sư', 'Kiếm Tu Lãng Du', 'Trưởng Lão Tông Môn').
 4.  Một danh hiệu (title) tu tiên tùy chọn, không bắt buộc, mang tính chất hào nhoáng (ví dụ: 'Kiếm Thánh', 'Huyết Ma', 'Bách Thảo Tiên Tử'). Để trống nếu không phù hợp.

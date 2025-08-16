@@ -113,6 +113,11 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose }) => {
             </button>
         </div>
         
+        <div className="flex items-center gap-x-2 text-lg text-yellow-300 bg-gray-800/50 px-3 py-1.5 rounded-md self-start flex-shrink-0" title="Linh Thạch Mang Theo">
+            <FaGem />
+            <span className="font-semibold">{npc.linhThach > 0 ? npc.linhThach.toLocaleString() : 'Không có'}</span>
+        </div>
+
         <div className="flex flex-col gap-y-2 flex-shrink-0">
             <div>
                 <p className="text-xs text-red-200 mb-1 text-right">{npc.hp} / {npc.stats.maxHp} Sinh Lực</p>
