@@ -35,12 +35,14 @@ export interface NPC {
   // NPC stats
   cultivation?: CultivationState;
   level?: number;
-  attributes: CharacterAttributes;
+  baseAttributes: CharacterAttributes; // Thuộc tính gốc (thiên phú)
+  attributes: CharacterAttributes; // Thuộc tính đã được tính toán (bao gồm cả tu luyện, trang bị)
   stats: CombatStats;
   cultivationStats: Partial<CombatStats & CharacterAttributes>;
   hp: number;
   qi: number;
   mana: number;
+  camNgo: number;
   linhThach: number;
   linhCan: LinhCan[];
   activeEffects: ActiveStatusEffect[];
@@ -112,6 +114,7 @@ export interface PlayerState {
   }[];
   chatHistories?: Record<string, ChatMessage[]>;
   lastPopCheck?: Record<string, GameTime>; // Key: mapId-areaId for monster population, Value: last check time
+  lastNpcProgressionCheck?: GameTime; // The last time NPC cultivation was processed
   journal?: JournalEntry[];
   
   // Game Time

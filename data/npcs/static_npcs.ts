@@ -20,6 +20,8 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         equipment: {
             ARMOR: { itemId: 'armor_thiet_giap' }
         },
+        linhThach: 150,
+        camNgo: 800,
         forSale: [
             { itemId: 'weapon_thiet_kiem', stock: 5, priceModifier: 1.2 },
             { itemId: 'armor_thiet_giap', stock: 3, priceModifier: 1.2 },
@@ -47,6 +49,7 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
             ACCESSORY: { itemId: 'accessory_binh_an_phu' }
         },
         linhThach: 50,
+        camNgo: 250,
     },
     {
         baseId: 'van_bao_chuong_quy',
@@ -67,6 +70,7 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         ],
         learnedSkillIds: ['tam-phap-dia-2', 'cong-phap-huyen-1'],
         linhThach: 100000,
+        camNgo: 50000,
         forSale: [
             { itemId: 'material_linh_thao', stock: 999, priceModifier: 1.5 },
             { itemId: 'material_huyen_thiet', stock: 999, priceModifier: 1.5 },
@@ -97,6 +101,8 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
             { type: 'MOC', purity: 55 },
         ],
         learnedSkillIds: ['tam-phap-hoang-2'],
+        linhThach: 120,
+        camNgo: 600,
         forSale: [
             { itemId: 'consumable_hoi_xuan_dan', stock: 5, priceModifier: 1.1 },
             { itemId: 'material_linh_thao', stock: 20, priceModifier: 1.0 },

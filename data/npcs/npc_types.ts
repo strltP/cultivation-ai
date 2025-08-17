@@ -19,6 +19,7 @@ export interface StaticNpcDefinition {
     initialInventory?: InventorySlot[];
     equipment?: Partial<Record<EquipmentSlot, { itemId: string }>>;
     linhThach?: number;
+    camNgo?: number;
     forSale?: { itemId: string; stock: number; priceModifier?: number }[];
 }
 

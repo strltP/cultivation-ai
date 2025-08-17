@@ -10,7 +10,7 @@ import { FaBookDead, FaBook, FaGem, FaHourglassHalf, FaLock } from 'react-icons/
 import { ALL_ITEMS } from '../../data/items/index';
 import type { EquipmentSlot } from '../../types/equipment';
 import { EQUIPMENT_SLOT_NAMES } from '../../types/equipment';
-import { GiDiamondHard, GiBackpack, GiGalaxy, GiTwoCoins } from 'react-icons/gi';
+import { GiDiamondHard, GiBackpack, GiGalaxy, GiTwoCoins, GiBrain } from 'react-icons/gi';
 import { LINH_CAN_DATA } from '../../data/linhcan';
 
 interface NpcInfoPanelProps {
@@ -119,9 +119,17 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
             </button>
         </div>
         
-        <div className="flex items-center gap-x-2 text-lg text-yellow-300 bg-gray-800/50 px-3 py-1.5 rounded-md self-start flex-shrink-0" title="Linh Thạch Mang Theo">
-            <FaGem />
-            <span className="font-semibold">{npc.linhThach > 0 ? npc.linhThach.toLocaleString() : 'Không có'}</span>
+        <div className="flex flex-wrap items-center gap-4 flex-shrink-0">
+            <div className="flex items-center gap-x-2 text-lg text-yellow-300 bg-gray-800/50 px-3 py-1.5 rounded-md" title="Linh Thạch Mang Theo">
+                <FaGem />
+                <span className="font-semibold">{npc.linhThach > 0 ? npc.linhThach.toLocaleString() : 'Không có'}</span>
+            </div>
+            {!isMonster && (
+                <div className="flex items-center gap-x-2 text-lg text-cyan-300 bg-gray-800/50 px-3 py-1.5 rounded-md" title="Điểm Cảm Ngộ">
+                    <GiBrain />
+                    <span className="font-semibold">{npc.camNgo > 0 ? npc.camNgo.toLocaleString() : 'Không có'}</span>
+                </div>
+            )}
         </div>
 
         <div className="flex flex-col gap-y-2 flex-shrink-0">

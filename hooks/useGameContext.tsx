@@ -16,6 +16,10 @@ import type { CombatState, PlayerAction } from '../types/combat';
 import { generatePlaceNames, PlaceToName } from '../services/geminiService';
 import { savePlayerState } from './usePlayerPersistence';
 import { useDebounce } from './useDebounce';
+import { getNextCultivationLevel, getCultivationInfo, getRealmLevelInfo, calculateAllStats } from '../services/cultivationService';
+import { ALL_SKILLS } from '../data/skills/skills';
+import type { CharacterAttributes, CombatStats } from '../types/stats';
+import { DAYS_PER_MONTH } from '../constants';
 
 
 // --- TYPE DEFINITIONS FOR CONTEXTS ---
@@ -187,6 +191,153 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         };
         initializeGame();
     }, []); // Run only once on mount
+
+    // NPC Cultivation Progression Logic
+    useEffect(() => {
+        if (!isGameReady || !playerState.time) return;
+    
+        const lastCheck = playerState.lastNpcProgressionCheck || playerState.time;
+        const monthsPassed = (playerState.time.year - lastCheck.year) * 12 + (playerState.time.month - lastCheck.month);
+    
+        if (monthsPassed > 0) {
+            updateAndPersistPlayerState(p => {
+                if (!p) return p;
+    
+                const newGeneratedNpcs = JSON.parse(JSON.stringify(p.generatedNpcs));
+                const newJournalEntries: JournalEntry[] = [];
+                const totalHoursPassed = monthsPassed * DAYS_PER_MONTH * 24;
+    
+                for (const mapId in newGeneratedNpcs) {
+                    for (const npc of newGeneratedNpcs[mapId]) {
+                        if (npc.npcType !== 'cultivator' || !npc.cultivation) continue;
+    
+                        // --- Base Gain Rates ---
+                        const SECLUSION_QI_PER_HOUR_BASE = 1.5;
+                        const NGO_TINH_FACTOR_QI = 0.05;
+                        const realmMultiplier = 1 + (npc.cultivation.realmIndex * 0.15);
+                        const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (npc.attributes.ngoTinh * NGO_TINH_FACTOR_QI)) * realmMultiplier;
+                        const totalPotentialQiGained = Math.round(qiPerHour * totalHoursPassed);
+    
+                        const CAM_NGO_PER_HOUR_BASE = 1.5;
+                        const NGO_TINH_FACTOR_CAM_NGO = 0.08;
+                        const camNgoPerHour = CAM_NGO_PER_HOUR_BASE + (npc.attributes.ngoTinh * NGO_TINH_FACTOR_CAM_NGO);
+                        const totalPotentialCamNgoGained = Math.round(camNgoPerHour * totalHoursPassed);
+    
+                        // --- NPC Action Decision ---
+                        let action: 'CULTIVATE' | 'ENLIGHTEN' | 'EXPLORE' = 'CULTIVATE';
+                        const upgradableSkills = npc.learnedSkills
+                            .map((ls: any) => ({ learned: ls, def: ALL_SKILLS.find(s => s.id === ls.skillId) }))
+                            .filter((item: any) => item.def && item.learned.currentLevel < item.def.maxLevel);
+                        
+                        const cheapestSkillCost = upgradableSkills.length > 0 
+                            ? Math.min(...upgradableSkills.map((s: any) => s.def!.enlightenmentBaseCost + s.learned.currentLevel * s.def!.enlightenmentCostPerLevel))
+                            : Infinity;
+    
+                        let cultivateChance = 0.70;
+                        let enlightenChance = 0.25;
+    
+                        if (npc.qi >= npc.stats.maxQi) {
+                            cultivateChance = 0;
+                            enlightenChance = 0.95;
+                        } else if (upgradableSkills.length === 0 || npc.camNgo < cheapestSkillCost) {
+                            enlightenChance = 0;
+                            cultivateChance = 0.95;
+                        }
+                        
+                        const randomRoll = Math.random();
+                        if (randomRoll < cultivateChance) {
+                            action = 'CULTIVATE';
+                        } else if (randomRoll < cultivateChance + enlightenChance) {
+                            action = 'ENLIGHTEN';
+                        } else {
+                            action = 'EXPLORE';
+                        }
+    
+                        // --- Perform Action ---
+                        switch(action) {
+                            case 'CULTIVATE':
+                                npc.qi = Math.min(npc.stats.maxQi, (npc.qi || 0) + totalPotentialQiGained);
+                                npc.camNgo = (npc.camNgo || 0) + Math.round(totalPotentialCamNgoGained * 0.25); // Passive gain
+                                
+                                const nextCultivationLevel = getNextCultivationLevel(npc.cultivation);
+                                if (nextCultivationLevel && npc.qi >= npc.stats.maxQi) {
+                                    const breakthroughChance = Math.min(0.95, 0.5 + (npc.attributes.tamCanh / 200) + (npc.attributes.coDuyen / 400));
+                                    if (Math.random() < breakthroughChance) {
+                                        const oldCultivationInfo = getCultivationInfo(npc.cultivation);
+                                        const qiRequiredForOldLevel = npc.stats.maxQi;
+                                        const newLevelInfo = getRealmLevelInfo(nextCultivationLevel);
+                                        if (!newLevelInfo) continue;
+    
+                                        const newCultivationStats = { ...npc.cultivationStats };
+                                        for (const key in newLevelInfo.bonuses) {
+                                            const statKey = key as keyof (CombatStats & CharacterAttributes);
+                                            const value = newLevelInfo.bonuses[statKey];
+                                            let rolledValue = typeof value === 'number' ? value : (Array.isArray(value) ? Math.floor(Math.random() * (value[1] - value[0] + 1)) + value[0] : 0);
+                                            if (rolledValue !== 0) (newCultivationStats as any)[statKey] = ((newCultivationStats as any)[statKey] || 0) + rolledValue;
+                                        }
+                                        const { finalStats, finalAttributes } = calculateAllStats(npc.baseAttributes, nextCultivationLevel, newCultivationStats, npc.learnedSkills, ALL_SKILLS, npc.equipment, ALL_ITEMS, npc.linhCan);
+                                        
+                                        npc.cultivation = nextCultivationLevel;
+                                        npc.attributes = finalAttributes;
+                                        npc.stats = finalStats;
+                                        npc.cultivationStats = newCultivationStats;
+                                        npc.hp = finalStats.maxHp;
+                                        npc.mana = finalStats.maxMana;
+                                        npc.qi -= qiRequiredForOldLevel;
+                                        const newCultivationInfo = getCultivationInfo(nextCultivationLevel);
+                                        newJournalEntries.push({ time: p.time, message: `Có tin đồn, ${npc.name} (${npc.role}) sau nhiều năm khổ tu đã đột phá thành công, từ ${oldCultivationInfo.name} tiến vào cảnh giới ${newCultivationInfo.name}!` });
+                                    } else {
+                                        npc.qi = npc.stats.maxQi * 0.8;
+                                        newJournalEntries.push({ time: p.time, message: `Nghe nói ${npc.name} (${npc.role}) nếm mùi thất bại khi cố gắng đột phá, tu vi bị hao tổn.` });
+                                    }
+                                }
+                                break;
+                            
+                            case 'ENLIGHTEN':
+                                npc.camNgo = (npc.camNgo || 0) + totalPotentialCamNgoGained;
+                                npc.qi = Math.min(npc.stats.maxQi, (npc.qi || 0) + Math.round(totalPotentialQiGained * 0.25)); // Passive gain
+    
+                                const upgradableSkillsNow = npc.learnedSkills
+                                    .map((ls: any) => ({ learned: ls, def: ALL_SKILLS.find(s => s.id === ls.skillId) }))
+                                    .filter((item: any) => item.def && item.learned.currentLevel < item.def.maxLevel)
+                                    .map((item: any) => ({ ...item, cost: item.def!.enlightenmentBaseCost + item.learned.currentLevel * item.def!.enlightenmentCostPerLevel }))
+                                    .filter((item: any) => npc.camNgo >= item.cost);
+    
+                                if (upgradableSkillsNow.length > 0) {
+                                    upgradableSkillsNow.sort((a: any, b: any) => a.cost - b.cost);
+                                    const skillToUpgrade = upgradableSkillsNow[0];
+                                    
+                                    npc.camNgo -= skillToUpgrade.cost;
+                                    const skillIndex = npc.learnedSkills.findIndex((s: any) => s.skillId === skillToUpgrade.learned.skillId);
+                                    npc.learnedSkills[skillIndex].currentLevel++;
+                                    
+                                    newJournalEntries.push({ time: p.time, message: `Có tin đồn, ${npc.name} (${npc.role}) sau nhiều năm khổ tu đã lĩnh ngộ "${skillToUpgrade.def!.name}" lên tầng thứ ${npc.learnedSkills[skillIndex].currentLevel}!` });
+    
+                                    if (skillToUpgrade.def!.type === 'TAM_PHAP') {
+                                        const { finalStats, finalAttributes } = calculateAllStats(npc.baseAttributes, npc.cultivation, npc.cultivationStats, npc.learnedSkills, ALL_SKILLS, npc.equipment, ALL_ITEMS, npc.linhCan);
+                                        npc.attributes = finalAttributes;
+                                        npc.stats = finalStats;
+                                    }
+                                }
+                                break;
+    
+                            case 'EXPLORE':
+                                npc.qi = Math.min(npc.stats.maxQi, (npc.qi || 0) + Math.round(totalPotentialQiGained * 0.10));
+                                npc.camNgo = (npc.camNgo || 0) + Math.round(totalPotentialCamNgoGained * 0.10);
+                                break;
+                        }
+                    }
+                }
+    
+                return {
+                    ...p,
+                    generatedNpcs: newGeneratedNpcs,
+                    journal: [...(p.journal || []), ...newJournalEntries],
+                    lastNpcProgressionCheck: p.time,
+                };
+            });
+        }
+    }, [playerState.time.month, playerState.time.year, isGameReady, updateAndPersistPlayerState]);
 
 
     const [gameMessageObject, setGameMessageObject] = useState<{ text: string; id: number } | null>(null);

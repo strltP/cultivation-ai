@@ -9,7 +9,7 @@ import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, Procedural
 import { generateNpcs, GeneratedNpcData } from './geminiService';
 import { REALM_PROGRESSION } from '../constants';
 import { MAPS, MAP_AREAS_BY_MAP } from '../mapdata';
-import { calculateAllStats } from './cultivationService';
+import { calculateAllStats, getNextCultivationLevel, getRealmLevelInfo } from './cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { ALL_ITEMS } from '../data/items/index';
 import { EquipmentSlot } from '../types/equipment';
@@ -37,7 +37,7 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
     const cultivation = { realmIndex: realmIndex !== -1 ? realmIndex : 0, level };
     
     // --- Simulate level-ups to get accumulated bonuses ---
-    const mortalAttributes: CharacterAttributes = { ...data.attributes }; // Start with base "talent" from Gemini
+    const baseAttributes: CharacterAttributes = { ...data.attributes }; // Store the original "talent"
     const npcCultivationBonuses: Partial<CombatStats & CharacterAttributes> = {};
     
     for (let r_idx = 0; r_idx <= cultivation.realmIndex; r_idx++) {
@@ -126,19 +126,17 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
         linhCan.push({ type: 'THO', purity: 20 });
     }
 
-    const { finalStats, finalAttributes } = calculateAllStats(mortalAttributes, cultivation, npcCultivationBonuses, learnedSkills, ALL_SKILLS, equipment, ALL_ITEMS, linhCan);
+    const { finalStats, finalAttributes } = calculateAllStats(baseAttributes, cultivation, npcCultivationBonuses, learnedSkills, ALL_SKILLS, equipment, ALL_ITEMS, linhCan);
     
-    // Pass the cultivation bonuses directly, which is now named npcCultivationBonuses
     const npcCultivationStats = npcCultivationBonuses;
     
     let age = 0;
     if ('age' in data && data.age) {
         age = data.age; // For static NPCs
     } else {
-        // Generate a plausible random age based on realm for procedural NPCs
-        const realmAgeMin = [16, 50, 150, 400, 1000, 2000]; // Min age for Luyen Khi, Truc Co, Ket Tinh, etc.
+        const realmAgeMin = [16, 50, 150, 400, 1000, 2000];
         const minAge = realmAgeMin[cultivation.realmIndex] || 16;
-        const maxAgeForRealm = finalStats.maxThoNguyen * 0.8; // Don't spawn NPCs about to die of old age
+        const maxAgeForRealm = finalStats.maxThoNguyen * 0.8;
         age = Math.floor(Math.random() * (maxAgeForRealm - minAge + 1)) + minAge;
     }
 
@@ -151,7 +149,6 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
         minute: 0
     };
 
-
     return {
         name: data.name,
         gender: data.gender,
@@ -163,14 +160,16 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
         position,
         birthTime,
         cultivation,
+        baseAttributes: baseAttributes,
         attributes: finalAttributes,
         stats: finalStats,
         cultivationStats: npcCultivationStats,
         linhCan,
         activeEffects: [],
         hp: finalStats.maxHp,
-        qi: finalStats.maxQi,
+        qi: Math.floor(Math.random() * finalStats.maxQi), // Start with a random amount of Qi
         mana: finalStats.maxMana,
+        camNgo: 'camNgo' in data && typeof data.camNgo === 'number' ? data.camNgo : 0,
         linhThach: 'linhThach' in data && typeof data.linhThach === 'number' ? data.linhThach : 0,
         learnedSkills,
         inventory,
@@ -182,6 +181,7 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
 export function createMonsterFromData(template: MonsterDefinition, level: number, id: string, position: {x:number, y:number}, spawnRuleId: string | undefined, gameTime: GameTime): NPC {
     const levelMultiplier = Math.pow(1.15, level - 1);
 
+    const baseAttributes: CharacterAttributes = template.attributes;
     const finalAttributes: CharacterAttributes = {
         canCot: Math.round(template.attributes.canCot * levelMultiplier),
         thanPhap: Math.round(template.attributes.thanPhap * levelMultiplier),
@@ -225,11 +225,13 @@ export function createMonsterFromData(template: MonsterDefinition, level: number
         prompt: `Một con ${template.name} cấp ${level} hung dữ đang chắn đường.`,
         position,
         level,
+        baseAttributes,
         attributes: finalAttributes,
         stats: finalStats,
         hp: finalStats.maxHp,
         qi: 0,
         mana: 0,
+        camNgo: 0,
         birthTime,
         cultivationStats: {},
         linhCan: [],

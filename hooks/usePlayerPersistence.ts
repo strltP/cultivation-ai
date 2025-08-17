@@ -1,9 +1,7 @@
-
-
 import { useState, useEffect, useCallback } from 'react';
-import type { PlayerState } from '../types/character';
+import type { PlayerState, NPC } from '../types/character';
 import { INITIAL_PLAYER_STATE as BASE_INITIAL_PLAYER_STATE, DAYS_PER_MONTH, MONTHS_PER_YEAR, REALM_PROGRESSION } from '../constants';
-import { calculateAllStats } from '../services/cultivationService';
+import { calculateAllStats, getNextCultivationLevel, getRealmLevelInfo } from '../services/cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { advanceTime } from '../services/timeService';
 import { ALL_ITEMS } from '../data/items/index';
@@ -19,6 +17,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
     ...BASE_INITIAL_PLAYER_STATE,
     journal: [],
     saveVersion: CURRENT_SAVE_VERSION,
+    lastNpcProgressionCheck: { year: 17, season: 'Xuân', month: 1, day: 1, hour: 8, minute: 0 },
 };
 export { DAYS_PER_MONTH };
 
@@ -133,6 +132,7 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         if (!parsed.activeEffects) parsed.activeEffects = [];
         if (!parsed.targetPosition) parsed.targetPosition = parsed.position;
         if (!parsed.journal) parsed.journal = [];
+        if (!parsed.lastNpcProgressionCheck) parsed.lastNpcProgressionCheck = parsed.time;
         
         // Add checks for numeric stats that might be missing in old saves.
         if (typeof parsed.hp !== 'number' || isNaN(parsed.hp)) parsed.hp = parsed.stats?.maxHp || 50;
@@ -184,6 +184,27 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         parsed.learnedSkills = Array.isArray(parsed.learnedSkills)
             ? (parsed.learnedSkills as any[]).filter(ls => ls && ALL_SKILLS.find(s => s.id === ls.skillId))
             : [];
+        
+        // Migrate NPCs in old save files
+        for (const mapId in parsed.generatedNpcs) {
+            for (const npc of parsed.generatedNpcs[mapId]) {
+                if (npc.npcType !== 'monster') {
+                    if (!npc.baseAttributes) {
+                        npc.baseAttributes = { ...npc.attributes };
+                    }
+                    if (npc.cultivationProgress !== undefined) {
+                        // This is an NPC from an old save file.
+                        // Recalculate stats first to get the correct new maxQi.
+                        const { finalStats: tempStats } = calculateAllStats(npc.baseAttributes, npc.cultivation, npc.cultivationStats, npc.learnedSkills, ALL_SKILLS, npc.equipment, ALL_ITEMS, npc.linhCan);
+                        // Set their qi to a random value to reflect the system change.
+                        npc.qi = Math.floor(Math.random() * tempStats.maxQi);
+                        // Remove the old property
+                        delete npc.cultivationProgress;
+                    }
+                }
+            }
+        }
+
 
         // Always recalculate stats on load to apply balancing changes and new properties.
         const { finalStats, finalAttributes } = calculateAllStats(

@@ -323,6 +323,7 @@ export interface GeneratedNpcData {
     };
     linhCan: { type: string, purity: number }[];
     linhThach: number;
+    camNgo: number;
     learnedSkillIds: string[];
     equipment?: Partial<Record<EquipmentSlot, { itemId: string }>>;
     inventory?: { itemId: string, quantity: number }[];
@@ -363,9 +364,10 @@ ${titleInstruction}
 9.  Một danh sách từ 1 đến 5 Linh Căn. Mỗi Linh Căn bao gồm 'type' (loại) và 'purity' (độ thuần khiết, 10-100). Loại Linh Căn phải nằm trong danh sách sau: [${linhCanTypesString}]. Linh Căn phải phù hợp với vai trò và cảnh giới của NPC.
 10. Một danh sách ID kỹ năng đã học. Hãy chọn 1 Tâm Pháp từ danh sách sau: [${tamPhapInfo}]. Và chọn 1 hoặc 2 Công Pháp từ danh sách sau: [${congPhapInfo}]. Các kỹ năng phải phù hợp với vai trò và cảnh giới của họ.
 11. Một lượng Linh Thạch mà họ có thể đánh rơi. Lượng này phải phù hợp với cảnh giới và vai trò của NPC. Ví dụ: một tu sĩ Luyện Khí có thể có 50-200 linh thạch, một trưởng lão Kim Đan hoặc một thương nhân giàu có có thể có từ 5,000 đến 50,000 linh thạch.
-12. Một bộ trang bị (equipment) từ danh sách sau, phù hợp với vai trò và cảnh giới. Chỉ cung cấp itemId. Không trang bị cho tất cả. Danh sách trang bị: [${equipmentInfo}]
-13. Một túi đồ (inventory) chứa một vài vật phẩm từ danh sách sau. Có thể là một mảng rỗng. Danh sách vật phẩm: [${sellableItemsInfo}]
-14. Một danh sách các vật phẩm để bán (forSale), phù hợp với vai trò của NPC (ví dụ: thợ rèn bán khoáng thạch, dược sư bán thảo dược). Có thể là một mảng rỗng. Mỗi vật phẩm bao gồm: 'itemId', 'stock' (một số lượng hữu hạn, ví dụ 5-50), và có thể có 'priceModifier' (hệ số giá, ví dụ 1.5 là bán đắt hơn 50%). Không bao giờ sử dụng số lượng vô hạn hoặc -1. Danh sách vật phẩm có thể bán: [${sellableItemsInfo}]`;
+12. Một lượng điểm Cảm Ngộ mà họ sở hữu. Lượng này phải phù hợp với cảnh giới của họ (ví dụ: Luyện Khí có 100-1000, Kim Đan có 10,000-100,000).
+13. Một bộ trang bị (equipment) từ danh sách sau, phù hợp với vai trò và cảnh giới. Chỉ cung cấp itemId. Không trang bị cho tất cả. Danh sách trang bị: [${equipmentInfo}]
+14. Một túi đồ (inventory) chứa một vài vật phẩm từ danh sách sau. Có thể là một mảng rỗng. Danh sách vật phẩm: [${sellableItemsInfo}]
+15. Một danh sách các vật phẩm để bán (forSale), phù hợp với vai trò của NPC (ví dụ: thợ rèn bán khoáng thạch, dược sư bán thảo dược). Có thể là một mảng rỗng. Mỗi vật phẩm bao gồm: 'itemId', 'stock' (một số lượng hữu hạn, ví dụ 5-50), và có thể có 'priceModifier' (hệ số giá, ví dụ 1.5 là bán đắt hơn 50%). Không bao giờ sử dụng số lượng vô hạn hoặc -1. Danh sách vật phẩm có thể bán: [${sellableItemsInfo}]`;
 
         const response = await client.models.generateContent({
             model: "gemini-2.5-flash",
@@ -412,6 +414,7 @@ ${titleInstruction}
                                 }
                             },
                             linhThach: { type: Type.INTEGER, description: "Lượng Linh Thạch NPC có thể đánh rơi khi bị hạ gục." },
+                            camNgo: { type: Type.INTEGER, description: "Lượng Cảm Ngộ NPC sở hữu." },
                             learnedSkillIds: {
                                 type: Type.ARRAY,
                                 description: "Một danh sách ID kỹ năng (Tâm Pháp và Công Pháp) mà NPC đã học. Chọn từ danh sách được cung cấp trong prompt.",
@@ -458,7 +461,7 @@ ${titleInstruction}
                                 }
                             }
                         },
-                        required: ["name", "gender", "role", "prompt", "realmName", "levelDescription", "attributes", "linhCan", "linhThach", "learnedSkillIds"]
+                        required: ["name", "gender", "role", "prompt", "realmName", "levelDescription", "attributes", "linhCan", "linhThach", "camNgo", "learnedSkillIds"]
                     }
                 }
             },
