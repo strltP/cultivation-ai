@@ -34,11 +34,25 @@ export const generateRandomLinhCan = (): LinhCan[] => {
     const BASE_ELEMENTS: LinhCanType[] = ['KIM', 'MOC', 'THUY', 'HOA', 'THO'];
     
     const VARIANT_COMBINATIONS: Record<string, LinhCanType> = {
-        'KIM-THUY': 'BĂNG', 'THUY-KIM': 'BĂNG',   // Kim sinh Thủy -> Băng
-        'MOC-HOA': 'LOI', 'HOA-MOC': 'LOI',     // Mộc sinh Hỏa -> Lôi
-        'KIM-MOC': 'PHONG', 'MOC-KIM': 'PHONG',   // Kim khắc Mộc -> Phong
-        'HOA-THO': 'QUANG', 'THO-HOA': 'QUANG',   // Hỏa sinh Thổ -> Quang
-        'THUY-THO': 'AM', 'THO-THUY': 'AM',       // Thổ khắc Thủy -> Ám
+        // Băng (Băng) = Thủy + Kim (Sinh) | Thủy + Hỏa (Khắc)
+        'KIM-THUY': 'BĂNG', 'THUY-KIM': 'BĂNG',
+        'THUY-HOA': 'BĂNG', 'HOA-THUY': 'BĂNG',
+
+        // Lôi (Sét) = Mộc + Hỏa (Sinh) | Hỏa + Kim (Khắc)
+        'MOC-HOA': 'LOI', 'HOA-MOC': 'LOI',
+        'HOA-KIM': 'LOI', 'KIM-HOA': 'LOI',
+        
+        // Phong (Gió) = Kim + Mộc (Khắc) | Mộc + Thổ (Khắc)
+        'KIM-MOC': 'PHONG', 'MOC-KIM': 'PHONG',
+        'MOC-THO': 'PHONG', 'THO-MOC': 'PHONG',
+
+        // Quang (Ánh sáng) = Hỏa + Thổ (Sinh) | Thổ + Kim (Sinh)
+        'HOA-THO': 'QUANG', 'THO-HOA': 'QUANG',
+        'KIM-THO': 'QUANG', 'THO-KIM': 'QUANG',
+
+        // Ám (Bóng tối) = Thổ + Thủy (Khắc) | Thủy + Mộc (Sinh)
+        'THUY-THO': 'AM', 'THO-THUY': 'AM',
+        'THUY-MOC': 'AM', 'MOC-THUY': 'AM',
     };
 
     const numBaseRoots = Math.floor(Math.random() * 5) + 1;
@@ -46,13 +60,13 @@ export const generateRandomLinhCan = (): LinhCan[] => {
     
     const baseRoots: LinhCan[] = shuffledBaseElements.slice(0, numBaseRoots).map(type => ({
         type: type,
-        purity: Math.floor(Math.random() * 71) + 10, // Purity from 10 to 80 for base roots
+        purity: Math.floor(Math.random() * 91) + 10, // Purity from 10 to 100 for base roots
     }));
 
     let finalRoots: LinhCan[] = [...baseRoots];
 
-    // Dị linh căn chỉ có thể được tạo ra từ Chân Linh Căn (2 hoặc 3 linh căn ngũ hành)
-    const canHaveVariant = numBaseRoots >= 2 && numBaseRoots <= 3;
+    // Dị linh căn giờ đây chỉ có thể được tạo ra từ Chân Linh Căn (chính xác là 2 linh căn ngũ hành)
+    const canHaveVariant = numBaseRoots === 2;
     const hasVariantChance = 0.3; // 30% chance
 
     if (canHaveVariant && Math.random() < hasVariantChance) {

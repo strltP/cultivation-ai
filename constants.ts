@@ -34,7 +34,7 @@ export const REALM_PROGRESSION: RealmProgression[] = [
       { qiRequired: 3000, levelName: "Tầng 10", bonuses: { maxHp: [90, 150], maxMana: [45, 60], attackPower: [5, 8], defensePower: 4, canCot: 2, thanPhap: 2, thanThuc: 2, ngoTinh: 2, coDuyen: 2, tamCanh: 2, maxThoNguyen: [3, 7] } },
       { qiRequired: 3300, levelName: "Tầng 11", bonuses: { maxHp: [100, 160], maxMana: [50, 70], attackPower: [5, 9], defensePower: 4, coDuyen: 1, maxThoNguyen: [3, 7] } },
       { qiRequired: 3600, levelName: "Tầng 12", bonuses: { maxHp: [110, 180], maxMana: [55, 80], attackPower: [5, 10], defensePower: 4, tamCanh: 1, maxThoNguyen: [3, 7] } },
-      { qiRequired: 5000, levelName: "Tầng 13 (Đỉnh Phong)", bonuses: { maxHp: [180, 250], maxMana: [90, 120], attackPower: [10, 15], defensePower: [8, 12], canCot: 3, thanPhap: 3, thanThuc: 3, ngoTinh: 3, coDuyen: 3, tamCanh: 3, maxThoNguyen: [10, 20] } },
+      { qiRequired: 5000, levelName: "Tầng 13", bonuses: { maxHp: [180, 250], maxMana: [90, 120], attackPower: [10, 15], defensePower: [8, 12], canCot: 3, thanPhap: 3, thanThuc: 3, ngoTinh: 3, coDuyen: 3, tamCanh: 3, maxThoNguyen: [10, 20] } },
     ]
   },
   // Cảnh giới 1: Trúc Cơ
