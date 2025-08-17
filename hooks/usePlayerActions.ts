@@ -182,14 +182,14 @@ export const usePlayerActions = (
             const totalMinutesToAdvance = months * DAYS_PER_MONTH * 24 * 60;
             const totalHoursToAdvance = months * DAYS_PER_MONTH * 24;
             
-            const SECLUSION_QI_PER_HOUR_BASE = 1.5;
-            const NGO_TINH_FACTOR_QI = 0.05;
+            const SECLUSION_QI_PER_HOUR_BASE = 0.5;
+            const NGO_TINH_FACTOR_QI = 0.02;
             const realmMultiplier = 1 + (prev.cultivation.realmIndex * 0.15);
             const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (prev.attributes.ngoTinh * NGO_TINH_FACTOR_QI)) * realmMultiplier;
             const totalQiGained = Math.round(qiPerHour * totalHoursToAdvance);
             
-            const CAM_NGO_PER_MONTH_BASE = 50;
-            const totalCamNgoGained = Math.round((CAM_NGO_PER_MONTH_BASE + prev.attributes.ngoTinh * 2 + prev.attributes.tamCanh * 2) * months);
+            const CAM_NGO_PER_MONTH_BASE = 10;
+            const totalCamNgoGained = Math.round((CAM_NGO_PER_MONTH_BASE + prev.attributes.ngoTinh * 0.5 + prev.attributes.tamCanh * 0.5) * months);
 
             const newQi = Math.min(prev.stats.maxQi, prev.qi + totalQiGained);
             const newCamNgo = prev.camNgo + totalCamNgoGained;

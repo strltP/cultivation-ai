@@ -212,15 +212,15 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                         if (npc.npcType !== 'cultivator' || !npc.cultivation) continue;
     
                         // --- Base QI Gain Rate (remains unchanged) ---
-                        const SECLUSION_QI_PER_HOUR_BASE = 1.5;
-                        const NGO_TINH_FACTOR_QI = 0.05;
+                        const SECLUSION_QI_PER_HOUR_BASE = 0.5;
+                        const NGO_TINH_FACTOR_QI = 0.02;
                         const realmMultiplier = 1 + (npc.cultivation.realmIndex * 0.15);
                         const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (npc.attributes.ngoTinh * NGO_TINH_FACTOR_QI)) * realmMultiplier;
                         const totalPotentialQiGained = Math.round(qiPerHour * totalHoursPassed);
     
                         // --- New Cam Ngo Calculation (matches player's seclusion formula) ---
-                        const CAM_NGO_PER_MONTH_BASE = 50;
-                        const totalCamNgoGained = Math.round((CAM_NGO_PER_MONTH_BASE + npc.attributes.ngoTinh * 2 + npc.attributes.tamCanh * 2) * monthsPassed);
+                        const CAM_NGO_PER_MONTH_BASE = 10;
+                        const totalCamNgoGained = Math.round((CAM_NGO_PER_MONTH_BASE + npc.attributes.ngoTinh * 0.5 + npc.attributes.tamCanh * 0.5) * monthsPassed);
                         npc.camNgo = (npc.camNgo || 0) + totalCamNgoGained;
 
                         // --- NPC Action Decision ---

@@ -25,8 +25,8 @@ const SeclusionPanel: React.FC<SeclusionPanelProps> = ({ playerState, onClose, o
         // This calculation MUST match handleStartSeclusion in usePlayerActions.ts
         const totalHoursToAdvance = months * DAYS_PER_MONTH * 24;
         
-        const SECLUSION_QI_PER_HOUR_BASE = 1.5;
-        const NGO_TINH_FACTOR_QI = 0.05;
+        const SECLUSION_QI_PER_HOUR_BASE = 0.5;
+        const NGO_TINH_FACTOR_QI = 0.02;
         const realmMultiplier = 1 + (playerState.cultivation.realmIndex * 0.15);
         
         const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (playerState.attributes.ngoTinh * NGO_TINH_FACTOR_QI)) * realmMultiplier;
@@ -36,8 +36,8 @@ const SeclusionPanel: React.FC<SeclusionPanelProps> = ({ playerState, onClose, o
     
     const estimatedCamNgoGain = useMemo(() => {
         // This calculation MUST match handleStartSeclusion in usePlayerActions.ts
-        const CAM_NGO_PER_MONTH_BASE = 50;
-        return Math.round((CAM_NGO_PER_MONTH_BASE + playerState.attributes.ngoTinh * 2 + playerState.attributes.tamCanh * 2) * months);
+        const CAM_NGO_PER_MONTH_BASE = 10;
+        return Math.round((CAM_NGO_PER_MONTH_BASE + playerState.attributes.ngoTinh * 0.5 + playerState.attributes.tamCanh * 0.5) * months);
     }, [months, playerState.attributes.ngoTinh, playerState.attributes.tamCanh]);
 
     const yearsPassed = Math.floor(months / 12);
