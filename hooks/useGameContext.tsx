@@ -211,18 +211,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                     for (const npc of newGeneratedNpcs[mapId]) {
                         if (npc.npcType !== 'cultivator' || !npc.cultivation) continue;
     
-                        // --- Base Gain Rates ---
+                        // --- Base QI Gain Rate (remains unchanged) ---
                         const SECLUSION_QI_PER_HOUR_BASE = 1.5;
                         const NGO_TINH_FACTOR_QI = 0.05;
                         const realmMultiplier = 1 + (npc.cultivation.realmIndex * 0.15);
                         const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (npc.attributes.ngoTinh * NGO_TINH_FACTOR_QI)) * realmMultiplier;
                         const totalPotentialQiGained = Math.round(qiPerHour * totalHoursPassed);
     
-                        const CAM_NGO_PER_HOUR_BASE = 1.5;
-                        const NGO_TINH_FACTOR_CAM_NGO = 0.08;
-                        const camNgoPerHour = CAM_NGO_PER_HOUR_BASE + (npc.attributes.ngoTinh * NGO_TINH_FACTOR_CAM_NGO);
-                        const totalPotentialCamNgoGained = Math.round(camNgoPerHour * totalHoursPassed);
-    
+                        // --- New Cam Ngo Calculation (matches player's seclusion formula) ---
+                        const CAM_NGO_PER_MONTH_BASE = 50;
+                        const totalCamNgoGained = Math.round((CAM_NGO_PER_MONTH_BASE + npc.attributes.ngoTinh * 2 + npc.attributes.tamCanh * 2) * monthsPassed);
+                        npc.camNgo = (npc.camNgo || 0) + totalCamNgoGained;
+
                         // --- NPC Action Decision ---
                         let action: 'CULTIVATE' | 'ENLIGHTEN' | 'EXPLORE' = 'CULTIVATE';
                         const upgradableSkills = npc.learnedSkills
@@ -257,7 +257,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                         switch(action) {
                             case 'CULTIVATE':
                                 npc.qi = Math.min(npc.stats.maxQi, (npc.qi || 0) + totalPotentialQiGained);
-                                npc.camNgo = (npc.camNgo || 0) + Math.round(totalPotentialCamNgoGained * 0.25); // Passive gain
                                 
                                 const nextCultivationLevel = getNextCultivationLevel(npc.cultivation);
                                 if (nextCultivationLevel && npc.qi >= npc.stats.maxQi) {
@@ -294,7 +293,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                                 break;
                             
                             case 'ENLIGHTEN':
-                                npc.camNgo = (npc.camNgo || 0) + totalPotentialCamNgoGained;
                                 npc.qi = Math.min(npc.stats.maxQi, (npc.qi || 0) + Math.round(totalPotentialQiGained * 0.25)); // Passive gain
     
                                 const upgradableSkillsNow = npc.learnedSkills
@@ -323,7 +321,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
     
                             case 'EXPLORE':
                                 npc.qi = Math.min(npc.stats.maxQi, (npc.qi || 0) + Math.round(totalPotentialQiGained * 0.10));
-                                npc.camNgo = (npc.camNgo || 0) + Math.round(totalPotentialCamNgoGained * 0.10);
                                 break;
                         }
                     }
