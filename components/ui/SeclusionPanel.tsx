@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { PlayerState } from '../../types/character';
 import { FaTimes } from 'react-icons/fa';
-import { GiCaveEntrance, GiSandsOfTime, GiGalaxy } from 'react-icons/gi';
+import { GiCaveEntrance, GiSandsOfTime, GiGalaxy, GiBrain } from 'react-icons/gi';
 import { DAYS_PER_MONTH } from '../../hooks/usePlayerPersistence';
 
 
@@ -26,13 +26,19 @@ const SeclusionPanel: React.FC<SeclusionPanelProps> = ({ playerState, onClose, o
         const totalHoursToAdvance = months * DAYS_PER_MONTH * 24;
         
         const SECLUSION_QI_PER_HOUR_BASE = 1.5;
-        const NGO_TINH_FACTOR = 0.05;
+        const NGO_TINH_FACTOR_QI = 0.05;
         const realmMultiplier = 1 + (playerState.cultivation.realmIndex * 0.15);
         
-        const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (playerState.attributes.ngoTinh * NGO_TINH_FACTOR)) * realmMultiplier;
+        const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (playerState.attributes.ngoTinh * NGO_TINH_FACTOR_QI)) * realmMultiplier;
         
         return Math.floor(qiPerHour * totalHoursToAdvance);
     }, [months, playerState.attributes.ngoTinh, playerState.cultivation.realmIndex]);
+    
+    const estimatedCamNgoGain = useMemo(() => {
+        // This calculation MUST match handleStartSeclusion in usePlayerActions.ts
+        const CAM_NGO_PER_MONTH_BASE = 50;
+        return Math.round((CAM_NGO_PER_MONTH_BASE + playerState.attributes.ngoTinh * 2 + playerState.attributes.tamCanh * 2) * months);
+    }, [months, playerState.attributes.ngoTinh, playerState.attributes.tamCanh]);
 
     const yearsPassed = Math.floor(months / 12);
     const monthsPassed = months % 12;
@@ -79,6 +85,10 @@ const SeclusionPanel: React.FC<SeclusionPanelProps> = ({ playerState, onClose, o
                         <div className="flex justify-between items-center text-lg">
                             <span className="font-semibold text-gray-300 flex items-center gap-2"><GiGalaxy /> Chân khí ước tính:</span>
                             <span className="font-bold text-cyan-300">~{estimatedQiGain.toLocaleString()}</span>
+                        </div>
+                         <div className="flex justify-between items-center text-lg">
+                            <span className="font-semibold text-gray-300 flex items-center gap-2"><GiBrain /> Cảm ngộ ước tính:</span>
+                            <span className="font-bold text-purple-300">~{estimatedCamNgoGain.toLocaleString()}</span>
                         </div>
                     </div>
 
