@@ -273,7 +273,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         teleportGates: effectiveTeleportGates,
     });
 
-    const playerActions = usePlayerActionsManager(updateAndPersistPlayerState, setGameMessage, addJournalEntry, stopAllActions);
+    const playerActions = usePlayerActionsManager(updateAndPersistPlayerState, setGameMessage, stopAllActions);
 
     const combatManager = useCombatManager(
         playerState, updateAndPersistPlayerState, setGameMessage, addJournalEntry, stopAllActions,

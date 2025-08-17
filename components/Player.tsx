@@ -16,7 +16,6 @@ const Player = forwardRef<HTMLDivElement, PlayerProps>(({ position, isMeditating
         left: 0, // Position is now controlled by transform for better performance
         top: 0,
         transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
-        transition: 'transform 100ms linear',
       }}
     >
       <div className="w-full h-full animate-pulse bg-white/30 rounded-full"></div>

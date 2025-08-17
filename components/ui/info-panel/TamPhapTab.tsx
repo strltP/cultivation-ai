@@ -1,26 +1,28 @@
-
 import React from 'react';
 import type { PlayerState } from '../../../types/character';
 import type { Skill as SkillDef } from '../../../types/skill';
 import { ALL_SKILLS, SKILL_TIER_INFO } from '../../../data/skills/skills';
-import { FaBookDead, FaBook, FaPlus, FaBolt, FaExclamationCircle } from 'react-icons/fa';
-import { GiBrain, GiMuscleUp, GiCrossedSwords, GiBroadsword } from 'react-icons/gi';
+import { FaBook, FaPlus } from 'react-icons/fa';
+import { GiBrain, GiMuscleUp, GiBroadsword } from 'react-icons/gi';
 import { WEAPON_TYPE_NAMES } from '../../../types/equipment';
-import { EFFECT_TYPE_NAMES } from '../../../types/skill';
 
 const ATTRIBUTE_NAMES: Record<string, string> = {
     canCot: 'Căn Cốt',
     thanPhap: 'Thân Pháp',
     thanThuc: 'Thần Thức',
     ngoTinh: 'Ngộ Tính',
+    coDuyen: 'Cơ Duyên',
+    tamCanh: 'Tâm Cảnh',
     maxHp: 'Sinh Lực Tối đa',
     maxQi: 'Chân Khí Tối đa',
     maxMana: 'Linh Lực Tối đa',
+    maxThoNguyen: 'Thọ Nguyên Tối đa',
     attackPower: 'Lực Công',
     defensePower: 'Lực Thủ',
     speed: 'Tốc Độ',
     critRate: 'Tỉ lệ Bạo kích',
     critDamage: 'ST Bạo kích',
+    armorPenetration: 'Xuyên Giáp',
 };
 
 const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; currentLevel: number; onLevelUp: () => void }> = ({ playerState, skillDef, currentLevel, onLevelUp }) => {
@@ -47,42 +49,7 @@ const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; curren
                             <span className="font-semibold text-white">{WEAPON_TYPE_NAMES[skillDef.weaponType]}</span>
                         </div>
                     )}
-                    {skillDef.type === 'CONG_PHAP' && (
-                        <>
-                            {skillDef.manaCost !== undefined && (
-                                <div className="flex items-center justify-between">
-                                    <span className="flex items-center gap-2 text-gray-400"><FaBolt className="text-cyan-400" /> Linh Lực:</span>
-                                    <span className="font-semibold text-cyan-300">{skillDef.manaCost + (skillDef.manaCostPerLevel || 0) * (currentLevel - 1)}</span>
-                                </div>
-                            )}
-                            {skillDef.damage && (() => {
-                                const baseDmg = skillDef.damage.baseValue + skillDef.damage.valuePerLevel * (currentLevel - 1);
-                                const attackPowerDmg = playerState.stats.attackPower * (skillDef.damage.attackPowerFactor || 0);
-                                const scalingDmg = skillDef.damage.scalingAttribute ? playerState.attributes[skillDef.damage.scalingAttribute] * (skillDef.damage.scalingFactor || 0) : 0;
-                                const totalDmg = Math.round(baseDmg + attackPowerDmg + scalingDmg);
-                                const titleText = `Cơ bản: ${Math.round(baseDmg)}\nLực Công: ${Math.round(attackPowerDmg)}\nThuộc tính: ${Math.round(scalingDmg)}`;
-                                return (
-                                    <div className="flex items-center justify-between">
-                                        <span className="flex items-center gap-2 text-gray-400"><GiCrossedSwords className="text-red-400" /> Sát Thương:</span>
-                                        <span className="font-semibold text-red-400" title={titleText}>
-                                            {totalDmg}
-                                        </span>
-                                    </div>
-                                );
-                            })()}
-                            {skillDef.effects?.map((effect, index) => {
-                                let text = `${EFFECT_TYPE_NAMES[effect.type]} (${effect.chance * 100}%)`;
-                                if(effect.duration) text += `, ${effect.duration} hiệp`;
-                                return (
-                                    <div key={index} className="flex items-center justify-between text-yellow-400/90">
-                                        <span className="flex items-center gap-2 text-gray-400"><FaExclamationCircle /> Hiệu ứng:</span>
-                                        <span>{text}</span>
-                                    </div>
-                                )
-                            })}
-                        </>
-                    )}
-
+                    
                     {skillDef.type === 'TAM_PHAP' && skillDef.bonuses.map((bonus, index) => {
                         const targetKey = bonus.targetStat || bonus.targetAttribute;
                         if (!targetKey) return null;
@@ -124,19 +91,15 @@ const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; curren
     );
 };
 
-interface SkillsTabProps {
+interface TamPhapTabProps {
     playerState: PlayerState;
     onLevelUpSkill: (skillId: string) => void;
 }
 
-const SkillsTab: React.FC<SkillsTabProps> = ({ playerState, onLevelUpSkill }) => {
+const TamPhapTab: React.FC<TamPhapTabProps> = ({ playerState, onLevelUpSkill }) => {
     const { learnedSkills } = playerState;
 
     const getSkillDetails = (skillId: string) => ALL_SKILLS.find(s => s.id === skillId);
-
-    const congPhapList = learnedSkills
-        .map(ls => ({ learned: ls, def: getSkillDetails(ls.skillId) }))
-        .filter(item => item.def?.type === 'CONG_PHAP');
     
     const tamPhapList = learnedSkills
         .map(ls => ({ learned: ls, def: getSkillDetails(ls.skillId) }))
@@ -144,15 +107,6 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ playerState, onLevelUpSkill }) =>
 
     return (
         <div className="space-y-6">
-            <div>
-                <h3 className="flex items-center gap-3 text-2xl font-semibold text-red-400 mb-3"><FaBookDead /> Công Pháp</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {congPhapList.length > 0 ? congPhapList.map(({ learned, def }) => 
-                        def ? <SkillCard key={def.id} playerState={playerState} skillDef={def} currentLevel={learned.currentLevel} onLevelUp={() => onLevelUpSkill(def.id)} /> : null
-                    ) : <p className="text-gray-500 italic col-span-full">Chưa học được công pháp nào.</p>}
-                </div>
-            </div>
-
             <div>
                 <h3 className="flex items-center gap-3 text-2xl font-semibold text-blue-400 mb-3"><FaBook /> Tâm Pháp</h3>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -165,4 +119,4 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ playerState, onLevelUpSkill }) =>
     );
 };
 
-export default SkillsTab;
+export default TamPhapTab;

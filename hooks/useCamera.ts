@@ -1,5 +1,6 @@
 
-import { useState, useEffect, RefObject } from 'react';
+
+import { useState, useLayoutEffect, RefObject } from 'react';
 import type { Position } from '../types/common';
 import type { GameMap, PointOfInterest, MapArea } from '../types/map';
 
@@ -14,7 +15,7 @@ export const useCamera = (
     const [currentZone, setCurrentZone] = useState<string | null>(null);
     const [currentArea, setCurrentArea] = useState<string | null>(null);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!gameContainerRef.current) return;
 
         const { width: viewportWidth, height: viewportHeight } = gameContainerRef.current.getBoundingClientRect();

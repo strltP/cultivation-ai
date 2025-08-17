@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { PlayerState } from '../types/character';
+import type { PlayerState, JournalEntry } from '../types/character';
 import { getNextCultivationLevel, getCultivationInfo, calculateAllStats, getRealmLevelInfo } from '../services/cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { advanceTime } from '../services/timeService';
@@ -7,10 +7,30 @@ import { ALL_ITEMS } from '../data/items/index';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
 import { INITIAL_PLAYER_STATE, DAYS_PER_MONTH } from '../hooks/usePlayerPersistence';
 
+const STAT_ATTRIBUTE_NAMES: Record<string, string> = {
+    // Attributes
+    canCot: 'Căn Cốt',
+    thanPhap: 'Thân Pháp',
+    thanThuc: 'Thần Thức',
+    ngoTinh: 'Ngộ Tính',
+    coDuyen: 'Cơ Duyên',
+    tamCanh: 'Tâm Cảnh',
+    // Combat Stats
+    maxHp: 'Sinh Lực Tối đa',
+    maxQi: 'Chân Khí Tối đa',
+    maxMana: 'Linh Lực Tối đa',
+    maxThoNguyen: 'Thọ Nguyên Tối đa',
+    attackPower: 'Lực Công',
+    defensePower: 'Lực Thủ',
+    speed: 'Tốc Độ',
+    critRate: 'Tỉ lệ Bạo kích',
+    critDamage: 'ST Bạo kích',
+    armorPenetration: 'Xuyên Giáp',
+};
+
 export const usePlayerActions = (
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
-    addJournalEntry: (message: string) => void,
     stopAllActions: React.MutableRefObject<() => void>
 ) => {
     const [isMeditating, setIsMeditating] = useState<boolean>(false);
@@ -114,7 +134,8 @@ export const usePlayerActions = (
                 
                 if (rolledValue !== 0) {
                     (newCultivationStats as any)[statKey] = ((newCultivationStats as any)[statKey] || 0) + rolledValue;
-                    breakthroughMessages.push(`${statKey} +${rolledValue}`);
+                    const statName = STAT_ATTRIBUTE_NAMES[statKey] || statKey;
+                    breakthroughMessages.push(`${statName} +${rolledValue}`);
                 }
             }
             
@@ -133,7 +154,11 @@ export const usePlayerActions = (
             
             const message = `Chúc mừng! Đã đột phá đến ${nextCultivationInfo.name}! ${breakthroughMessages.join(', ')}. (Tốn 12 giờ)`;
             setGameMessage(message);
-            addJournalEntry(message);
+            
+            const newJournalEntry: JournalEntry = {
+                time: timeAdvanced,
+                message: message
+            };
 
             return {
                 ...prev,
@@ -144,9 +169,10 @@ export const usePlayerActions = (
                 hp: finalStats.maxHp,
                 qi: 0,
                 time: timeAdvanced,
+                journal: [...(prev.journal || []), newJournalEntry],
             };
         });
-    }, [updateAndPersistPlayerState, setGameMessage, stopAllActions, addJournalEntry]);
+    }, [updateAndPersistPlayerState, setGameMessage, stopAllActions]);
 
     const handleStartSeclusion = useCallback((months: number) => {
         stopAllActions.current();
@@ -167,7 +193,11 @@ export const usePlayerActions = (
 
             const message = `Bế quan ${months} tháng kết thúc. Chân khí tăng ${totalQiGained.toLocaleString()}, đạt tới ${newQi.toLocaleString()}. Toàn bộ sinh lực và linh lực đã hồi phục.`;
             setGameMessage(message);
-            addJournalEntry(message);
+            
+            const newJournalEntry: JournalEntry = {
+                time: newTime,
+                message: message,
+            };
 
             return {
                 ...prev,
@@ -175,9 +205,10 @@ export const usePlayerActions = (
                 qi: newQi,
                 hp: prev.stats.maxHp,
                 mana: prev.stats.maxMana,
+                journal: [...(prev.journal || []), newJournalEntry],
             };
         });
-    }, [updateAndPersistPlayerState, setGameMessage, addJournalEntry, stopAllActions]);
+    }, [updateAndPersistPlayerState, setGameMessage, stopAllActions]);
 
     const handleToggleMeditation = useCallback(() => {
         if (isMeditating) {
@@ -231,7 +262,12 @@ export const usePlayerActions = (
             
             const message = `"${skillDef.name}" đã được tu luyện tới tầng ${skillToLevelUp.currentLevel + 1}! (Tiêu tốn ${cost} Cảm Ngộ và 2 giờ)`;
             setGameMessage(message);
-            addJournalEntry(message);
+            
+            const newJournalEntry: JournalEntry = {
+                time: timeAdvanced,
+                message: message
+            };
+
             return {
                 ...prev,
                 learnedSkills: newLearnedSkills,
@@ -240,9 +276,10 @@ export const usePlayerActions = (
                 camNgo: prev.camNgo - cost,
                 hp: Math.round(prev.hp / prev.stats.maxHp * finalStats.maxHp),
                 time: timeAdvanced,
+                journal: [...(prev.journal || []), newJournalEntry],
             };
         });
-    }, [updateAndPersistPlayerState, setGameMessage, addJournalEntry]);
+    }, [updateAndPersistPlayerState, setGameMessage]);
     
     return {
         isMeditating,

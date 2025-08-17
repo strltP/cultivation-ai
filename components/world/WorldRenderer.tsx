@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useMemo, useState, useLayoutEffect } from 'react';
 import type { PlayerState, NPC } from '../../types/character';
 import type { Interactable } from '../../types/interaction';
 import type { TeleportLocation, PointOfInterest, GameMap } from '../../types/map';
@@ -30,6 +31,8 @@ interface WorldRendererProps {
     onEnterPoi: (poi: PointOfInterest) => void;
 }
 
+const RENDER_BUFFER = 300; // Render objects 300px outside the viewport
+
 const WorldRenderer: React.FC<WorldRendererProps> = (props) => {
     const {
         playerRef,
@@ -51,6 +54,41 @@ const WorldRenderer: React.FC<WorldRendererProps> = (props) => {
         onTeleport,
         onEnterPoi,
     } = props;
+    
+    const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+
+    // Assuming the game container takes up the full screen, adjust if not
+    useLayoutEffect(() => {
+        const updateSize = () => {
+            setViewportSize({ width: window.innerWidth, height: window.innerHeight });
+        };
+        window.addEventListener('resize', updateSize);
+        updateSize();
+        return () => window.removeEventListener('resize', updateSize);
+    }, []);
+
+
+    const visibleEntities = useMemo(() => {
+        const viewLeft = -cameraPosition.x;
+        const viewTop = -cameraPosition.y;
+        const viewRight = viewLeft + viewportSize.width;
+        const viewBottom = viewTop + viewportSize.height;
+
+        const isVisible = (pos: Position) => 
+            pos.x > viewLeft - RENDER_BUFFER &&
+            pos.x < viewRight + RENDER_BUFFER &&
+            pos.y > viewTop - RENDER_BUFFER &&
+            pos.y < viewBottom + RENDER_BUFFER;
+
+        return {
+            pois: currentPois.filter(e => isVisible(e.position)),
+            npcs: currentNpcs.filter(e => isVisible(e.position)),
+            interactables: currentInteractables.filter(e => isVisible(e.position)),
+            teleportGates: currentTeleportGates.filter(e => isVisible(e.position)),
+        };
+
+    }, [cameraPosition, viewportSize, currentPois, currentNpcs, currentInteractables, currentTeleportGates]);
+
 
     const onNpcInteraction = (npc: NPC) => onGenericInteraction(npc, () => setActiveInteractionNpc(npc));
     
@@ -79,18 +117,17 @@ const WorldRenderer: React.FC<WorldRendererProps> = (props) => {
                 width: currentMapData.size.width,
                 height: currentMapData.size.height,
                 transform: `translate(${cameraPosition.x}px, ${cameraPosition.y}px)`,
-                transition: 'transform 100ms linear',
                 position: 'relative',
             }}
             onClick={onWorldClick}
         >
             <div className="absolute inset-0" style={currentMapData.backgroundStyle}></div>
             <TimeOfDayOverlay gameHour={playerState.time.hour} />
-            {currentPois.map(poi => <PointOfInterestComponent key={poi.id} poi={poi} onClick={() => onPoiInteraction(poi)} />)}
+            {visibleEntities.pois.map(poi => <PointOfInterestComponent key={poi.id} poi={poi} onClick={() => onPoiInteraction(poi)} />)}
             <Player ref={playerRef} position={playerState.position} isMeditating={isMeditating} />
-            {currentNpcs.map(npc => <GameEntity key={npc.id} entity={npc} onClick={() => onNpcInteraction(npc)} playerState={playerState} />)}
-            {currentInteractables.map(item => <GameEntity key={item.id} entity={item} onClick={() => onInteractableInteraction(item)} playerState={playerState} />)}
-            {currentTeleportGates.map(gate => <TeleportGate key={gate.id} gate={gate} allMaps={allMaps} onClick={() => onTeleportInteraction(gate)} />)}
+            {visibleEntities.npcs.map(npc => <GameEntity key={npc.id} entity={npc} onClick={() => onNpcInteraction(npc)} playerState={playerState} />)}
+            {visibleEntities.interactables.map(item => <GameEntity key={item.id} entity={item} onClick={() => onInteractableInteraction(item)} playerState={playerState} />)}
+            {visibleEntities.teleportGates.map(gate => <TeleportGate key={gate.id} gate={gate} allMaps={allMaps} onClick={() => onTeleportInteraction(gate)} />)}
         </div>
     );
 };
