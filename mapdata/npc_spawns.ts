@@ -3,7 +3,17 @@ import type { NpcSpawnDefinition } from '../data/npcs/npc_types';
 
 export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> = {
     THIEN_NAM: [
-        // No NPCs should be generated for Lục Yên Thôn on the overworld map.
+        {
+            type: 'procedural',
+            roles: [
+                {
+                    factionId: 'THAT_HUYEN_THANH',
+                    roleNames: ['Tán tu'],
+                    count: 10, // Thêm 10 Tán tu lang thang trên đại lục
+                    poiIds: [], // Sinh ra ngẫu nhiên ở bất kỳ đâu
+                }
+            ]
+        }
     ],
     HAC_AM_SAM_LAM: [
         {
@@ -30,19 +40,19 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
     ],
     THAT_HUYEN_THANH: [
         {
-            type: 'static',
-            id: 'npc-lao-ma-1',
-            baseId: 'lao_ma',
-            position: { x: 450, y: 450 }
-        },
-        {
             type: 'procedural',
             roles: [
                 {
-                    role: 'Tu Sĩ',
-                    count: 6,
-                    generationPrompt: `Tạo ra các tu sĩ, học giả, và trưởng lão đang nghiên cứu hoặc trông coi tại các địa điểm quan trọng trong thành. Cảnh giới từ Luyện Khí đến Trúc Cơ.`,
-                    poiIds: ['tht-poi-1', 'tht-poi-2'], // Luyện Đan Các, Tàng Kinh Các
+                    factionId: 'THAT_HUYEN_THANH',
+                    roleNames: ['Tán tu', 'Vệ binh', 'Thường dân'],
+                    count: 15,
+                    poiIds: [],
+                },
+                 {
+                    factionId: 'THAT_HUYEN_THANH',
+                    roleNames: ['Chủ tiệm lớn'],
+                    count: 2,
+                    poiIds: ['tht-poi-1', 'tht-poi-2'],
                 }
             ]
         }
@@ -52,9 +62,9 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             type: 'procedural',
             roles: [
                 {
-                    role: 'Khách Nhân',
-                    count: 8,
-                    generationPrompt: `Tạo ra các tu sĩ, khách quen, và nhân viên cho các địa điểm giải trí và luyện tập tại Mộ Linh Thành. Họ có thể là các tửu khách, võ tu, nghệ sĩ, hoặc những nhân vật bí ẩn. Cảnh giới của họ đa dạng, từ Luyện Khí đến Trúc Cơ.`,
+                    factionId: 'THAT_HUYEN_THANH',
+                    roleNames: ['Tán tu', 'Vệ binh', 'Thường dân', 'Tiểu nhị'],
+                    count: 12,
                     poiIds: ['mlt-poi-1', 'mlt-poi-2', 'mlt-poi-3', 'mlt-poi-4'],
                 }
             ]
@@ -71,10 +81,10 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             type: 'procedural',
             roles: [
                 {
-                    role: 'Tửu Khách',
+                    factionId: 'THAT_HUYEN_THANH',
+                    roleNames: ['Tán tu', 'Thường dân'],
                     count: 4,
-                    generationPrompt: 'Tạo ra các tửu khách đang uống rượu, bàn luận chuyện thiên hạ trong Thiên Mã Tửu Lâu. Họ có thể là tán tu, thương nhân, hoặc đệ tử các môn phái.',
-                    poiIds: [], // Spawns anywhere on this small map
+                    poiIds: [], 
                 }
             ]
         }
@@ -98,22 +108,28 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             type: 'procedural',
             roles: [
                 {
-                    role: 'Tạp Hóa Lão Bản',
+                    factionId: 'LUC_YEN_THON',
+                    roleNames: ['Lão bản'],
                     count: 1,
-                    generationPrompt: `Tạo ra một vị Lão Bản trông coi tiệm tạp hóa duy nhất trong Lục Yên Thôn. Ông là một tu sĩ Luyện Khí Kỳ đã về già, bán một số vật phẩm cơ bản cho tu sĩ và dân làng.`,
-                    poiIds: ['lyt-poi-2'] // Tiệm Tạp Hóa
+                    poiIds: ['lyt-poi-2']
                 },
                 {
-                    role: 'Thợ Săn',
+                    factionId: 'LUC_YEN_THON',
+                    roleNames: ['Thợ săn'],
                     count: 2,
-                    generationPrompt: `Tạo ra một Thợ Săn sống tại Lục Yên Thôn. Họ là những người phàm hoặc tu sĩ Luyện Khí cấp thấp, am hiểu về núi rừng xung quanh. Trang bị của họ đơn giản, thường là cung hoặc dao găm, và họ có thể bán một số da thú hoặc thảo dược cơ bản.`,
-                    poiIds: ['lyt-poi-3'] // Nhà Dân
+                    poiIds: ['lyt-poi-3']
                 },
                 {
-                    role: 'Nông Dân',
-                    count: 3,
-                    generationPrompt: `Tạo ra một Nông Dân hiền lành, chất phác của Lục Yên Thôn. Họ là phàm nhân, quanh năm bán mặt cho đất bán lưng cho trời. Họ không biết tu luyện nhưng có thể kể vài câu chuyện về thôn làng.`,
-                    poiIds: ['lyt-poi-3'] // Nhà Dân
+                    factionId: 'LUC_YEN_THON',
+                    roleNames: ['Nông dân'],
+                    count: 5,
+                    poiIds: ['lyt-poi-3']
+                },
+                {
+                    factionId: 'LUC_YEN_THON',
+                    roleNames: ['Nguyên anh ẩn tu'],
+                    count: 1,
+                    poiIds: []
                 }
             ]
         }
@@ -124,9 +140,9 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             type: 'procedural',
             roles: [
                 {
-                    role: 'Cư Dân Thành Thị',
+                    factionId: 'THAT_HUYEN_THANH', // Using a generic city dweller faction for now
+                    roleNames: ['Tán tu', 'Vệ binh', 'Thường dân'],
                     count: 10,
-                    generationPrompt: 'Tạo ra các tu sĩ, thị vệ, và thương nhân trong Huyền Ngọc Thành. Cảnh giới của họ từ Luyện Khí đến Trúc Cơ, phản ánh một thành phố sầm uất nhưng không phải là trung tâm quyền lực lớn nhất.',
                     poiIds: ['hth-poi-1', 'hth-poi-2', 'hth-poi-3', 'hth-poi-4', 'hth-poi-5'],
                 }
             ]
@@ -136,50 +152,12 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
         {
             type: 'procedural',
             roles: [
-                {
-                    role: 'Môn Chủ',
-                    count: 1,
-                    generationPrompt: `Tạo ra Môn Chủ của Thanh Vân Môn. Đây là một đại năng uy nghiêm, cảnh giới Kim Đan Hậu Kì hoặc Đỉnh Phong. Ngài mặc đạo bào lộng lẫy, khí chất phi phàm. Prompt của ngài phải thể hiện quyền uy và sự uyên bác của một người đứng đầu tông môn.`,
-                    poiIds: ['tvm-poi-1'], // Chính Điện
-                    titleChance: 0.3,
-                },
-                {
-                    role: 'Phó Môn Chủ',
-                    count: 2,
-                    generationPrompt: `Tạo ra một Phó Môn Chủ của Thanh Vân Môn, đang ở Chính Điện. Họ là tu sĩ Kim Đan Sơ Kì hoặc Trung Kì, phụ trách các công việc quan trọng của tông môn. Tính cách có thể nghiêm nghị hoặc ôn hòa.`,
-                    poiIds: ['tvm-poi-1'] // Chính Điện
-                },
-                {
-                    role: 'Chấp Sự Trưởng Lão',
-                    count: 2,
-                    generationPrompt: `Tạo ra một vị Trưởng Lão Chấp Sự của Thanh Vân Môn, đang có mặt tại Chính Điện. Họ là tu sĩ Kết Tinh Đỉnh Phong, quản lý các sự vụ cụ thể. Họ thường bận rộn và ít nói.`,
-                    poiIds: ['tvm-poi-1'] // Chính Điện
-                },
-                {
-                    role: 'Thủ Các Trưởng Lão',
-                    count: 1,
-                    generationPrompt: `Tạo ra một Thủ Các Trưởng Lão trông coi Tàng Kinh Các của Thanh Vân Môn. Họ là một tu sĩ Kết Tinh Kỳ uyên bác, am hiểu vạn quyển công pháp. Tính cách có phần cổ quái, yêu sách như mạng.`,
-                    poiIds: ['tvm-poi-2'] // Tàng Kinh Các
-                },
-                {
-                    role: 'Chân Truyền Đệ Tử',
-                    count: 2,
-                    generationPrompt: `Tạo ra Chân Truyền Đệ Tử của Thanh Vân Môn, đang ở Tàng Kinh Các để tìm đọc công pháp. Họ là những thiên tài Trúc Cơ Kỳ, kiêu ngạo và tài năng.`,
-                    poiIds: ['tvm-poi-2'], // Tàng Kinh Các
-                    titleChance: 0.05,
-                },
-                {
-                    role: 'Nội Môn Đệ Tử',
-                    count: 5,
-                    generationPrompt: `Tạo ra một Nội Môn Đệ Tử của Thanh Vân Môn, đang ở khu vực Đệ Tử Xá. Họ là tu sĩ Trúc Cơ Kỳ, là nòng cốt của tông môn, có thể đang tu luyện, trò chuyện hoặc vội vã đi làm nhiệm vụ.`,
-                    poiIds: ['tvm-poi-4'] // Đệ Tử Xá
-                },
-                {
-                    role: 'Ngoại Môn Đệ Tử',
-                    count: 10,
-                    generationPrompt: `Tạo ra một Ngoại Môn Đệ Tử của Thanh Vân Môn, đang ở khu vực Đệ Tử Xá. Họ là tu sĩ Luyện Khí Kỳ, đang nỗ lực tu luyện để mong có ngày được thăng cấp. Họ thường làm các công việc tạp vụ trong tông môn.`,
-                    poiIds: ['tvm-poi-4'] // Đệ Tử Xá
-                }
+                { factionId: 'THANH_VAN_MON', roleNames: ['Môn chủ'], count: 1, poiIds: ['tvm-poi-1'], titleChance: 0.3 },
+                { factionId: 'THANH_VAN_MON', roleNames: ['Phó môn chủ'], count: 2, poiIds: ['tvm-poi-1', 'tvm-poi-5'] },
+                { factionId: 'THANH_VAN_MON', roleNames: ['Trưởng lão'], count: 3, poiIds: ['tvm-poi-1', 'tvm-poi-2', 'tvm-poi-3', 'tvm-poi-5'] },
+                { factionId: 'THANH_VAN_MON', roleNames: ['Chân truyền đệ tử'], count: 4, poiIds: ['tvm-poi-2', 'tvm-poi-4'], titleChance: 0.05 },
+                { factionId: 'THANH_VAN_MON', roleNames: ['Nội môn đệ tử'], count: 8, poiIds: ['tvm-poi-4'] },
+                { factionId: 'THANH_VAN_MON', roleNames: ['Ngoại môn đệ tử'], count: 12, poiIds: ['tvm-poi-4', 'tvm-poi-7'] }
             ]
         }
     ],
@@ -191,10 +169,10 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             type: 'procedural',
             roles: [
                 {
-                    role: 'Dược Đồng',
+                    factionId: 'THANH_VAN_MON',
+                    roleNames: ['Ngoại môn đệ tử'],
                     count: 2,
-                    generationPrompt: 'Tạo ra 1-2 đệ tử trông coi Dược Viên. Họ là Luyện Khí Kỳ, am hiểu về linh thảo và có thể bán một số hạt giống cơ bản.',
-                    poiIds: [], // Spawns anywhere on this small map
+                    poiIds: [],
                 }
             ]
         }

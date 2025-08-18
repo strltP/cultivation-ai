@@ -157,7 +157,8 @@ export const usePlayerActions = (
             
             const newJournalEntry: JournalEntry = {
                 time: timeAdvanced,
-                message: message
+                message: message,
+                type: 'player'
             };
 
             return {
@@ -201,6 +202,7 @@ export const usePlayerActions = (
             const newJournalEntry: JournalEntry = {
                 time: newTime,
                 message: message,
+                type: 'player',
             };
 
             return {
@@ -270,7 +272,8 @@ export const usePlayerActions = (
             
             const newJournalEntry: JournalEntry = {
                 time: timeAdvanced,
-                message: message
+                message: message,
+                type: 'player'
             };
 
             return {

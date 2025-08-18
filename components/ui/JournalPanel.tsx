@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import type { PlayerState, JournalEntry } from '../../types/character';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaBookOpen } from 'react-icons/fa';
+import { GiScrollQuill } from 'react-icons/gi';
 
 interface JournalPanelProps {
   playerState: PlayerState;
@@ -8,7 +9,18 @@ interface JournalPanelProps {
 }
 
 const JournalPanel: React.FC<JournalPanelProps> = ({ playerState, onClose }) => {
-    const groupedJournal = (playerState.journal || []).reduce((acc, entry) => {
+    const [activeTab, setActiveTab] = useState<'player' | 'world'>('player');
+
+    const tabs: { id: 'player' | 'world'; label: string; icon: React.ReactNode }[] = [
+        { id: 'player', label: 'Nhật Ký Người Chơi', icon: <GiScrollQuill /> },
+        { id: 'world', label: 'Nhật Ký Thế Giới', icon: <FaBookOpen /> },
+    ];
+
+    const filteredJournal = useMemo(() => {
+        return (playerState.journal || []).filter(entry => (entry.type || 'player') === activeTab);
+    }, [playerState.journal, activeTab]);
+
+    const groupedJournal = filteredJournal.reduce((acc, entry) => {
         const key = `Tháng ${entry.time.month}, Năm ${entry.time.year}`;
         if (!acc[key]) {
             acc[key] = [];
@@ -40,6 +52,22 @@ const JournalPanel: React.FC<JournalPanelProps> = ({ playerState, onClose }) => 
                         </svg>
                     </button>
                 </header>
+                 <nav className="flex-shrink-0 flex border-b-2 border-gray-700 overflow-x-auto">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex items-center gap-2 px-4 md:px-6 py-3 text-base md:text-lg font-semibold transition-colors duration-200 border-b-4 flex-shrink-0 ${
+                                activeTab === tab.id
+                                    ? 'text-yellow-300 border-yellow-400 bg-yellow-600/30'
+                                    : 'text-gray-400 border-transparent hover:bg-gray-700/50 hover:text-white'
+                            }`}
+                        >
+                            {tab.icon}
+                            <span className="whitespace-nowrap">{tab.label}</span>
+                        </button>
+                    ))}
+                </nav>
                 <main className="flex-grow p-4 overflow-y-auto scrollbar-thin chat-history">
                     {sortedGroupKeys.length > 0 ? (
                         <div className="space-y-6">
@@ -48,7 +76,7 @@ const JournalPanel: React.FC<JournalPanelProps> = ({ playerState, onClose }) => 
                                     <h3 className="text-2xl font-semibold text-amber-300 border-b border-amber-500/50 pb-2 mb-3">{groupKey}</h3>
                                     <ul className="space-y-2">
                                         {groupedJournal[groupKey]
-                                            .sort((a,b) => a.time.day - b.time.day)
+                                            .sort((a,b) => b.time.day - a.time.day) // Sort days descending within a month
                                             .map((entry, index) => (
                                             <li key={index} className="text-gray-300">
                                                 <span className="text-gray-500 font-mono text-sm mr-3">
@@ -63,7 +91,11 @@ const JournalPanel: React.FC<JournalPanelProps> = ({ playerState, onClose }) => 
                         </div>
                     ) : (
                         <div className="flex items-center justify-center h-full text-gray-500">
-                            <p>Nhật ký của bạn vẫn còn trống. Hãy bắt đầu hành trình của mình!</p>
+                            <p>
+                                {activeTab === 'player'
+                                ? 'Nhật ký của bạn vẫn còn trống. Hãy bắt đầu hành trình của mình!'
+                                : 'Thế giới vẫn còn yên tĩnh. Chưa có sự kiện lớn nào xảy ra.'}
+                            </p>
                         </div>
                     )}
                 </main>

@@ -139,6 +139,7 @@ export const INITIAL_PLAYER_STATE: Omit<PlayerState, 'saveVersion'> = {
   generatedNpcs: {},
   generatedInteractables: {},
   defeatedNpcIds: [],
+  journal: [],
   time: { year: 1, season: 'Xuân', month: 1, day: 1, hour: 8, minute: 0 },
   respawningNpcs: [],
   plantedPlots: [],

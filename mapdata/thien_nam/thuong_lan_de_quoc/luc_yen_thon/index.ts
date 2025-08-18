@@ -19,7 +19,7 @@ export const pois: PointOfInterest[] = [
     { id: 'lyt-poi-1', name: 'Nhà Thôn Trưởng', type: 'building', position: { x: 1000, y: 550 }, size: { width: 300, height: 250 } },
     { id: 'lyt-poi-2', name: 'Tiệm Tạp Hóa', type: 'building', position: { x: 600, y: 800 }, size: { width: 250, height: 200 } },
     { id: 'lyt-poi-3', name: 'Nhà Dân', type: 'building', position: { x: 1400, y: 900 }, size: { width: 200, height: 180 } },
-    { id: 'lyt-poi-4', name: 'Giếng Cổ', type: 'landmark', position: { x: 1000, y: 950 }, size: { width: 100, height: 100 } },
+    { id: 'lyt-poi-4', name: 'Giếng Cổ', type: 'building', position: { x: 1000, y: 950 }, size: { width: 100, height: 100 } },
 ];
 
 export const teleportGates: TeleportLocation[] = [

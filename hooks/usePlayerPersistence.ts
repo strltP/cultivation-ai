@@ -132,6 +132,10 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         if (!parsed.activeEffects) parsed.activeEffects = [];
         if (!parsed.targetPosition) parsed.targetPosition = parsed.position;
         if (!parsed.journal) parsed.journal = [];
+        parsed.journal = parsed.journal.map((entry: any) => ({
+            ...entry,
+            type: entry.type || 'player'
+        }));
         if (!parsed.lastNpcProgressionCheck) parsed.lastNpcProgressionCheck = parsed.time;
         
         // Add checks for numeric stats that might be missing in old saves.

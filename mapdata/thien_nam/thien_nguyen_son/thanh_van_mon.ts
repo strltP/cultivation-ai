@@ -23,13 +23,13 @@ export const mapAreas: MapArea[] = [
 ];
 
 export const pois: PointOfInterest[] = [
-    { id: 'tvm-poi-1', name: 'Chính Điện', type: 'building', position: { x: 1500, y: 800 }, size: { width: 1200, height: 800 } },
-    { id: 'tvm-poi-2', name: 'Tàng Kinh Các', type: 'building', position: { x: 600, y: 1800 }, size: { width: 800, height: 700 } },
-    { id: 'tvm-poi-3', name: 'Luyện Đan Phường', type: 'building', position: { x: 2400, y: 1800 }, size: { width: 800, height: 700 } },
-    { id: 'tvm-poi-4', name: 'Đệ Tử Xá', type: 'building', position: { x: 1500, y: 2800 }, size: { width: 1500, height: 900 } },
-    { id: 'tvm-poi-5', name: 'Trưởng Lão Viện', type: 'building', position: { x: 2400, y: 500 }, size: { width: 900, height: 600 } },
-    { id: 'tvm-poi-6', name: 'Hậu Sơn Cấm Địa', type: 'dungeon', position: { x: 1500, y: 100 }, size: { width: 1000, height: 400 } },
-    { id: 'tvm-poi-7', name: 'Dược Viên', type: 'landmark', position: { x: 2400, y: 2500 }, size: { width: 700, height: 600 }, targetMap: 'DUOC_VIEN', targetPosition: { x: 1000, y: 1300 } },
+    { id: 'tvm-poi-1', name: 'Chính Điện', type: 'building', position: { x: 1500, y: 800 }, size: { width: 1200, height: 800 }, allowedFactionIds: ['THANH_VAN_MON'] },
+    { id: 'tvm-poi-2', name: 'Tàng Kinh Các', type: 'building', position: { x: 600, y: 1800 }, size: { width: 800, height: 700 }, allowedFactionIds: ['THANH_VAN_MON'] },
+    { id: 'tvm-poi-3', name: 'Luyện Đan Phường', type: 'building', position: { x: 2400, y: 1800 }, size: { width: 800, height: 700 }, allowedFactionIds: ['THANH_VAN_MON'] },
+    { id: 'tvm-poi-4', name: 'Đệ Tử Xá', type: 'building', position: { x: 1500, y: 2800 }, size: { width: 1500, height: 900 }, allowedFactionIds: ['THANH_VAN_MON'] },
+    { id: 'tvm-poi-5', name: 'Trưởng Lão Viện', type: 'building', position: { x: 2400, y: 500 }, size: { width: 900, height: 600 }, allowedFactionIds: ['THANH_VAN_MON'] },
+    { id: 'tvm-poi-6', name: 'Hậu Sơn Cấm Địa', type: 'dungeon', position: { x: 1500, y: 100 }, size: { width: 1000, height: 400 }, allowedFactionIds: ['THANH_VAN_MON'] },
+    { id: 'tvm-poi-7', name: 'Dược Viên', type: 'landmark', position: { x: 2400, y: 2500 }, size: { width: 700, height: 600 }, allowedFactionIds: ['THANH_VAN_MON'], targetMap: 'DUOC_VIEN', targetPosition: { x: 1000, y: 1300 } },
 ];
 
 export const teleportGates: TeleportLocation[] = [

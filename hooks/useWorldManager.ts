@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { PlayerState, NPC } from '../types/character';
 import type { Interactable } from '../types/interaction';
 import type { TeleportLocation, PointOfInterest, MapArea, MapID } from '../types/map';
@@ -150,7 +150,8 @@ export const useWorldManager = (
                 
                 const newJournalEntries = deadNpcMessages.map(message => ({
                     time: p.time,
-                    message
+                    message,
+                    type: 'world' as 'world'
                 }));
 
                 return {
@@ -225,7 +226,11 @@ export const useWorldManager = (
         setCurrentMapAreas(dataSource.mapAreas[currentMapId] || []);
 
         const loadAndSetNpcs = async () => {
-            if (!playerState.generatedNpcs[currentMapId] && !isLoading) {
+            const spawnDefinitionsExist = (NPC_SPAWN_DEFINITIONS_BY_MAP[currentMapId] || []).length > 0;
+            const npcsGenerated = playerState.generatedNpcs[currentMapId] && playerState.generatedNpcs[currentMapId].length > 0;
+            const needsGeneration = spawnDefinitionsExist && !npcsGenerated;
+            
+            if (needsGeneration && !isLoading) {
                 setIsLoading(true);
                 try {
                     const newNpcs = await loadNpcsForMap(currentMapId, POIS_BY_MAP, playerState.time);
@@ -286,7 +291,7 @@ export const useWorldManager = (
                                     const x = area.position.x - area.size.width / 2 + Math.random() * area.size.width;
                                     const y = area.position.y - area.size.height / 2 + Math.random() * area.size.height;
                                     const id = `proc-monster-${currentMapId}-${baseId}-${Date.now()}-${i}`;
-                                    newMonsters.push(createMonsterFromData(template, level, id, {x, y}, ruleKey, p.time));
+                                    newMonsters.push(createMonsterFromData(template, level, id, {x, y}, ruleKey, p.time, currentMapId));
                                 }
                             }
                         }

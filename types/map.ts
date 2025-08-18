@@ -14,6 +14,7 @@ export interface MapArea {
   position: Position; // Center position
   size: { width: number; height: number };
   style: CSSProperties;
+  allowedFactionIds?: string[]; // Chỉ những phe phái này được vào
 }
 
 export interface PointOfInterest {
@@ -24,6 +25,8 @@ export interface PointOfInterest {
   size: { width: number; height: number }; // Bounding box size
   targetMap?: MapID; // Map to teleport to when entered
   targetPosition?: Position; // Position to land at in the new map
+  minRealmIndex?: number; // Cảnh giới tối thiểu để vào
+  allowedFactionIds?: string[]; // Chỉ những phe phái này được vào
 }
 
 export interface GameMap {

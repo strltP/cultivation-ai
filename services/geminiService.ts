@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse, Chat } from "@google/genai";
-import type { PlayerState, NPC, ChatMessage } from '../types/character';
+import type { PlayerState, NPC, ChatMessage, NpcIntent, JournalEntry } from '../types/character';
 import type { Interactable } from '../types/interaction';
 import type { Item } from '../types/item';
 import type { NpcDecision } from '../types/combat';
@@ -11,6 +12,9 @@ import { ALL_ITEMS } from "../data/items/index";
 import { LINH_CAN_TYPES } from "../types/linhcan";
 import { REALM_PROGRESSION } from "../constants";
 import { MAPS, POIS_BY_MAP, MAP_AREAS_BY_MAP } from "../mapdata";
+import type { PointOfInterest } from '../types/map';
+import { gameTimeToMinutes } from "./timeService";
+
 
 let ai: GoogleGenAI | null = null;
 
@@ -154,14 +158,53 @@ export const createChatSession = (playerState: PlayerState, npc: NPC, history?: 
         .filter(Boolean)
         .join(', ') || "Không bán gì";
 
+    // 5. World Events (Gossip System)
+    const allJournalEntries: JournalEntry[] = [];
+    for (const mapId in playerState.generatedNpcs) {
+        for (const otherNpc of playerState.generatedNpcs[mapId]) {
+            if (otherNpc.id !== npc.id && otherNpc.actionHistory) {
+                allJournalEntries.push(...otherNpc.actionHistory);
+            }
+        }
+    }
+    const recentEvents = allJournalEntries
+        .sort((a, b) => gameTimeToMinutes(b.time) - gameTimeToMinutes(a.time))
+        .slice(0, 3) // Get the 3 most recent events
+        .map(entry => `- ${entry.message}`);
+    
+    let recentEventsString = '';
+    if (recentEvents.length > 0) {
+        recentEventsString = `TIN TỨC GẦN ĐÂY TRONG GIANG HỒ (bạn có thể kể lại những chuyện này nếu được hỏi thăm tin tức)
+${recentEvents.join('\n')}`;
+    }
+
+    // 6. NPC Current State (Dynamic Interaction)
+    let currentStateString = '';
+    if (npc.currentIntent && npc.intentProgress) {
+        const allPois = Object.values(POIS_BY_MAP).flat();
+        const destinationPoi = allPois.find(p => p.id === npc.currentIntent!.destinationPoiId);
+        
+        let locationStatus = '';
+        if (npc.intentProgress.isTraveling) {
+            locationStatus = `đang trên đường tới ${destinationPoi?.name || 'một nơi nào đó'}`;
+        } else {
+            locationStatus = `đang ở tại ${destinationPoi?.name || 'một nơi nào đó'}`;
+        }
+
+        currentStateString = `TRẠNG THÁI HIỆN TẠI CỦA BẠN
+- Ý định: "${npc.currentIntent.description}" (${locationStatus}).
+- Khi được hỏi đang làm gì, hãy trả lời dựa trên điều này. Ví dụ: "Ta đang trên đường đến Hắc Ám Sâm Lâm để tìm Huyết Tinh Chi." hoặc "Ta đang bận thu thập khoáng thạch ở Thiên Nguyên Sơn."`;
+    }
+
+
     const initialNpcPrompt = `BỐI CẢNH THẾ GIỚI
 - Hệ thống cảnh giới tu luyện trong thế giới này, từ thấp đến cao, là: ${realmNames}.
 - Sơ đồ địa lý của thế giới:
 ${worldGeographyString}
-- Vị trí hiện tại của bạn là ở ${npcLocationString}.
-
+${recentEventsString ? `\n${recentEventsString}\n` : ''}
 THÔNG TIN VỀ BẢN THÂN BẠN (${npc.name})
 - Chức vụ: ${npc.role}${npc.title ? `\n- Danh hiệu: ${npc.title}` : ''}
+- Quyền lực: ${npc.power || 'Không rõ'} (trên thang điểm 100, quyền lực càng cao, địa vị càng lớn, thái độ càng uy nghiêm hoặc thâm sâu).
 - Giới tính: ${npc.gender}
 - Cảnh giới: ${npcCultivationInfo.name}
 - Thuộc tính: ${attributesString}.
@@ -170,7 +213,7 @@ THÔNG TIN VỀ BẢN THÂN BẠN (${npc.name})
 - Vật phẩm trong túi đồ: ${inventoryString}.
 - Vật phẩm đang bán: ${forSaleString}.
 - Vai trò và tính cách cốt lõi: "${npc.prompt}"
-
+${currentStateString ? `\n${currentStateString}\n` : ''}
 BỐI CẢNH TRÒ CHUYỆN
 - Bạn đang nói chuyện với một tu sĩ (${playerState.gender}) tên là '${playerState.name}', hiện đang ở cảnh giới ${playerCultivationInfo.name}.
 - Bây giờ là ${timeOfDay} vào mùa ${season}.`;
@@ -263,10 +306,12 @@ export const getNpcDefeatDecision = async (npc: NPC, player: PlayerState): Promi
         const npcCultivationInfo = getCultivationInfo(npc.cultivation!);
 
         const prompt = `Trong một trận đấu sinh tử, NPC '${npc.name}' (${npc.role}, giới tính ${npc.gender}${npc.title ? `, "${npc.title}"` : ''}, cảnh giới ${npcCultivationInfo.name}) đã đánh bại người chơi '${player.name}' (giới tính ${player.gender}, cảnh giới ${playerCultivationInfo.name}).
-Bối cảnh của NPC là: "${npc.prompt}".
-Dựa vào tính cách và bối cảnh của NPC, hãy quyết định xem NPC sẽ tha mạng hay kết liễu người chơi.
-Hãy đưa ra một lời thoại ngắn gọn (1-2 câu) để NPC nói với người chơi, phản ánh quyết định đó.
-Lưu ý: NPC có thể độc ác, kiêu ngạo, nhân từ, hoặc dửng dưng. Quyết định phải phù hợp với vai trò của họ. Ví dụ, một trưởng lão chính phái có thể tha mạng, một ma tu có thể kết liễu không do dự.`;
+Bản chất và tính cách cốt lõi của NPC là: "${npc.prompt}".
+
+**QUAN TRỌNG:** Quyết định của bạn PHẢI tuyệt đối tuân theo bản chất của NPC. Một NPC độc ác, ma đạo, hoặc kiêu ngạo SẼ KHÔNG tha mạng cho một kẻ thù yếu đuối. Một NPC chính phái, nhân từ có thể sẽ tha mạng. Quyết định không phù hợp với nhân vật sẽ phá hỏng câu chuyện.
+
+Dựa vào những điều trên, hãy quyết định xem NPC sẽ tha mạng ('spare') hay kết liễu ('kill') người chơi.
+Sau đó, đưa ra một lời thoại ngắn gọn (1-2 câu) để NPC nói với người chơi, phản ánh quyết định đó.`;
 
         const response = await client.models.generateContent({
             model: "gemini-2.5-flash",
@@ -297,7 +342,7 @@ Lưu ý: NPC có thể độc ác, kiêu ngạo, nhân từ, hoặc dửng dưng
         return JSON.parse(jsonStr) as NpcDecision;
     } catch (error) {
         console.error("Error generating NPC defeat decision from Gemini:", error);
-        // Fallback decision
+        // Fallback decision in case of error, still leans towards sparing to not be overly punitive on API failure.
         return {
             decision: 'spare',
             dialogue: "Hôm nay ta tha cho ngươi một mạng. Cút đi!"
@@ -309,6 +354,8 @@ export interface GeneratedNpcData {
     name: string;
     gender: 'Nam' | 'Nữ';
     role: string;
+    power: number;
+    behaviors: string[];
     title?: string;
     prompt: string;
     realmName: string; // e.g., "Kim Đan"
@@ -330,6 +377,8 @@ export interface GeneratedNpcData {
     forSale?: { itemId: string, stock: number, priceModifier?: number }[];
 }
 
+const BEHAVIOR_TAGS_STRING = "'FIGHTER', 'HUNTER', 'GATHERER_HERB', 'GATHERER_ORE', 'TRADER', 'MEDITATOR', 'SCHOLAR', 'WANDERER'";
+
 export const generateNpcs = async (generationPrompt: string, count: number, titleChance?: number): Promise<GeneratedNpcData[]> => {
     try {
         const client = getAIClient();
@@ -346,28 +395,30 @@ export const generateNpcs = async (generationPrompt: string, count: number, titl
         
         let titleInstruction = '';
         if (titleChance !== undefined && titleChance > 0) {
-            titleInstruction = `4.  Một danh hiệu (title) tu tiên tùy chọn. Có ${Math.round(titleChance * 100)}% khả năng NPC này sẽ có danh hiệu. Danh hiệu phải mang tính chất hào nhoáng (ví dụ: 'Kiếm Thánh', 'Huyết Ma', 'Bách Thảo Tiên Tử'). Nếu không có danh hiệu, hãy để trống trường này hoặc đặt là null.`;
+            titleInstruction = `6.  Một danh hiệu (title) tu tiên tùy chọn. Có ${Math.round(titleChance * 100)}% khả năng NPC này sẽ có danh hiệu. Danh hiệu phải mang tính chất hào nhoáng (ví dụ: 'Kiếm Thánh', 'Huyết Ma', 'Bách Thảo Tiên Tử'). Nếu không có danh hiệu, hãy để trống trường này hoặc đặt là null.`;
         } else {
-            titleInstruction = `4.  Danh hiệu (title): Để trống trường này. NPC này không có danh hiệu.`;
+            titleInstruction = `6.  Danh hiệu (title): Để trống trường này. NPC này không có danh hiệu.`;
         }
 
         const prompt = `${generationPrompt}
 Hãy tạo ra ${count} NPC độc đáo. Đối với mỗi NPC, hãy cung cấp:
 1.  Một cái tên tiếng Việt đậm chất tiên hiệp, huyền huyễn (ví dụ: Mặc Trần, Lãnh Nguyệt Hàn, Tiêu Viêm, Liễu Thanh Ca). Tên phải có cả Họ và Tên.
 2.  Giới tính ('Nam' hoặc 'Nữ').
-3.  Một chức vụ (role) phù hợp (ví dụ: 'Lão Dược Sư', 'Kiếm Tu Lãng Du', 'Trưởng Lão Tông Môn').
+3.  Sử dụng lại chính xác chức vụ (role) được cung cấp trong prompt.
+4.  Sử dụng lại chính xác cấp độ quyền lực (power) được cung cấp trong prompt.
+5.  Một danh sách từ 1 đến 3 thẻ hành vi (behaviors) từ danh sách sau để xác định AI của họ: [${BEHAVIOR_TAGS_STRING}]. Ví dụ, một Dược Sư nên có 'GATHERER_HERB', một Kiếm Tu nên có 'FIGHTER' và 'HUNTER'.
 ${titleInstruction}
-5.  Một lời nhắc đối thoại ngắn gọn (1-2 câu) để mời tương tác.
-6.  Cảnh giới tu luyện (ví dụ: 'Trúc Cơ', 'Kim Đan').
-7.  Tiểu cảnh giới (ví dụ: 'Hậu Kì', 'Đỉnh Phong', hoặc 'Tầng 5' đối với Luyện Khí).
-8.  Các thuộc tính cơ bản (Căn Cốt, Thân Pháp, Thần Thức, Ngộ Tính, Cơ Duyên, Tâm Cảnh). Đây là các chỉ số "thiên phú" ban đầu khi còn là phàm nhân, trước khi tu luyện. Hãy tạo ra các giá trị trong khoảng từ 5 đến 15 cho mỗi thuộc tính. Hãy phân bổ các điểm này để phản ánh vai trò của họ (ví dụ: pháp tu có Thần Thức và Ngộ Tính cao, hộ vệ có Căn Cốt cao).
-9.  Một danh sách từ 1 đến 5 Linh Căn. Mỗi Linh Căn bao gồm 'type' (loại) và 'purity' (độ thuần khiết, 10-100). Loại Linh Căn phải nằm trong danh sách sau: [${linhCanTypesString}]. Linh Căn phải phù hợp với vai trò và cảnh giới của NPC.
-10. Một danh sách ID kỹ năng đã học. Hãy chọn 1 Tâm Pháp từ danh sách sau: [${tamPhapInfo}]. Và chọn 1 hoặc 2 Công Pháp từ danh sách sau: [${congPhapInfo}]. Các kỹ năng phải phù hợp với vai trò và cảnh giới của họ.
-11. Một lượng Linh Thạch mà họ có thể đánh rơi. Lượng này phải phù hợp với cảnh giới và vai trò của NPC. Ví dụ: một tu sĩ Luyện Khí có thể có 50-200 linh thạch, một trưởng lão Kim Đan hoặc một thương nhân giàu có có thể có từ 5,000 đến 50,000 linh thạch.
-12. Một lượng điểm Cảm Ngộ mà họ sở hữu. Lượng này phải phù hợp với cảnh giới của họ (ví dụ: Luyện Khí có 100-1000, Kim Đan có 10,000-100,000).
-13. Một bộ trang bị (equipment) từ danh sách sau, phù hợp với vai trò và cảnh giới. Chỉ cung cấp itemId. Không trang bị cho tất cả. Danh sách trang bị: [${equipmentInfo}]
-14. Một túi đồ (inventory) chứa một vài vật phẩm từ danh sách sau. Có thể là một mảng rỗng. Danh sách vật phẩm: [${sellableItemsInfo}]
-15. Một danh sách các vật phẩm để bán (forSale), phù hợp với vai trò của NPC (ví dụ: thợ rèn bán khoáng thạch, dược sư bán thảo dược). Có thể là một mảng rỗng. Mỗi vật phẩm bao gồm: 'itemId', 'stock' (một số lượng hữu hạn, ví dụ 5-50), và có thể có 'priceModifier' (hệ số giá, ví dụ 1.5 là bán đắt hơn 50%). Không bao giờ sử dụng số lượng vô hạn hoặc -1. Danh sách vật phẩm có thể bán: [${sellableItemsInfo}]`;
+7.  Một lời nhắc đối thoại ngắn gọn (1-2 câu) để mời tương tác.
+8.  Cảnh giới tu luyện (ví dụ: 'Trúc Cơ', 'Kim Đan'). Cảnh giới phải phù hợp với cấp độ quyền lực đã cho.
+9.  Tiểu cảnh giới (ví dụ: 'Hậu Kì', 'Đỉnh Phong', hoặc 'Tầng 5' đối với Luyện Khí).
+10. Các thuộc tính cơ bản (Căn Cốt, Thân Pháp, Thần Thức, Ngộ Tính, Cơ Duyên, Tâm Cảnh). Đây là các chỉ số "thiên phú" ban đầu khi còn là phàm nhân, trước khi tu luyện. Hãy tạo ra các giá trị trong khoảng từ 5 đến 15 cho mỗi thuộc tính. Hãy phân bổ các điểm này để phản ánh vai trò của họ (ví dụ: pháp tu có Thần Thức và Ngộ Tính cao, hộ vệ có Căn Cốt cao).
+11. Một danh sách từ 1 đến 5 Linh Căn. Mỗi Linh Căn bao gồm 'type' (loại) và 'purity' (độ thuần khiết, 10-100). Loại Linh Căn phải nằm trong danh sách sau: [${linhCanTypesString}]. Linh Căn phải phù hợp với vai trò và cảnh giới của NPC.
+12. Một danh sách ID kỹ năng đã học. Hãy chọn 1 Tâm Pháp từ danh sách sau: [${tamPhapInfo}]. Và chọn 1 hoặc 2 Công Pháp từ danh sách sau: [${congPhapInfo}]. Các kỹ năng phải phù hợp với vai trò và cảnh giới của họ.
+13. Một lượng Linh Thạch mà họ có thể đánh rơi. Lượng này phải phù hợp với cảnh giới và vai trò của NPC. Ví dụ: một tu sĩ Luyện Khí có thể có 50-200 linh thạch, một trưởng lão Kim Đan hoặc một thương nhân giàu có có thể có từ 5,000 đến 50,000 linh thạch.
+14. Một lượng điểm Cảm Ngộ mà họ sở hữu. Lượng này phải phù hợp với cảnh giới của họ (ví dụ: Luyện Khí có 100-1000, Kim Đan có 10,000-100,000).
+15. Một bộ trang bị (equipment) từ danh sách sau, phù hợp với vai trò và cảnh giới. Chỉ cung cấp itemId. Không trang bị cho tất cả. Danh sách trang bị: [${equipmentInfo}]
+16. Một túi đồ (inventory) chứa một vài vật phẩm từ danh sách sau. Có thể là một mảng rỗng. Danh sách vật phẩm: [${sellableItemsInfo}]
+17. Một danh sách các vật phẩm để bán (forSale), phù hợp với vai trò của NPC (ví dụ: thợ rèn bán khoáng thạch, dược sư bán thảo dược). Có thể là một mảng rỗng. Mỗi vật phẩm bao gồm: 'itemId', 'stock' (một số lượng hữu hạn, ví dụ 5-50), và có thể có 'priceModifier' (hệ số giá, ví dụ 1.5 là bán đắt hơn 50%). Không bao giờ sử dụng số lượng vô hạn hoặc -1. Danh sách vật phẩm có thể bán: [${sellableItemsInfo}]`;
 
         const response = await client.models.generateContent({
             model: "gemini-2.5-flash",
@@ -385,6 +436,12 @@ ${titleInstruction}
                             name: { type: Type.STRING, description: "Tên tiếng Việt của NPC." },
                             gender: { type: Type.STRING, description: "Giới tính của NPC ('Nam' hoặc 'Nữ').", enum: ['Nam', 'Nữ'] },
                             role: { type: Type.STRING, description: "Chức vụ hoặc vai trò của NPC (ví dụ: 'Lão Dược Sư', 'Kiếm Tu Lãng Du')." },
+                            power: { type: Type.INTEGER, description: "Cấp độ quyền lực của NPC, từ 1-100. Hãy sử dụng đúng cấp độ được cung cấp trong prompt." },
+                            behaviors: {
+                                type: Type.ARRAY,
+                                description: `Một danh sách các thẻ hành vi từ: [${BEHAVIOR_TAGS_STRING}]`,
+                                items: { type: Type.STRING }
+                            },
                             title: { type: Type.STRING, description: "Danh hiệu tu tiên của NPC (ví dụ: 'Kiếm Thánh'). Có thể là chuỗi rỗng hoặc null nếu không có.", nullable: true },
                             prompt: { type: Type.STRING, description: "Một lời thoại ngắn gọn, trong vai nhân vật để người chơi tương tác." },
                             realmName: { type: Type.STRING, description: "Tên cảnh giới tu luyện của NPC (ví dụ: 'Trúc Cơ')." },
@@ -461,7 +518,7 @@ ${titleInstruction}
                                 }
                             }
                         },
-                        required: ["name", "gender", "role", "prompt", "realmName", "levelDescription", "attributes", "linhCan", "linhThach", "camNgo", "learnedSkillIds"]
+                        required: ["name", "gender", "role", "power", "behaviors", "prompt", "realmName", "levelDescription", "attributes", "linhCan", "linhThach", "camNgo", "learnedSkillIds"]
                     }
                 }
             },

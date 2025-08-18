@@ -4,7 +4,7 @@ import type { CultivationState, CharacterAttributes, CombatStats } from './stats
 import type { LearnedSkill } from './skill';
 import type { InventorySlot } from './item';
 import type { EquipmentSlot } from './equipment';
-import type { LinhCan } from './linhcan';
+import type { LinhCan, NpcBehavior } from './linhcan';
 import type { ActiveStatusEffect } from './combat';
 import type { Interactable } from './interaction';
 
@@ -16,6 +16,26 @@ export interface ChatMessage {
 export interface JournalEntry {
     time: GameTime;
     message: string;
+    type: 'player' | 'world';
+}
+
+export type NpcIntentType = 'GATHER' | 'HUNT' | 'TRADE' | 'MEDITATE' | 'CHALLENGE' | 'WANDERER';
+
+export interface NpcIntent {
+  type: NpcIntentType;
+  destinationPoiId: string; // POI to travel to.
+  destinationMapId: MapID; // Map where the POI is located.
+  destinationPosition: Position; // The specific random point within the POI.
+  durationMonths: number;   // Time to spend there.
+  description: string;      // Flavor text from AI.
+  gatherTargetType?: 'herb' | 'stone'; // To differentiate GATHER_HERBS and GATHER_MINERALS for the AI prompt
+  targetNpcId?: string;
+  path?: PathStep[]; // NEW: The multi-map path to the destination
+}
+
+export interface PathStep {
+    mapId: MapID;
+    targetPosition: Position;
 }
 
 export interface NPC {
@@ -27,8 +47,15 @@ export interface NPC {
   title?: string; // Danh hiệu, ví dụ: "Kiếm Thánh" (Optional)
   spawnRuleId?: string; // For procedural monsters, to link them to their spawn rule
   role: string;   // Chức vụ, ví dụ: "Trưởng Lão" (Required)
+  factionId?: string; // ID của thế lực NPC thuộc về
+  power?: number; // Chỉ số quyền lực trong một thế lực
+  behaviors?: NpcBehavior[]; // Thẻ hành vi AI, ví dụ: ['FIGHTER', 'TRADER']
   cannotChallengeUntil?: GameTime;
   position: Position;
+  currentMap: MapID; // Bản đồ NPC đang ở
+  homeMapId: MapID;
+  homePosition: Position;
+  cannotActUntil?: GameTime; // NPC cannot get a new intent until this time has passed.
   prompt: string;
   birthTime: GameTime;
 
@@ -48,11 +75,24 @@ export interface NPC {
   activeEffects: ActiveStatusEffect[];
   lootTable?: { itemId: string; chance: number; quantity: [number, number]; }[];
 
-  // NPC Skills and Inventory
+  // NPC Inventory, skills, etc.
   learnedSkills: LearnedSkill[];
   inventory: InventorySlot[];
   equipment: Partial<Record<EquipmentSlot, InventorySlot>>;
-  forSale?: { itemId: string; stock: number; priceModifier: number }[];
+  forSale?: { itemId: string; stock: number; priceModifier?: number }[];
+
+  // --- NPC Exploration System Fields (Giai đoạn 1 & 2) ---
+  path?: PathStep[];
+  currentPathStepIndex?: number;
+  currentGoal?: string; // Mục tiêu dài hạn, ví dụ: "Trở nên giàu có"
+  currentIntent?: NpcIntent;
+  intentProgress?: { // Theo dõi tiến độ của intent
+      startTime: GameTime;
+      isTraveling: boolean;
+      timeAtDestination?: number; // Thời gian còn lại ở đích (tính bằng phút)
+  };
+  lastDecisionTime?: GameTime; // Lần cuối NPC "suy nghĩ" để ra quyết định mới
+  actionHistory?: JournalEntry[]; // Lịch sử các hành động đã hoàn thành
 }
 
 export type Season = 'Xuân' | 'Hạ' | 'Thu' | 'Đông';
@@ -115,7 +155,7 @@ export interface PlayerState {
   chatHistories?: Record<string, ChatMessage[]>;
   lastPopCheck?: Record<string, GameTime>; // Key: mapId-areaId for monster population, Value: last check time
   lastNpcProgressionCheck?: GameTime; // The last time NPC cultivation was processed
-  journal?: JournalEntry[];
+  journal: JournalEntry[];
   
   // Game Time
   time: GameTime;

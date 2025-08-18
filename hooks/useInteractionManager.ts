@@ -10,6 +10,7 @@ import { ALL_INTERACTABLES } from '../data/interactables';
 import { INTERACTION_RADIUS, INVENTORY_SIZE } from '../constants';
 import type { InventorySlot } from '../types/item';
 import type { Chat } from '@google/genai';
+import { FACTIONS } from '../data/factions';
 
 type InteractionDependencies = {
     handleAddItemToInventory: (itemIdToAdd: string, quantityToAdd: number) => void;
@@ -132,6 +133,20 @@ export const useInteractionManager = (
     
     const handleEnterPoi = useCallback((poi: PointOfInterest) => {
         if (!poi.targetMap || !poi.targetPosition) return;
+
+        // Faction Access Control
+        if (poi.allowedFactionIds && poi.allowedFactionIds.length > 0) {
+            // Player doesn't have a faction yet. This logic denies access if a faction is required.
+            // When player factions are implemented, check playerState.factionId here.
+            const playerFactionId = undefined; // Placeholder for player's faction
+            if (!playerFactionId || !poi.allowedFactionIds.includes(playerFactionId)) {
+                const faction = FACTIONS.find(f => f.id === poi.allowedFactionIds![0]);
+                const factionName = faction ? `[${faction.name}]` : 'nơi này';
+                setGameMessage(`Nơi đây là trọng địa của ${factionName}, không phận sự miễn vào!`);
+                return;
+            }
+        }
+
         stopAllActions.current();
         setIsLoading(true);
         setGameMessage(`Đang tiến vào ${poi.name}...`);
@@ -151,7 +166,7 @@ export const useInteractionManager = (
             setIsLoading(false);
             setGameMessage(`Chào mừng đến ${poi.name}!`);
         }, 1500);
-    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, stopAllActions]);
+    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, stopAllActions, setGameMessage]);
 
     const handleSpiritFieldClick = useCallback((plot: Interactable) => {
         setActiveInteractionInteractable(null);

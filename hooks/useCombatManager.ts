@@ -243,6 +243,8 @@ export const useCombatManager = (
                 npcsOnMap[npcIndex].hp = 1;
                 npcsOnMap[npcIndex].mana = npc.mana;
                 npcsOnMap[npcIndex].cannotChallengeUntil = cannotChallengeUntil;
+                npcsOnMap[npcIndex].currentIntent = undefined;
+                npcsOnMap[npcIndex].intentProgress = undefined;
             } else {
                 console.warn("Could not find spared NPC in master list to update.");
             }
@@ -268,41 +270,41 @@ export const useCombatManager = (
         }, 100);
     }, [combatState, setGameMessage, updateAndPersistPlayerState, addJournalEntry]);
 
-    const processCombatEnd = useCallback((winner: 'player' | 'npc') => {
-        setCombatState(cs => {
-            if (!cs || cs.combatEnded) return cs;
-            
-            addCombatLog(winner === 'player' ? `Bạn đã chiến thắng!` : `Bạn đã bị đánh bại!`, 'info');
-
-            const newState: CombatState = { ...cs, winner, combatEnded: true, isProcessing: true };
-            
-            if (winner === 'npc') {
-                if (cs.npc.npcType === 'monster') {
-                    const decision: NpcDecision = { decision: 'kill', dialogue: `*${cs.npc.name} gầm lên một tiếng rồi lao tới kết liễu bạn!*` };
-                    newState.isProcessing = false;
-                    newState.npcDecision = decision;
-                } else {
-                    getNpcDefeatDecision(cs.npc, cs.player).then(decision => {
-                        setCombatState(s => s ? { ...s, isProcessing: false, npcDecision: decision } : null);
-                    });
-                }
-            } else {
-                 const camNgoGained = cs.npc.npcType === 'monster' 
-                    ? Math.max(5, Math.round(5 + (cs.npc.level || 1) * 2 + cs.npc.stats.maxHp / 50))
-                    : Math.max(5, Math.round(10 + ((cs.npc.cultivation?.realmIndex ?? 0) * 15 + (cs.npc.cultivation?.level ?? 0)) - (cs.player.cultivation.realmIndex * 15 + cs.player.cultivation.level) * 2 + cs.npc.stats.maxHp / 50));
-
-                 newState.camNgoGained = camNgoGained;
-                 newState.isProcessing = false; // Player won, no more processing needed
-            }
-
-            return newState;
+    const handleNpcDecision = useCallback((cs: CombatState) => {
+        getNpcDefeatDecision(cs.npc, cs.player).then(decision => {
+            setCombatState(s => s ? { ...s, isProcessing: false, npcDecision: decision } : null);
         });
-    }, [addCombatLog]);
+    }, []);
+
+    const getCombatEndState = useCallback((currentState: CombatState, winner: 'player' | 'npc'): CombatState => {
+        if (currentState.combatEnded) return currentState;
+
+        addCombatLog(winner === 'player' ? `Bạn đã chiến thắng!` : `Bạn đã bị đánh bại!`, 'info');
+
+        const newState: CombatState = { ...currentState, winner, combatEnded: true, isProcessing: true };
+
+        if (winner === 'npc') {
+            if (newState.npc.npcType === 'monster') {
+                const decision: NpcDecision = { decision: 'kill', dialogue: `*${newState.npc.name} gầm lên một tiếng rồi lao tới kết liễu bạn!*` };
+                newState.isProcessing = false;
+                newState.npcDecision = decision;
+            } else {
+                handleNpcDecision(newState);
+            }
+        } else { // winner === 'player'
+            const camNgoGained = newState.npc.npcType === 'monster'
+                ? Math.max(5, Math.round(5 + (newState.npc.level || 1) * 2 + newState.npc.stats.maxHp / 50))
+                : Math.max(5, Math.round(10 + ((newState.npc.cultivation?.realmIndex ?? 0) * 15 + (newState.npc.cultivation?.level ?? 0)) - (newState.player.cultivation.realmIndex * 15 + newState.player.cultivation.level) * 2 + newState.npc.stats.maxHp / 50));
+            newState.camNgoGained = camNgoGained;
+            newState.isProcessing = false;
+        }
+        return newState;
+    }, [addCombatLog, handleNpcDecision]);
 
     const processTurn = useCallback(<A extends PlayerState | NPC, D extends PlayerState | NPC>(attackerState: A, defenderState: D, action: PlayerAction | NpcAction): { updatedAttacker: A, updatedDefender: D, endWinner?: 'player' | 'npc'} => {
         const updatedAttacker: A = { ...attackerState };
         const updatedDefender: D = { ...defenderState };
-        const attackerIsPlayer = 'camNgo' in attackerState;
+        const attackerIsPlayer = 'targetPosition' in attackerState;
         const targetSide = attackerIsPlayer ? 'npc' : 'player';
         
         if (action.type === 'ATTACK') {
@@ -385,7 +387,7 @@ export const useCombatManager = (
             switch(effect.type) {
                 case 'STUN':
                     wasStunned = true;
-                    showDamage('camNgo' in combatantAfterEffects ? 'player' : 'npc', 'Choáng', 'effect');
+                    showDamage('targetPosition' in combatantAfterEffects ? 'player' : 'npc', 'Choáng', 'effect');
                     addCombatLog(`${combatant.name} bị choáng và không thể hành động!`, 'info');
                     break;
                 case 'BURN':
@@ -398,7 +400,7 @@ export const useCombatManager = (
         }
         
         if (totalDamage > 0) {
-             showDamage('camNgo' in combatantAfterEffects ? 'player' : 'npc', totalDamage, 'damage');
+             showDamage('targetPosition' in combatantAfterEffects ? 'player' : 'npc', totalDamage, 'damage');
         }
 
         // Tick down durations
@@ -425,8 +427,7 @@ export const useCombatManager = (
             const { updatedCombatant: playerAfterEffects, wasStunned } = processAndTickEffects(cs.player);
 
             if (playerAfterEffects.hp <= 0) {
-                processCombatEnd('npc');
-                return { ...cs, player: playerAfterEffects };
+                return getCombatEndState({ ...cs, player: playerAfterEffects }, 'npc');
             }
 
             if (wasStunned) {
@@ -459,15 +460,14 @@ export const useCombatManager = (
                 updatedNpcState = updatedDefender;
 
                 if (endWinner) {
-                    processCombatEnd(endWinner);
-                    return { ...cs, player: finalPlayerState, npc: updatedNpcState };
+                    return getCombatEndState({ ...cs, player: finalPlayerState, npc: updatedNpcState }, endWinner);
                 }
             }
 
             // --- Set state to trigger NPC turn via useEffect ---
             return { ...cs, player: finalPlayerState, npc: updatedNpcState, isPlayerTurn: false, isProcessing: false };
         });
-    }, [processTurn, processCombatEnd, addCombatLog, processAndTickEffects, setGameMessage, closeCombatScreen, addJournalEntry]);
+    }, [processTurn, getCombatEndState, addCombatLog, processAndTickEffects, setGameMessage, closeCombatScreen, addJournalEntry]);
 
     useEffect(() => {
         if (combatState && !combatState.isPlayerTurn && !combatState.isProcessing && !combatState.combatEnded) {
@@ -480,8 +480,7 @@ export const useCombatManager = (
                     const { updatedCombatant: npcAfterEffects, wasStunned } = processAndTickEffects(currentState.npc);
 
                     if (npcAfterEffects.hp <= 0) {
-                        processCombatEnd('player');
-                        return { ...currentState, npc: npcAfterEffects };
+                        return getCombatEndState({ ...currentState, npc: npcAfterEffects }, 'player');
                     }
 
                     if (wasStunned) {
@@ -495,8 +494,12 @@ export const useCombatManager = (
                         setCombatState(s => {
                             if (!s || s.combatEnded) return s;
                             const { updatedAttacker: finalNpc, updatedDefender: finalPlayer, endWinner } = processTurn(npcAfterEffects, s.player, npcAction);
-                             if (endWinner) processCombatEnd(endWinner);
-                             return { ...s, player: finalPlayer, npc: finalNpc, isPlayerTurn: true, isProcessing: false, turn: s.turn + 1 };
+                             
+                            if (endWinner) {
+                                return getCombatEndState({ ...s, player: finalPlayer, npc: finalNpc }, endWinner);
+                            } else {
+                                return { ...s, player: finalPlayer, npc: finalNpc, isPlayerTurn: true, isProcessing: false, turn: s.turn + 1 };
+                            }
                         });
                     }, 1500);
 
@@ -504,7 +507,7 @@ export const useCombatManager = (
                 });
             }, 1000);
         }
-    }, [combatState?.isPlayerTurn, combatState?.isProcessing, combatState?.combatEnded, processAndTickEffects, processCombatEnd, processTurn, addCombatLog]);
+    }, [combatState?.isPlayerTurn, combatState?.isProcessing, combatState?.combatEnded, processAndTickEffects, getCombatEndState, addCombatLog, processTurn]);
 
 
     return {

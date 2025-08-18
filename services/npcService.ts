@@ -5,7 +5,7 @@ import type { InventorySlot } from '../types/item';
 import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
 import { ALL_STATIC_NPCS } from '../data/npcs/static_npcs';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
-import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, ProceduralMonsterRule, MonsterDefinition } from '../data/npcs/npc_types';
+import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, ProceduralMonsterRule, MonsterDefinition, RoleSpawnDefinition } from '../data/npcs/npc_types';
 import { generateNpcs, GeneratedNpcData } from './geminiService';
 import { REALM_PROGRESSION } from '../constants';
 import { MAPS, MAP_AREAS_BY_MAP } from '../mapdata';
@@ -13,11 +13,12 @@ import { calculateAllStats, getNextCultivationLevel, getRealmLevelInfo } from '.
 import { ALL_SKILLS } from '../data/skills/skills';
 import { ALL_ITEMS } from '../data/items/index';
 import { EquipmentSlot } from '../types/equipment';
-import type { LinhCan, LinhCanType } from '../types/linhcan';
+import type { LinhCan, LinhCanType, NpcBehavior } from '../types/linhcan';
 import { LINH_CAN_TYPES } from '../types/linhcan';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
+import { FACTIONS, FactionRole } from '../data/factions';
 
-function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: string, position: {x:number, y:number}, gameTime: GameTime): NPC {
+function createNpcFromData(data: (GeneratedNpcData | StaticNpcDefinition) & { power?: number }, id: string, position: {x:number, y:number}, gameTime: GameTime, homeMapId: MapID, factionId?: string): NPC {
     const realmIndex = REALM_PROGRESSION.findIndex(r => r.name === data.realmName);
     const realm = realmIndex !== -1 ? REALM_PROGRESSION[realmIndex] : REALM_PROGRESSION[0];
     
@@ -148,6 +149,8 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
         hour: 0,
         minute: 0
     };
+    
+    const behaviors = ('behaviors' in data && data.behaviors && data.behaviors.length > 0) ? data.behaviors : ['WANDERER'];
 
     return {
         name: data.name,
@@ -155,9 +158,15 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
         npcType: 'cultivator',
         title: data.title,
         role: data.role,
+        factionId: factionId,
+        power: data.power,
+        behaviors: behaviors as NpcBehavior[],
         prompt: data.prompt,
         id,
         position,
+        currentMap: homeMapId,
+        homeMapId,
+        homePosition: { ...position },
         birthTime,
         cultivation,
         baseAttributes: baseAttributes,
@@ -178,7 +187,7 @@ function createNpcFromData(data: GeneratedNpcData | StaticNpcDefinition, id: str
     };
 }
 
-export function createMonsterFromData(template: MonsterDefinition, level: number, id: string, position: {x:number, y:number}, spawnRuleId: string | undefined, gameTime: GameTime): NPC {
+export function createMonsterFromData(template: MonsterDefinition, level: number, id: string, position: {x:number, y:number}, spawnRuleId: string | undefined, gameTime: GameTime, currentMap: MapID): NPC {
     const levelMultiplier = Math.pow(1.15, level - 1);
 
     const baseAttributes: CharacterAttributes = template.attributes;
@@ -224,6 +233,9 @@ export function createMonsterFromData(template: MonsterDefinition, level: number
         role: 'Yêu Thú',
         prompt: `Một con ${template.name} cấp ${level} hung dữ đang chắn đường.`,
         position,
+        currentMap: currentMap,
+        homeMapId: currentMap,
+        homePosition: { ...position },
         level,
         baseAttributes,
         attributes: finalAttributes,
@@ -261,7 +273,20 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
     for (const spawn of staticSpawns) {
         const template = staticNpcTemplates.get(spawn.baseId);
         if (template) {
-            finalNpcs.push(createNpcFromData(template, spawn.id, spawn.position, gameTime));
+            const containingPoi = poisForMap.find(poi => 
+                spawn.position.x >= poi.position.x - poi.size.width / 2 &&
+                spawn.position.x <= poi.position.x + poi.size.width / 2 &&
+                spawn.position.y >= poi.position.y - poi.size.height / 2 &&
+                spawn.position.y <= poi.position.y + poi.size.height / 2
+            );
+
+            let finalPosition = spawn.position;
+            if (containingPoi) {
+                const randomX = containingPoi.position.x - containingPoi.size.width / 2 + Math.random() * containingPoi.size.width;
+                const randomY = containingPoi.position.y - containingPoi.size.height / 2 + Math.random() * containingPoi.size.height;
+                finalPosition = { x: randomX, y: randomY };
+            }
+            finalNpcs.push(createNpcFromData(template, spawn.id, finalPosition, gameTime, mapId, template.factionId));
         } else {
             console.warn(`Could not find static NPC template for baseId: ${spawn.baseId}`);
         }
@@ -284,40 +309,67 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
             const id = `proc-monster-${mapId}-${baseId}-${Date.now()}-${i}`;
             
             const spawnRuleId = `${mapId}-${rule.areaId}`;
-            finalNpcs.push(createMonsterFromData(template, level, id, {x, y}, spawnRuleId, gameTime));
+            finalNpcs.push(createMonsterFromData(template, level, id, {x, y}, spawnRuleId, gameTime, mapId));
         }
     }
 
-    // Handle procedural cultivator spawns using the new unified system
+    // Handle procedural cultivator spawns
     const proceduralRules = spawnDefinitions.filter((def): def is ProceduralNpcRule => def.type === 'procedural');
     const generationPromises: Promise<NPC[]>[] = [];
 
     for (const rule of proceduralRules) {
         for (const roleDef of rule.roles) {
-             const promise = generateNpcs(roleDef.generationPrompt, roleDef.count, roleDef.titleChance)
-                .then(generatedData => {
-                    const spawnablePOIs = roleDef.poiIds.map(id => poisForMap.find(p => p.id === id)).filter((p): p is PointOfInterest => !!p);
-                    
-                    return generatedData.map((npcData, index) => {
-                        // Overwrite the role generated by the AI with the one from our definition for consistency.
-                        npcData.role = roleDef.role;
+            const faction = FACTIONS.find(f => f.id === roleDef.factionId);
+            if (!faction) {
+                console.warn(`Could not find faction with ID: ${roleDef.factionId}`);
+                continue;
+            }
+
+            const rolesToSpawnFrom = faction.roles.filter(r => roleDef.roleNames.includes(r.name));
+            if (rolesToSpawnFrom.length === 0) {
+                console.warn(`No valid roles found for names [${roleDef.roleNames.join(', ')}] in faction ${faction.name}`);
+                continue;
+            }
+            
+            const generationGroups: Record<string, { role: FactionRole, count: number }> = {};
+            for(let i = 0; i < roleDef.count; i++) {
+                const selectedRole = rolesToSpawnFrom[i % rolesToSpawnFrom.length];
+                if (!generationGroups[selectedRole.name]) {
+                    generationGroups[selectedRole.name] = { role: selectedRole, count: 0 };
+                }
+                generationGroups[selectedRole.name].count++;
+            }
+
+            for (const groupName in generationGroups) {
+                const { role, count } = generationGroups[groupName];
+                const generationPrompt = `Bối cảnh: ${faction.name}.
+Hãy tạo ra ${count} NPC với vai trò là "${role.name}" và cấp độ quyền lực (power level) là ${role.power}.
+Gợi ý về vai trò: "${role.generationHint}".
+Cấp độ quyền lực từ 1-100. Quyền lực càng cao, NPC càng mạnh mẽ, tu vi cao, trang bị tốt, và có địa vị. Hãy dùng chỉ số này để quyết định cảnh giới, thuộc tính, và vật phẩm của NPC.`;
+                
+                const promise = generateNpcs(generationPrompt, count, roleDef.titleChance)
+                    .then(generatedData => {
+                        const spawnablePOIs = roleDef.poiIds.map(id => poisForMap.find(p => p.id === id)).filter((p): p is PointOfInterest => !!p);
                         
-                        let x: number, y: number;
-                        if (spawnablePOIs.length > 0) {
-                            // Distribute this group of NPCs among the specified POIs for their role
-                            const poi = spawnablePOIs[index % spawnablePOIs.length]!;
-                            x = poi.position.x - poi.size.width / 2 + Math.random() * poi.size.width;
-                            y = poi.position.y - poi.size.height / 2 + Math.random() * poi.size.height;
-                        } else {
-                            // If no POIs are specified, spawn anywhere on the map
-                            x = Math.random() * mapData.size.width;
-                            y = Math.random() * mapData.size.height;
-                        }
-                        const id = `proc-npc-${mapId}-${roleDef.role.replace(/\s/g, '')}-${Date.now()}-${index}`;
-                        return createNpcFromData(npcData, id, { x, y }, gameTime);
+                        return generatedData.map((npcData, index) => {
+                            npcData.role = role.name;
+                            npcData.power = role.power; 
+                            
+                            let x: number, y: number;
+                            if (spawnablePOIs.length > 0) {
+                                const poi = spawnablePOIs[index % spawnablePOIs.length]!;
+                                x = poi.position.x - poi.size.width / 2 + Math.random() * poi.size.width;
+                                y = poi.position.y - poi.size.height / 2 + Math.random() * poi.size.height;
+                            } else {
+                                x = Math.random() * mapData.size.width;
+                                y = Math.random() * mapData.size.height;
+                            }
+                            const id = `proc-npc-${mapId}-${role.name.replace(/\s/g, '')}-${Date.now()}-${index}`;
+                            return createNpcFromData(npcData, id, { x, y }, gameTime, mapId, roleDef.factionId);
+                        });
                     });
-                });
-            generationPromises.push(promise);
+                generationPromises.push(promise);
+            }
         }
     }
 

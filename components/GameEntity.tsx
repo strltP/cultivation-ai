@@ -33,7 +33,8 @@ const GameEntity: React.FC<GameEntityProps> = ({ entity, onClick, playerState })
             : <FaMale className="text-yellow-900" size={20} />;
         const cultivationInfo = getCultivationInfo(entity.cultivation!);
         const age = playerState.time.year - entity.birthTime.year;
-        title = `${entity.name}${entity.title ? ` «${entity.title}»` : ''}\nGiới tính: ${entity.gender}\nChức vụ: ${entity.role}\nCảnh giới: ${cultivationInfo.name}\nTuổi: ${age}\nHP: ${entity.hp}/${entity.stats.maxHp}`;
+        const powerString = entity.power ? `\nQuyền Lực: ${entity.power}` : '';
+        title = `${entity.name}${entity.title ? ` «${entity.title}»` : ''}\nGiới tính: ${entity.gender}\nChức vụ: ${entity.role}${powerString}\nCảnh giới: ${cultivationInfo.name}\nTuổi: ${age}\nHP: ${entity.hp}/${entity.stats.maxHp}`;
     }
   } else {
     const interactable = entity as Interactable;

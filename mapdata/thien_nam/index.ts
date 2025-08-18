@@ -24,19 +24,19 @@ export const mapAreas: MapArea[] = [
 
 export const pois: PointOfInterest[] = [
     // Thương Lan Đế Quốc (Top) - Re-arranged for better logical flow
-    { id: 'tn-poi-tht', name: 'Thất Huyền Thành', type: 'city', position: { x: 5000, y: 1500 }, size: { width: 900, height: 800 }, targetMap: 'THAT_HUYEN_THANH', targetPosition: {x: 500, y: 850} }, // Central Capital
-    { id: 'tn-poi-luc-yen-thon', name: 'Lục Yên Thôn', type: 'village', position: { x: 3800, y: 1800 }, size: { width: 400, height: 300 }, targetMap: 'LUC_YEN_THON', targetPosition: {x: 1000, y: 1300} }, // Starter village
-    { id: 'tn-poi-ngoc-thanh', name: 'Ngọc Thành', type: 'city', position: { x: 4200, y: 2100 }, size: { width: 700, height: 600 } }, // First major city from starter village
-    { id: 'tn-poi-mo-linh-thanh', name: 'Mộ Linh Thành', type: 'city', position: { x: 6200, y: 800 }, size: { width: 650, height: 600 }, targetMap: 'MO_LINH_THANH', targetPosition: { x: 600, y: 850 } }, // NE City
-    { id: 'tn-poi-linh-duoc-tran', name: 'Linh Dược Trấn', type: 'village', position: { x: 6000, y: 1800 }, size: { width: 450, height: 350 } }, // SE village
-    { id: 'tn-poi-hac-am-sam-lam', name: 'Hắc Ám Sâm Lâm', type: 'dungeon', position: { x: 3500, y: 700 }, size: { width: 400, height: 300 }, targetMap: 'HAC_AM_SAM_LAM', targetPosition: {x: 1500, y: 3800} }, // NW Dungeon
-    { id: 'tn-poi-doan-hon-coc', name: 'Đoạn Hồn Cốc', type: 'landmark', position: { x: 6500, y: 2200 }, size: { width: 500, height: 250 } }, // SE Landmark/Dungeon
+    { id: 'tn-poi-tht', name: 'Thất Huyền Thành', type: 'city', position: { x: 5000, y: 1500 }, size: { width: 900, height: 800 }, targetMap: 'THAT_HUYEN_THANH', targetPosition: {x: 500, y: 850}, minRealmIndex: 0 }, // Central Capital
+    { id: 'tn-poi-luc-yen-thon', name: 'Lục Yên Thôn', type: 'village', position: { x: 3800, y: 1800 }, size: { width: 400, height: 300 }, targetMap: 'LUC_YEN_THON', targetPosition: {x: 1000, y: 1300}, minRealmIndex: 0 }, // Starter village
+    { id: 'tn-poi-ngoc-thanh', name: 'Ngọc Thành', type: 'city', position: { x: 4200, y: 2100 }, size: { width: 700, height: 600 }, minRealmIndex: 0 }, // First major city from starter village
+    { id: 'tn-poi-mo-linh-thanh', name: 'Mộ Linh Thành', type: 'city', position: { x: 6200, y: 800 }, size: { width: 650, height: 600 }, targetMap: 'MO_LINH_THANH', targetPosition: { x: 600, y: 850 }, minRealmIndex: 1 }, // NE City
+    { id: 'tn-poi-linh-duoc-tran', name: 'Linh Dược Trấn', type: 'village', position: { x: 6000, y: 1800 }, size: { width: 450, height: 350 }, minRealmIndex: 0 }, // SE village
+    { id: 'tn-poi-hac-am-sam-lam', name: 'Hắc Ám Sâm Lâm', type: 'dungeon', position: { x: 3500, y: 700 }, size: { width: 400, height: 300 }, targetMap: 'HAC_AM_SAM_LAM', targetPosition: {x: 1500, y: 3800}, minRealmIndex: 0 }, // NW Dungeon
+    { id: 'tn-poi-doan-hon-coc', name: 'Đoạn Hồn Cốc', type: 'landmark', position: { x: 6500, y: 2200 }, size: { width: 500, height: 250 }, minRealmIndex: 2 }, // SE Landmark/Dungeon
     
     // Thiên Nguyên Sơn (Center)
-    { id: 'tn-poi-3', name: 'Thanh Vân Môn', type: 'sect', position: { x: 4800, y: 3800 }, size: { width: 700, height: 900 }, targetMap: 'THANH_VAN_MON', targetPosition: { x: 1500, y: 3700 } },
+    { id: 'tn-poi-3', name: 'Thanh Vân Môn', type: 'sect', position: { x: 4800, y: 3800 }, size: { width: 700, height: 900 }, targetMap: 'THANH_VAN_MON', targetPosition: { x: 1500, y: 3700 }, minRealmIndex: 1 },
     
     // Vô Tận Thảo Nguyên (Right)
-    { id: 'tn-poi-4', name: 'Huyết Sắc Cấm Địa', type: 'dungeon', position: { x: 9000, y: 3800 }, size: { width: 600, height: 500 } },
+    { id: 'tn-poi-4', name: 'Huyết Sắc Cấm Địa', type: 'dungeon', position: { x: 9000, y: 3800 }, size: { width: 600, height: 500 }, minRealmIndex: 2 },
 ];
 
 export const teleportGates: TeleportLocation[] = [
