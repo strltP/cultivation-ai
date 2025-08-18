@@ -191,7 +191,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
             />}
             {isInfoPanelOpen && <InfoPanel playerState={playerState} setPlayerState={updateAndPersistPlayerState} onClose={onToggleInfoPanel} onLevelUpSkill={handleLevelUpSkill} onUseItem={handleUseItem} />}
             {isJournalOpen && <JournalPanel playerState={playerState} onClose={onToggleJournalPanel} />}
-            {isWorldInfoPanelOpen && <WorldInfoPanel onClose={onToggleWorldInfoPanel} />}
+            {isWorldInfoPanelOpen && <WorldInfoPanel playerState={playerState} onClose={onToggleWorldInfoPanel} />}
             {tradingNpc && <TradePanel playerState={playerState} setPlayerState={updateAndPersistPlayerState} npc={tradingNpc} setNpc={setTradingNpc} onClose={() => setTradingNpc(null)} />}
             {isTeleportUIOpen && (
                 <TeleportationTalismanUI

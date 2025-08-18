@@ -1,20 +1,22 @@
-
 import React, { useState } from 'react';
-import { FaBookDead, FaBook, FaBoxOpen } from 'react-icons/fa';
+import type { PlayerState } from '../../types/character';
+import { FaBookDead, FaBook, FaBoxOpen, FaUsers } from 'react-icons/fa';
 import { GiDiamondHard, GiGalaxy } from 'react-icons/gi';
 import CongPhapTab from './world-info-panel/CongPhapTab';
 import TamPhapTab from './world-info-panel/TamPhapTab';
 import VatPhamTab from './world-info-panel/VatPhamTab';
 import TrangBiTab from './world-info-panel/TrangBiTab';
 import LinhCanWorldInfoTab from './world-info-panel/LinhCanTab';
+import ChungSinhLucTab from './world-info-panel/ChungSinhLucTab';
 
 interface WorldInfoPanelProps {
   onClose: () => void;
+  playerState: PlayerState;
 }
 
-type ActiveTab = 'congphap' | 'tamphap' | 'linhcan' | 'vatpham' | 'trangbi';
+type ActiveTab = 'congphap' | 'tamphap' | 'linhcan' | 'vatpham' | 'trangbi' | 'chungsinh';
 
-const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({ onClose }) => {
+const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({ onClose, playerState }) => {
     const [activeTab, setActiveTab] = useState<ActiveTab>('congphap');
 
     const tabs: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
@@ -23,6 +25,7 @@ const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({ onClose }) => {
         { id: 'linhcan', label: 'Linh Căn', icon: <GiGalaxy /> },
         { id: 'vatpham', label: 'Vật Phẩm', icon: <FaBoxOpen /> },
         { id: 'trangbi', label: 'Trang Bị', icon: <GiDiamondHard /> },
+        { id: 'chungsinh', label: 'Chúng Sinh Lục', icon: <FaUsers /> },
     ];
 
     const renderContent = () => {
@@ -37,6 +40,8 @@ const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({ onClose }) => {
                 return <VatPhamTab />;
             case 'trangbi':
                 return <TrangBiTab />;
+            case 'chungsinh':
+                return <ChungSinhLucTab playerState={playerState} />;
             default:
                 return null;
         }
