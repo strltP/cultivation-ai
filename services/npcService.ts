@@ -18,6 +18,37 @@ import { LINH_CAN_TYPES } from '../types/linhcan';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
 import { FACTIONS, type FactionRole } from '../data/factions';
 
+const getEstimatedLifespan = (realmIndex: number, level: number): number => {
+    let totalLifespan = 80; // Mortal base from INITIAL_PLAYER_STATE
+    
+    // Sum up bonuses for all full realms before the target realm
+    for (let r_idx = 0; r_idx < realmIndex; r_idx++) {
+        const realm = REALM_PROGRESSION[r_idx];
+        if (!realm) continue;
+        for (const levelData of realm.levels) {
+            const lifespanBonus = levelData?.bonuses?.maxThoNguyen;
+            if (lifespanBonus && Array.isArray(lifespanBonus)) {
+                totalLifespan += (lifespanBonus[0] + lifespanBonus[1]) / 2;
+            }
+        }
+    }
+
+    // Sum up bonuses for levels within the target realm
+    const targetRealm = REALM_PROGRESSION[realmIndex];
+    if (targetRealm) {
+        for (let l_idx = 0; l_idx <= level; l_idx++) {
+            const levelData = targetRealm.levels[l_idx];
+            if (!levelData) continue;
+            const lifespanBonus = levelData.bonuses?.maxThoNguyen;
+            if (lifespanBonus && Array.isArray(lifespanBonus)) {
+                totalLifespan += (lifespanBonus[0] + lifespanBonus[1]) / 2;
+            }
+        }
+    }
+    
+    return totalLifespan;
+};
+
 function createNpcFromData(data: (GeneratedNpcData | StaticNpcDefinition) & { power?: number }, id: string, position: {x:number, y:number}, gameTime: GameTime, homeMapId: MapID, factionId?: string): NPC {
     const realmIndex = REALM_PROGRESSION.findIndex(r => r.name === data.realmName);
     const realm = realmIndex !== -1 ? REALM_PROGRESSION[realmIndex] : REALM_PROGRESSION[0];
@@ -335,6 +366,15 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
             for (const groupName in generationGroups) {
                 const { role, count } = generationGroups[groupName];
 
+                // --- DYNAMIC AGE CALCULATION ---
+                const minLifespan = getEstimatedLifespan(role.rangeRealm.min.realmIndex, role.rangeRealm.min.level);
+                const maxLifespan = getEstimatedLifespan(role.rangeRealm.max.realmIndex, role.rangeRealm.max.level);
+
+                const minAge = Math.max(16, Math.floor(minLifespan * 0.15));
+                const maxAge = Math.floor(maxLifespan * 0.90);
+                // Ensure maxAge is always greater than minAge and has a reasonable range
+                const finalMaxAge = Math.max(minAge + 20, maxAge);
+
                 const minRealm = REALM_PROGRESSION[role.rangeRealm.min.realmIndex];
                 const minLevel = minRealm.levels[role.rangeRealm.min.level];
                 const maxRealm = REALM_PROGRESSION[role.rangeRealm.max.realmIndex];
@@ -345,7 +385,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
                     `Hãy tạo ra ${count} NPC với vai trò là "${role.name}" và cấp độ quyền lực (power level) là ${role.power}.`,
                     `**Yêu cầu nghiêm ngặt:**`,
                     `- Cảnh giới tu luyện: từ ${minRealm.name} ${minLevel.levelName} đến ${maxRealm.name} ${maxLevel.levelName}.`,
-                    `- Tuổi: từ ${role.ageRange[0]} đến ${role.ageRange[1]}. Hãy tạo ra sự đa dạng, có thể có thiên tài trẻ tuổi hoặc người già tư chất kém.`,
+                    `- Tuổi: từ ${minAge} đến ${finalMaxAge}. Hãy tạo ra sự đa dạng, có thể có thiên tài trẻ tuổi hoặc người già tư chất kém.`,
                     `- Tính cách: Dựa trên các từ khóa sau: ${role.personalityTags.join(', ')}.`,
                     `- Danh hiệu: Có ${Math.round((role.titleChance || 0) * 100)}% khả năng có danh hiệu. Nếu có, chủ đề nên là: ${role.titleThemes.join(', ')}.`,
                     `- Trang bị: Phẩm chất trang bị nên từ ${ITEM_TIER_NAMES[role.equipmentTierRange[0]]} đến ${ITEM_TIER_NAMES[role.equipmentTierRange[1]]}.`

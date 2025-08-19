@@ -1,10 +1,10 @@
-import type { NPC, GameTime, JournalEntry, NpcIntent, PathStep } from '../types/character';
+import type { NPC, GameTime, JournalEntry, NpcIntent, PathStep, PlayerState } from '../types/character';
 import type { MapID, PointOfInterest } from '../types/map';
 import { ALL_ITEMS } from '../data/items/index';
 import type { InventorySlot } from '../types/item';
 import { DAYS_PER_MONTH } from '../constants';
 import { advanceTime, gameTimeToMinutes } from './timeService';
-import { getMapPath } from './npcIntentService';
+import { getMapPath, generateGlobalNpcIntent } from './npcIntentService';
 import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP } from '../mapdata';
 import { FACTIONS } from '../data/factions';
 
@@ -245,4 +245,122 @@ export const handleNpcActionCompletion = (
     const journalEntry: JournalEntry = { time: currentTime, message: finalJournalMessage, type: 'world' };
 
     return { updatedNpc, journalEntry };
+};
+
+export const processNpcActionsForTimeSkip = (
+    currentState: PlayerState,
+    monthsToSkip: number
+): { updatedNpcs: Record<string, NPC[]>, newJournalEntries: JournalEntry[] } => {
+     const newGeneratedNpcs = JSON.parse(JSON.stringify(currentState.generatedNpcs));
+    let hasChanges = false;
+    const newGlobalJournalEntries: JournalEntry[] = [];
+    const minutesPassed = monthsToSkip * DAYS_PER_MONTH * 24 * 60;
+    
+    const npcsToGetIntentFor: { npc: NPC }[] = [];
+    const nowMinutes = gameTimeToMinutes(currentState.time);
+
+    for (const mapId_str in newGeneratedNpcs) {
+        const mapId = mapId_str as MapID;
+        for (const npc of newGeneratedNpcs[mapId]) {
+            if (npc.npcType !== 'cultivator' || !npc.cultivation) continue;
+            if (currentState.defeatedNpcIds.includes(npc.id)) continue;
+
+            // Progress current intent (travel or at destination)
+            if (npc.path && typeof npc.currentPathStepIndex === 'number' && npc.intentProgress?.isTraveling) {
+                hasChanges = true;
+                const currentStep = npc.path[npc.currentPathStepIndex];
+                if (currentStep) {
+                    const TRAVEL_SPEED_PIXELS_PER_MINUTE = 5;
+                    const destinationPos = currentStep.targetPosition;
+                    const dx = destinationPos.x - npc.position.x; const dy = destinationPos.y - npc.position.y;
+                    const totalDistance = Math.hypot(dx, dy);
+                    const distanceToTravelThisTick = minutesPassed * TRAVEL_SPEED_PIXELS_PER_MINUTE;
+                    if (distanceToTravelThisTick >= totalDistance) {
+                        npc.position = { ...destinationPos };
+                        if (npc.currentPathStepIndex < npc.path.length - 1) {
+                            npc.currentPathStepIndex++; const nextStep = npc.path[npc.currentPathStepIndex]; npc.currentMap = nextStep.mapId;
+                        } else {
+                            npc.path = undefined; npc.currentPathStepIndex = undefined;
+                            if (npc.currentIntent && npc.intentProgress) {
+                                if (npc.currentIntent.durationMonths > 0) {
+                                    npc.intentProgress.isTraveling = false;
+                                    npc.intentProgress.timeAtDestination = npc.currentIntent.durationMonths * DAYS_PER_MONTH * 24 * 60;
+                                    npc.intentProgress.startTime = currentState.time;
+                                } else {
+                                    npc.currentIntent = undefined; npc.intentProgress = undefined;
+                                }
+                            } else {
+                                npc.intentProgress = undefined;
+                            }
+                        }
+                    } else {
+                        const ratio = distanceToTravelThisTick / totalDistance; npc.position.x += dx * ratio; npc.position.y += dy * ratio;
+                    }
+                }
+            } else if (npc.intentProgress && !npc.intentProgress.isTraveling) {
+                hasChanges = true;
+                const timeSpent = Math.min(minutesPassed, npc.intentProgress.timeAtDestination || 0);
+                npc.intentProgress.timeAtDestination = (npc.intentProgress.timeAtDestination || 0) - timeSpent;
+                if (npc.intentProgress.timeAtDestination <= 0) {
+                    const result = handleNpcActionCompletion(npc, currentState.time, POIS_BY_MAP);
+                    if (result) {
+                        Object.assign(npc, result.updatedNpc);
+                        if (!npc.actionHistory) npc.actionHistory = [];
+                        npc.actionHistory.push(result.journalEntry);
+                        newGlobalJournalEntries.push(result.journalEntry);
+                    }
+                }
+            }
+
+            // Check if NPC can get a new intent
+            let canGetNewIntent = true;
+            if (npc.cannotActUntil) {
+                if (nowMinutes < gameTimeToMinutes(npc.cannotActUntil)) { canGetNewIntent = false; } 
+                else { npc.cannotActUntil = undefined; hasChanges = true; }
+            }
+            
+            // Generate new intent if needed and allowed
+            if (canGetNewIntent && !npc.currentIntent) {
+                npcsToGetIntentFor.push({ npc });
+            }
+        }
+    }
+
+    if (npcsToGetIntentFor.length > 0) {
+        hasChanges = true;
+        npcsToGetIntentFor.forEach(({ npc }) => {
+            const newIntent = generateGlobalNpcIntent(npc, currentState, POIS_BY_MAP, TELEPORT_GATES_BY_MAP);
+            if (newIntent) {
+                npc.currentIntent = newIntent;
+                npc.path = newIntent.path;
+                npc.currentPathStepIndex = newIntent.path ? 0 : undefined;
+                npc.lastDecisionTime = currentState.time;
+                if(npc.path && npc.path.length > 0) {
+                    npc.intentProgress = { startTime: currentState.time, isTraveling: true, };
+                }
+                const journalMessage = formatIntentDescriptionForJournal(npc.name, newIntent);
+                const journalEntry: JournalEntry = { time: currentState.time, message: journalMessage, type: 'world' };
+                if (!npc.actionHistory) npc.actionHistory = [];
+                npc.actionHistory.push(journalEntry);
+                newGlobalJournalEntries.push(journalEntry);
+            }
+        });
+    }
+    
+    const npcsToMove: { npc: NPC, from: MapID, to: MapID }[] = [];
+    for (const mapId_str in newGeneratedNpcs) {
+        newGeneratedNpcs[mapId_str] = newGeneratedNpcs[mapId_str].filter((npc: NPC) => {
+            if (npc.currentMap !== mapId_str) {
+                npcsToMove.push({ npc, from: mapId_str as MapID, to: npc.currentMap });
+                return false;
+            }
+            return true;
+        });
+    }
+    npcsToMove.forEach(({ npc, to }) => {
+        if (!newGeneratedNpcs[to]) newGeneratedNpcs[to] = [];
+        newGeneratedNpcs[to].push(npc);
+    });
+
+    return { updatedNpcs: newGeneratedNpcs, newJournalEntries: newGlobalJournalEntries };
 };

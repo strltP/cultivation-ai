@@ -6,6 +6,8 @@ import { advanceTime } from '../services/timeService';
 import { ALL_ITEMS } from '../data/items/index';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
 import { INITIAL_PLAYER_STATE, DAYS_PER_MONTH } from '../hooks/usePlayerPersistence';
+import { processNpcTimeSkip } from '../services/npcProgressionService';
+import { processNpcActionsForTimeSkip } from '../services/npcActionService';
 
 const STAT_ATTRIBUTE_NAMES: Record<string, string> = {
     // Attributes
@@ -29,9 +31,13 @@ const STAT_ATTRIBUTE_NAMES: Record<string, string> = {
 };
 
 export const usePlayerActions = (
+    playerState: PlayerState,
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
-    stopAllActions: React.MutableRefObject<() => void>
+    stopAllActions: React.MutableRefObject<() => void>,
+    // Add setters for new simulation UI state
+    setIsSimulating: (isSimulating: boolean) => void,
+    setSimulationProgress: (progress: { current: number, total: number } | null) => void
 ) => {
     const [isMeditating, setIsMeditating] = useState<boolean>(false);
 
@@ -175,47 +181,73 @@ export const usePlayerActions = (
         });
     }, [updateAndPersistPlayerState, setGameMessage, stopAllActions]);
 
-    const handleStartSeclusion = useCallback((months: number) => {
+    const handleStartSeclusion = useCallback(async (months: number) => {
+        if (months <= 0) return;
         stopAllActions.current();
-        updateAndPersistPlayerState(prev => {
-            if (!prev || months <= 0) return prev;
+        setIsSimulating(true);
 
-            const totalMinutesToAdvance = months * DAYS_PER_MONTH * 24 * 60;
-            const totalHoursToAdvance = months * DAYS_PER_MONTH * 24;
+        let tempState = { ...playerState };
+        const collectedReportEntries: JournalEntry[] = [];
+
+        for (let i = 0; i < months; i++) {
+            setSimulationProgress({ current: i + 1, total: months });
+
+            // Simulate one month at a time
+            const { updatedNpcs: npcsAfterActions, newJournalEntries: actionJournalEntries } = processNpcActionsForTimeSkip(tempState, 1);
+            let stateAfterActions = { ...tempState, generatedNpcs: npcsAfterActions };
+
+            const { updatedNpcs: finalNpcs, newJournalEntries: progressionJournalEntries } = processNpcTimeSkip(stateAfterActions, 1);
             
-            const SECLUSION_QI_PER_HOUR_BASE = 0.15;
-            const NGO_TINH_FACTOR_QI = 0.005;
-            const realmMultiplier = 1 + (prev.cultivation.realmIndex * 0.15);
-            const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (prev.attributes.ngoTinh * NGO_TINH_FACTOR_QI)) * realmMultiplier;
-            const totalQiGained = Math.round(qiPerHour * totalHoursToAdvance);
-            
-            const CAM_NGO_PER_MONTH_BASE = 10;
-            const totalCamNgoGained = Math.round((CAM_NGO_PER_MONTH_BASE + prev.attributes.ngoTinh * 0.5 + prev.attributes.tamCanh * 0.5) * months);
+            // Collect entries for the report
+            collectedReportEntries.push(...actionJournalEntries, ...progressionJournalEntries);
 
-            const newQi = Math.min(prev.stats.maxQi, prev.qi + totalQiGained);
-            const newCamNgo = prev.camNgo + totalCamNgoGained;
-            const newTime = advanceTime(prev.time, totalMinutesToAdvance);
+            // Update time for the next iteration
+            const timeAfterMonth = advanceTime(tempState.time, DAYS_PER_MONTH * 24 * 60);
+            tempState = { ...tempState, time: timeAfterMonth, generatedNpcs: finalNpcs };
 
-            const message = `Bế quan ${months} tháng kết thúc. Chân khí tăng ${totalQiGained.toLocaleString()}, Cảm ngộ tăng ${totalCamNgoGained.toLocaleString()}. Toàn bộ sinh lực và linh lực đã hồi phục.`;
-            setGameMessage(message);
-            
-            const newJournalEntry: JournalEntry = {
-                time: newTime,
-                message: message,
-                type: 'player',
-            };
+            // Yield to the main thread to allow UI updates
+            await new Promise(resolve => setTimeout(resolve, 0));
+        }
 
-            return {
-                ...prev,
-                time: newTime,
-                qi: newQi,
-                camNgo: newCamNgo,
-                hp: prev.stats.maxHp,
-                mana: prev.stats.maxMana,
-                journal: [...(prev.journal || []), newJournalEntry],
-            };
-        });
-    }, [updateAndPersistPlayerState, setGameMessage, stopAllActions]);
+        // --- Player Progression ---
+        const totalHoursToAdvance = months * DAYS_PER_MONTH * 24;
+        const SECLUSION_QI_PER_HOUR_BASE = 0.15;
+        const NGO_TINH_FACTOR_QI = 0.005;
+        const realmMultiplier = 1 + (playerState.cultivation.realmIndex * 0.15);
+        const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (playerState.attributes.ngoTinh * NGO_TINH_FACTOR_QI)) * realmMultiplier;
+        const totalQiGained = Math.round(qiPerHour * totalHoursToAdvance);
+        
+        const CAM_NGO_PER_MONTH_BASE = 10;
+        const totalCamNgoGained = Math.round((CAM_NGO_PER_MONTH_BASE + playerState.attributes.ngoTinh * 0.5 + playerState.attributes.tamCanh * 0.5) * months);
+
+        const newQi = Math.min(playerState.stats.maxQi, playerState.qi + totalQiGained);
+        const newCamNgo = playerState.camNgo + totalCamNgoGained;
+
+        const message = `Bế quan ${months} tháng kết thúc. Chân khí tăng ${totalQiGained.toLocaleString()}, Cảm ngộ tăng ${totalCamNgoGained.toLocaleString()}.`;
+        setGameMessage(message);
+        
+        const playerJournalEntry: JournalEntry = {
+            time: tempState.time,
+            message: message,
+            type: 'player',
+        };
+
+        // Final state update
+        updateAndPersistPlayerState(prev => ({
+            ...prev,
+            time: tempState.time,
+            qi: newQi,
+            camNgo: newCamNgo,
+            hp: prev.stats.maxHp,
+            mana: prev.stats.maxMana,
+            generatedNpcs: tempState.generatedNpcs,
+            journal: [...(prev.journal || []), ...collectedReportEntries, playerJournalEntry],
+        }));
+
+        setIsSimulating(false);
+        setSimulationProgress(null);
+
+    }, [updateAndPersistPlayerState, setGameMessage, stopAllActions, playerState, setIsSimulating, setSimulationProgress]);
 
     const handleToggleMeditation = useCallback(() => {
         if (isMeditating) {

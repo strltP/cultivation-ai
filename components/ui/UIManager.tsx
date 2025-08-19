@@ -53,6 +53,8 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
         plantingPlot, setPlantingPlot,
         updateAndPersistPlayerState, // Get the atomic state updater
         setTeleportingWithItemIndex,
+        isSimulating,
+        simulationProgress,
     } = useUI();
     
     const { gameMessage, isLoading, currentPois, currentMapAreas, currentTeleportGates } = useWorld();
@@ -145,6 +147,18 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                     isMeditating={isMeditating}
                 />
             )}
+             {isSimulating && (
+                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-50">
+                    <div className="w-16 h-16 border-4 border-t-transparent border-cyan-400 rounded-full animate-spin"></div>
+                    <p className="mt-4 text-xl text-cyan-300">Thiên cơ dịch chuyển...</p>
+                    {simulationProgress && (
+                        <p className="mt-2 text-lg text-white">
+                            Đang mô phỏng tháng {simulationProgress.current} / {simulationProgress.total}
+                        </p>
+                    )}
+                </div>
+            )}
+            
 
             {activeDialogue && <DialogueBox dialogue={activeDialogue} onClose={() => setActiveDialogue(null)} />}
             
