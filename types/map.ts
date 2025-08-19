@@ -15,6 +15,7 @@ export interface MapArea {
   size: { width: number; height: number };
   style: CSSProperties;
   allowedFactionIds?: string[]; // Chỉ những phe phái này được vào
+  dangerLevel?: number; // Cảnh giới tối thiểu để vào an toàn (tương ứng realmIndex)
 }
 
 export interface PointOfInterest {
@@ -26,6 +27,7 @@ export interface PointOfInterest {
   targetMap?: MapID; // Map to teleport to when entered
   targetPosition?: Position; // Position to land at in the new map
   minRealmIndex?: number; // Cảnh giới tối thiểu để vào
+  dangerLevel?: number; // Cảnh giới tối thiểu để vào an toàn (tương ứng realmIndex)
   allowedFactionIds?: string[]; // Chỉ những phe phái này được vào
 }
 

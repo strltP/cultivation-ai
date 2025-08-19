@@ -32,7 +32,7 @@ export const calculateDamage = (attacker: { stats: CombatStats }, defender: { st
 
     // 6. Apply defense mitigation using the new armor penetration formula
     const effectiveDefense = defender.stats.defensePower * (1 - attacker.stats.armorPenetration);
-    const damageReduction = effectiveDefense / (effectiveDefense + 100);
+    const damageReduction = effectiveDefense / (effectiveDefense + attacker.stats.attackPower);
     const finalDamage = Math.max(1, Math.round(criticalDamage * (1 - damageReduction)));
     
     return { damage: finalDamage, isCritical, isEvaded: false };
@@ -91,7 +91,7 @@ export const calculateSkillDamage = (
     
     // 7. Apply defense mitigation with armor penetration
     const effectiveDefense = defender.state.stats.defensePower * (1 - caster.state.stats.armorPenetration);
-    const damageReduction = effectiveDefense / (effectiveDefense + 100);
+    const damageReduction = effectiveDefense / (effectiveDefense + caster.state.stats.attackPower);
     const finalDamage = Math.max(1, Math.round(criticalDamage * (1 - damageReduction)));
 
     // 8. Apply weapon incompatibility penalty

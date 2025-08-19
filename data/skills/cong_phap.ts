@@ -482,6 +482,22 @@ export const ALL_CONG_PHAP: Skill[] = [
         ],
         bonuses: [],
     },
+    {
+        id: 'cong-phap-huyen-15',
+        name: 'Hồi Thiên Thuật',
+        description: 'Hấp thu linh khí trời đất, chuyển hóa thành sinh mệnh lực tinh khiết để chữa trị vết thương, hồi phục một lượng lớn sinh lực dựa trên giới hạn của bản thân.',
+        type: 'CONG_PHAP',
+        tier: 'HUYEN',
+        maxLevel: 6,
+        manaCost: 80,
+        manaCostPerLevel: 15,
+        enlightenmentBaseCost: 250,
+        enlightenmentCostPerLevel: 50,
+        effects: [
+            { type: 'HEAL', chance: 1, value: 0.15, valuePerLevel: 0.05, valueIsPercent: true }
+        ],
+        bonuses: [],
+    },
 
     // -- ĐỊA GIAI --
      {

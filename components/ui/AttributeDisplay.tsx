@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import type { CharacterAttributes } from '../../types/stats';
 import { FaBone, FaEye, FaDice } from 'react-icons/fa';
@@ -7,9 +8,10 @@ import { GiRunningShoe, GiInspiration, GiHeartShield } from 'react-icons/gi';
 
 interface AttributeDisplayProps {
     attributes: CharacterAttributes;
+    isDebuffed?: boolean;
 }
 
-const AttributeDisplay: React.FC<AttributeDisplayProps> = ({ attributes }) => {
+const AttributeDisplay: React.FC<AttributeDisplayProps> = ({ attributes, isDebuffed }) => {
     const attributeList = [
         { name: 'Căn Cốt', value: attributes.canCot, icon: <FaBone title="Căn Cốt" /> },
         { name: 'Thân Pháp', value: attributes.thanPhap, icon: <GiRunningShoe title="Thân Pháp" /> },
@@ -19,12 +21,14 @@ const AttributeDisplay: React.FC<AttributeDisplayProps> = ({ attributes }) => {
         { name: 'Cơ Duyên', value: attributes.coDuyen, icon: <FaDice title="Cơ Duyên" /> },
     ];
 
+    const valueColorClass = isDebuffed ? 'text-red-400' : 'text-sm';
+
     return (
         <div className="grid grid-cols-3 gap-x-6 gap-y-3 pt-2 border-t border-blue-400/20 mt-3">
             {attributeList.map(attr => (
                  <div key={attr.name} className="flex items-center gap-x-2 text-gray-300" title={`${attr.name}: ${attr.value}`}>
                     <div className="text-blue-300 text-lg">{attr.icon}</div>
-                    <span className="font-semibold text-sm">{attr.value}</span>
+                    <span className={`font-semibold ${valueColorClass}`}>{attr.value}</span>
                 </div>
             ))}
         </div>

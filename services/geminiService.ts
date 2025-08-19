@@ -353,6 +353,7 @@ Sau đó, đưa ra một lời thoại ngắn gọn (1-2 câu) để NPC nói v�
 export interface GeneratedNpcData {
     name: string;
     gender: 'Nam' | 'Nữ';
+    age: number;
     role: string;
     power: number;
     behaviors: string[];
@@ -379,7 +380,7 @@ export interface GeneratedNpcData {
 
 const BEHAVIOR_TAGS_STRING = "'FIGHTER', 'HUNTER', 'GATHERER_HERB', 'GATHERER_ORE', 'TRADER', 'MEDITATOR', 'SCHOLAR', 'WANDERER'";
 
-export const generateNpcs = async (generationPrompt: string, count: number, titleChance?: number): Promise<GeneratedNpcData[]> => {
+export const generateNpcs = async (generationPrompt: string, count: number): Promise<GeneratedNpcData[]> => {
     try {
         const client = getAIClient();
         const tamPhapSkills = ALL_SKILLS.filter(s => s.type === 'TAM_PHAP');
@@ -392,33 +393,27 @@ export const generateNpcs = async (generationPrompt: string, count: number, titl
         const inventoryItems = ALL_ITEMS.filter(i => i.type === 'material' || i.type === 'consumable');
         const sellableItemsInfo = ALL_ITEMS.filter(i => i.value && i.value > 0).map(i => `id: ${i.id}, name: '${i.name}', type: ${i.type}`).join('; ');
         const linhCanTypesString = LINH_CAN_TYPES.join(', ');
-        
-        let titleInstruction = '';
-        if (titleChance !== undefined && titleChance > 0) {
-            titleInstruction = `6.  Một danh hiệu (title) tu tiên tùy chọn. Có ${Math.round(titleChance * 100)}% khả năng NPC này sẽ có danh hiệu. Danh hiệu phải mang tính chất hào nhoáng (ví dụ: 'Kiếm Thánh', 'Huyết Ma', 'Bách Thảo Tiên Tử'). Nếu không có danh hiệu, hãy để trống trường này hoặc đặt là null.`;
-        } else {
-            titleInstruction = `6.  Danh hiệu (title): Để trống trường này. NPC này không có danh hiệu.`;
-        }
 
         const prompt = `${generationPrompt}
 Hãy tạo ra ${count} NPC độc đáo. Đối với mỗi NPC, hãy cung cấp:
 1.  Một cái tên tiếng Việt đậm chất tiên hiệp, huyền huyễn (ví dụ: Mặc Trần, Lãnh Nguyệt Hàn, Tiêu Viêm, Liễu Thanh Ca). Tên phải có cả Họ và Tên.
 2.  Giới tính ('Nam' hoặc 'Nữ').
-3.  Sử dụng lại chính xác chức vụ (role) được cung cấp trong prompt.
-4.  Sử dụng lại chính xác cấp độ quyền lực (power) được cung cấp trong prompt.
-5.  Một danh sách từ 1 đến 3 thẻ hành vi (behaviors) từ danh sách sau để xác định AI của họ: [${BEHAVIOR_TAGS_STRING}]. Ví dụ, một Dược Sư nên có 'GATHERER_HERB', một Kiếm Tu nên có 'FIGHTER' và 'HUNTER'.
-${titleInstruction}
-7.  Một lời nhắc đối thoại ngắn gọn (1-2 câu) để mời tương tác.
-8.  Cảnh giới tu luyện (ví dụ: 'Trúc Cơ', 'Kim Đan'). Cảnh giới phải phù hợp với cấp độ quyền lực đã cho.
-9.  Tiểu cảnh giới (ví dụ: 'Hậu Kì', 'Đỉnh Phong', hoặc 'Tầng 5' đối với Luyện Khí).
-10. Các thuộc tính cơ bản (Căn Cốt, Thân Pháp, Thần Thức, Ngộ Tính, Cơ Duyên, Tâm Cảnh). Đây là các chỉ số "thiên phú" ban đầu khi còn là phàm nhân, trước khi tu luyện. Hãy tạo ra các giá trị trong khoảng từ 5 đến 15 cho mỗi thuộc tính. Hãy phân bổ các điểm này để phản ánh vai trò của họ (ví dụ: pháp tu có Thần Thức và Ngộ Tính cao, hộ vệ có Căn Cốt cao).
-11. Một danh sách từ 1 đến 5 Linh Căn. Mỗi Linh Căn bao gồm 'type' (loại) và 'purity' (độ thuần khiết, 10-100). Loại Linh Căn phải nằm trong danh sách sau: [${linhCanTypesString}]. Linh Căn phải phù hợp với vai trò và cảnh giới của NPC.
-12. Một danh sách ID kỹ năng đã học. Hãy chọn 1 Tâm Pháp từ danh sách sau: [${tamPhapInfo}]. Và chọn 1 hoặc 2 Công Pháp từ danh sách sau: [${congPhapInfo}]. Các kỹ năng phải phù hợp với vai trò và cảnh giới của họ.
-13. Một lượng Linh Thạch mà họ có thể đánh rơi. Lượng này phải phù hợp với cảnh giới và vai trò của NPC. Ví dụ: một tu sĩ Luyện Khí có thể có 50-200 linh thạch, một trưởng lão Kim Đan hoặc một thương nhân giàu có có thể có từ 5,000 đến 50,000 linh thạch.
-14. Một lượng điểm Cảm Ngộ mà họ sở hữu. Lượng này phải phù hợp với cảnh giới của họ (ví dụ: Luyện Khí có 100-1000, Kim Đan có 10,000-100,000).
-15. Một bộ trang bị (equipment) từ danh sách sau, phù hợp với vai trò và cảnh giới. Chỉ cung cấp itemId. Không trang bị cho tất cả. Danh sách trang bị: [${equipmentInfo}]
-16. Một túi đồ (inventory) chứa một vài vật phẩm từ danh sách sau. Có thể là một mảng rỗng. Danh sách vật phẩm: [${sellableItemsInfo}]
-17. Một danh sách các vật phẩm để bán (forSale), phù hợp với vai trò của NPC (ví dụ: thợ rèn bán khoáng thạch, dược sư bán thảo dược). Có thể là một mảng rỗng. Mỗi vật phẩm bao gồm: 'itemId', 'stock' (một số lượng hữu hạn, ví dụ 5-50), và có thể có 'priceModifier' (hệ số giá, ví dụ 1.5 là bán đắt hơn 50%). Không bao giờ sử dụng số lượng vô hạn hoặc -1. Danh sách vật phẩm có thể bán: [${sellableItemsInfo}]`;
+3.  Tuổi của nhân vật, phải nằm trong khoảng đã cho.
+4.  Sử dụng lại chính xác chức vụ (role) được cung cấp trong prompt.
+5.  Sử dụng lại chính xác cấp độ quyền lực (power) được cung cấp trong prompt.
+6.  Một danh sách từ 1 đến 3 thẻ hành vi (behaviors) từ danh sách sau để xác định AI của họ: [${BEHAVIOR_TAGS_STRING}].
+7.  Một danh hiệu (title) tu tiên tùy chọn, dựa trên tỉ lệ và chủ đề đã cho. Nếu không có, để trống hoặc null.
+8.  Một lời nhắc đối thoại ngắn gọn (1-2 câu) để mời tương tác.
+9.  Cảnh giới tu luyện (ví dụ: 'Trúc Cơ', 'Kim Đan'). Phải nằm trong khoảng đã cho.
+10. Tiểu cảnh giới (ví dụ: 'Hậu Kì', 'Tầng 5').
+11. Các thuộc tính cơ bản (Căn Cốt, Thân Pháp, Thần Thức, Ngộ Tính, Cơ Duyên, Tâm Cảnh) từ 5 đến 15. Phân bổ điểm để phản ánh vai trò.
+12. Một danh sách từ 1 đến 5 Linh Căn, bao gồm 'type' và 'purity' (10-100). Loại Linh Căn phải nằm trong danh sách sau: [${linhCanTypesString}].
+13. Một danh sách ID kỹ năng đã học. Chọn 1 Tâm Pháp từ: [${tamPhapInfo}]. Và 1-2 Công Pháp từ: [${congPhapInfo}].
+14. Lượng Linh Thạch phù hợp với vai trò và cảnh giới.
+15. Lượng Cảm Ngộ phù hợp với vai trò và cảnh giới.
+16. Một bộ trang bị (equipment) từ danh sách: [${equipmentInfo}]. Chỉ cung cấp itemId.
+17. Một túi đồ (inventory) chứa vài vật phẩm từ danh sách: [${sellableItemsInfo}]. Có thể rỗng.
+18. Một danh sách vật phẩm để bán (forSale), phù hợp vai trò. Mỗi vật phẩm gồm 'itemId', 'stock' (hữu hạn), và có thể có 'priceModifier'. Có thể rỗng. Danh sách vật phẩm có thể bán: [${sellableItemsInfo}]`;
 
         const response = await client.models.generateContent({
             model: "gemini-2.5-flash",
@@ -435,17 +430,18 @@ ${titleInstruction}
                         properties: {
                             name: { type: Type.STRING, description: "Tên tiếng Việt của NPC." },
                             gender: { type: Type.STRING, description: "Giới tính của NPC ('Nam' hoặc 'Nữ').", enum: ['Nam', 'Nữ'] },
-                            role: { type: Type.STRING, description: "Chức vụ hoặc vai trò của NPC (ví dụ: 'Lão Dược Sư', 'Kiếm Tu Lãng Du')." },
-                            power: { type: Type.INTEGER, description: "Cấp độ quyền lực của NPC, từ 1-100. Hãy sử dụng đúng cấp độ được cung cấp trong prompt." },
+                            age: { type: Type.INTEGER, description: "Tuổi của NPC." },
+                            role: { type: Type.STRING, description: "Chức vụ hoặc vai trò của NPC." },
+                            power: { type: Type.INTEGER, description: "Cấp độ quyền lực của NPC, từ 1-100." },
                             behaviors: {
                                 type: Type.ARRAY,
                                 description: `Một danh sách các thẻ hành vi từ: [${BEHAVIOR_TAGS_STRING}]`,
                                 items: { type: Type.STRING }
                             },
-                            title: { type: Type.STRING, description: "Danh hiệu tu tiên của NPC (ví dụ: 'Kiếm Thánh'). Có thể là chuỗi rỗng hoặc null nếu không có.", nullable: true },
-                            prompt: { type: Type.STRING, description: "Một lời thoại ngắn gọn, trong vai nhân vật để người chơi tương tác." },
-                            realmName: { type: Type.STRING, description: "Tên cảnh giới tu luyện của NPC (ví dụ: 'Trúc Cơ')." },
-                            levelDescription: { type: Type.STRING, description: "Tiểu cảnh giới của NPC (ví dụ: 'Hậu Kì', 'Tầng 5')." },
+                            title: { type: Type.STRING, description: "Danh hiệu tu tiên của NPC. Có thể là chuỗi rỗng hoặc null.", nullable: true },
+                            prompt: { type: Type.STRING, description: "Một lời thoại ngắn gọn, trong vai nhân vật." },
+                            realmName: { type: Type.STRING, description: "Tên cảnh giới tu luyện của NPC." },
+                            levelDescription: { type: Type.STRING, description: "Tiểu cảnh giới của NPC." },
                             attributes: {
                                 type: Type.OBJECT,
                                 properties: {
@@ -470,18 +466,18 @@ ${titleInstruction}
                                     required: ["type", "purity"]
                                 }
                             },
-                            linhThach: { type: Type.INTEGER, description: "Lượng Linh Thạch NPC có thể đánh rơi khi bị hạ gục." },
+                            linhThach: { type: Type.INTEGER, description: "Lượng Linh Thạch NPC có." },
                             camNgo: { type: Type.INTEGER, description: "Lượng Cảm Ngộ NPC sở hữu." },
                             learnedSkillIds: {
                                 type: Type.ARRAY,
-                                description: "Một danh sách ID kỹ năng (Tâm Pháp và Công Pháp) mà NPC đã học. Chọn từ danh sách được cung cấp trong prompt.",
+                                description: "Danh sách ID kỹ năng đã học.",
                                 items: {
                                     type: Type.STRING
                                 }
                             },
                              equipment: {
                                 type: Type.OBJECT,
-                                description: "Các vật phẩm NPC đang trang bị. Có thể là object rỗng.",
+                                description: "Các vật phẩm NPC đang trang bị.",
                                 properties: {
                                     WEAPON: { type: Type.OBJECT, properties: { itemId: { type: Type.STRING } }, required: ["itemId"], nullable: true },
                                     HEAD: { type: Type.OBJECT, properties: { itemId: { type: Type.STRING } }, required: ["itemId"], nullable: true },
@@ -492,12 +488,12 @@ ${titleInstruction}
                             },
                             inventory: {
                                 type: Type.ARRAY,
-                                description: "Danh sách các vật phẩm trong túi đồ của NPC. Có thể là mảng rỗng.",
+                                description: "Danh sách các vật phẩm trong túi đồ của NPC.",
                                 nullable: true,
                                 items: {
                                     type: Type.OBJECT,
                                     properties: {
-                                        itemId: { type: Type.STRING, description: "ID chính xác của vật phẩm." },
+                                        itemId: { type: Type.STRING, description: "ID của vật phẩm." },
                                         quantity: { type: Type.INTEGER, description: "Số lượng vật phẩm." }
                                     },
                                     required: ["itemId", "quantity"]
@@ -505,20 +501,20 @@ ${titleInstruction}
                             },
                             forSale: {
                                 type: Type.ARRAY,
-                                description: "Danh sách các vật phẩm NPC bán. Có thể là mảng rỗng.",
+                                description: "Danh sách các vật phẩm NPC bán.",
                                 nullable: true,
                                 items: {
                                     type: Type.OBJECT,
                                     properties: {
                                         itemId: { type: Type.STRING, description: "ID vật phẩm để bán." },
                                         stock: { type: Type.INTEGER, description: "Số lượng hữu hạn trong kho." },
-                                        priceModifier: { type: Type.NUMBER, description: "Hệ số giá bán (ví dụ 1.5). Mặc định là 1.", nullable: true }
+                                        priceModifier: { type: Type.NUMBER, description: "Hệ số giá bán (ví dụ 1.5).", nullable: true }
                                     },
                                     required: ["itemId", "stock"]
                                 }
                             }
                         },
-                        required: ["name", "gender", "role", "power", "behaviors", "prompt", "realmName", "levelDescription", "attributes", "linhCan", "linhThach", "camNgo", "learnedSkillIds"]
+                        required: ["name", "gender", "age", "role", "power", "behaviors", "prompt", "realmName", "levelDescription", "attributes", "linhCan", "linhThach", "camNgo", "learnedSkillIds"]
                     }
                 }
             },

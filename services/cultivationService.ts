@@ -1,9 +1,12 @@
 
 
+
+
 import { REALM_PROGRESSION } from '../constants';
 import { INITIAL_PLAYER_STATE as BASE_INITIAL_PLAYER_STATE } from '../hooks/usePlayerPersistence';
 import type { CultivationState, CharacterAttributes, CombatStats } from '../types/stats';
 import type { LearnedSkill, Skill } from '../types/skill';
+import type { ActiveStatusEffect } from '../types/combat';
 import type { InventorySlot, Item } from '../types/item';
 import type { EquipmentSlot } from '../types/equipment';
 import type { LinhCan } from '../types/linhcan';
@@ -73,7 +76,8 @@ export const calculateAllStats = (
     allSkills: Skill[],
     equipment: Partial<Record<EquipmentSlot, InventorySlot>>,
     allItems: Item[],
-    linhCan: LinhCan[]
+    linhCan: LinhCan[],
+    activeEffects: ActiveStatusEffect[] = []
 ): { finalStats: CombatStats; finalAttributes: CharacterAttributes } => {
     // 1. Start with absolute base stats of a mortal.
     const finalStats: Required<Mutable<Partial<CombatStats>>> = { ...BASE_INITIAL_PLAYER_STATE.stats };
@@ -174,6 +178,13 @@ export const calculateAllStats = (
     const nextCultivation = getNextCultivationLevel(cultivation);
     const baseMaxQi = nextCultivation ? getRealmLevelInfo(nextCultivation)?.qiRequired || 0 : getRealmLevelInfo(cultivation)?.qiRequired || 0;
     finalStats.maxQi = Math.round(baseMaxQi * qiMultiplier);
+
+    // --- Apply Global Debuffs from Active Effects ---
+    if (activeEffects.some(e => e.type === 'ENVIRONMENTAL_DEBUFF')) {
+        finalStats.attackPower *= 0.75; // -25%
+        finalStats.defensePower *= 0.75; // -25%
+        finalStats.speed *= 0.75; // -25%
+    }
 
 
     // Round the final stats to avoid floating point issues

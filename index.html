@@ -186,6 +186,31 @@
             scrollbar-width: thin;
             scrollbar-color: #b45309 transparent;
         }
+
+        /* Danger Zone Overlay */
+        .danger-zone-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 15;
+            box-shadow: inset 0 0 150px 30px rgba(127, 29, 29, 0.25);
+            animation: pulse-danger 3s infinite;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .danger-zone-overlay.active {
+            opacity: 1;
+        }
+
+        @keyframes pulse-danger {
+            0%, 100% {
+                box-shadow: inset 0 0 150px 30px rgba(127, 29, 29, 0.25);
+            }
+            50% {
+                box-shadow: inset 0 0 180px 50px rgba(153, 27, 27, 0.35);
+            }
+        }
     </style>
 <script type="importmap">
 {

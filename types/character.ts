@@ -136,24 +136,28 @@ export interface PlayerState {
   // Persisted world state
   generatedNpcs: Record<string, NPC[]>; // MapID -> NPC list for persistence
   generatedInteractables: Record<string, Interactable[]>; // MapID -> Interactable list
+  initializedMaps?: MapID[];
   defeatedNpcIds: string[]; // Using an array for JSON compatibility
+  harvestedInteractableIds: string[]; // IDs of gathered/destroyed interactables
+  deathInfo?: Record<string, { age: number }>; // Stores age of NPCs at time of death
   plantedPlots: { plotId: string; mapId: MapID; seedId: string; plantedAt: GameTime; }[];
-  respawningInteractables: {
-    originalId: string;
-    baseId: string;
-    mapId: MapID;
-    areaId?: string;
-    originalPosition: Position;
-    respawnAt: GameTime;
-  }[];
   respawningNpcs?: {
       originalId: string;
       baseId: string;
       mapId: MapID;
       respawnAt: GameTime;
   }[];
+  respawningInteractables: {
+      originalId: string;
+      baseId: string;
+      mapId: MapID;
+      areaId?: string;
+      originalPosition: Position;
+      respawnAt: GameTime;
+  }[];
   chatHistories?: Record<string, ChatMessage[]>;
-  lastPopCheck?: Record<string, GameTime>; // Key: mapId-areaId for monster population, Value: last check time
+  nextMonsterSpawnCheck?: Record<string, GameTime>; // Key: mapId-areaId for monster population, Value: next check time
+  nextInteractableSpawnCheck?: Record<string, GameTime>; // Key: mapId-areaId for interactable population
   lastNpcProgressionCheck?: GameTime; // The last time NPC cultivation was processed
   journal: JournalEntry[];
   

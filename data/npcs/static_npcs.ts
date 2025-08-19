@@ -1,4 +1,5 @@
 
+
 import type { StaticNpcDefinition } from './npc_types';
 
 export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
@@ -92,6 +93,7 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
             { itemId: 'book_hoa_cau_thuat', stock: 3, priceModifier: 2.0 },
             { itemId: 'book_thoi_the_kinh', stock: 3, priceModifier: 2.0 },
             { itemId: 'book_thiet_bo_sam', stock: 1, priceModifier: 2.5 },
+            { itemId: 'book_hoi_thien_thuat', stock: 2, priceModifier: 2.0 },
             { itemId: 'recipe_item_hoi_xuan_dan', stock: 3, priceModifier: 1.5 },
             { itemId: 'recipe_item_tu_khi_dan', stock: 2, priceModifier: 1.8 },
         ]

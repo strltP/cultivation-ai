@@ -63,7 +63,10 @@ const SkillInfoCard: React.FC<{ skillDef: Skill }> = ({ skillDef }) => {
                 {manaCost !== undefined && (
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-300 font-semibold">Tiêu hao Linh Lực:</span>
-                        <span className="text-cyan-300 font-bold">{manaCost}</span>
+                        <span className="text-cyan-300 font-bold">
+                            {manaCost}
+                            {skillDef.manaCostPerLevel && skillDef.manaCostPerLevel > 0 ? ` (+${skillDef.manaCostPerLevel} mỗi tầng)` : ''}
+                        </span>
                     </div>
                 )}
                 {damage && (

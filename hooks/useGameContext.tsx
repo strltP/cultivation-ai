@@ -54,6 +54,7 @@ interface IUIContext {
 
 interface IWorldContext {
     gameMessage: { text: string; id: number } | null;
+    setGameMessage: (message: string | null) => void;
     isLoading: boolean;
     currentNpcs: NPC[];
     currentInteractables: Interactable[];
@@ -216,6 +217,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                     const mapId = mapId_str as MapID;
                     for (const npc of newGeneratedNpcs[mapId]) {
                         if (npc.npcType !== 'cultivator' || !npc.cultivation) continue;
+                        if (currentState.defeatedNpcIds.includes(npc.id)) continue; // *** FIX: Skip defeated NPCs ***
 
                         // --- Part 0: Passive Cultivation ---
                         const totalHoursPassed = monthsPassed * DAYS_PER_MONTH * 24;
@@ -229,7 +231,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                                 case 'CHALLENGE': intentMultiplier = 0.2; break;
                             }
                         }
-                        const BASE_QI_PER_HOUR = 0.25; const NGO_TINH_QI_FACTOR = 0.01;
+                        const BASE_QI_PER_HOUR = 0.08; const NGO_TINH_QI_FACTOR = 0.003;
                         const BASE_CAM_NGO_PER_HOUR = 0.1; const NGO_TINH_CAM_NGO_FACTOR = 0.02;
                         const realmMultiplier = 1 + (npc.cultivation.realmIndex * 0.15);
                         const qiPerHour = (BASE_QI_PER_HOUR + (npc.attributes.ngoTinh * NGO_TINH_QI_FACTOR)) * realmMultiplier * intentMultiplier;
@@ -741,13 +743,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
 
     const worldContextValue: IWorldContext = useMemo(() => ({
         gameMessage: gameMessageObject,
+        setGameMessage: setGameMessage,
         isLoading: worldManager.isLoading,
         currentNpcs: worldManager.currentNpcs,
         currentInteractables: worldManager.currentInteractables,
         currentTeleportGates: worldManager.currentTeleportGates,
         currentPois: worldManager.currentPois,
         currentMapAreas: worldManager.currentMapAreas,
-    }), [gameMessageObject, worldManager]);
+    }), [gameMessageObject, setGameMessage, worldManager]);
 
     const playerActionsContextValue: IPlayerActionsContext = useMemo(() => ({
         isMeditating: playerActions.isMeditating,

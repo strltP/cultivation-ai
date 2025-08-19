@@ -1,14 +1,16 @@
 
 
+
 import React from 'react';
 import type { CombatStats } from '../../types/stats';
 import { GiCrossedSwords, GiShield, GiRunningShoe, GiTargetShot, GiBullseye, GiCrosshair } from 'react-icons/gi';
 
 interface CombatStatDisplayProps {
     stats: CombatStats;
+    isDebuffed?: boolean;
 }
 
-const CombatStatDisplay: React.FC<CombatStatDisplayProps> = ({ stats }) => {
+const CombatStatDisplay: React.FC<CombatStatDisplayProps> = ({ stats, isDebuffed }) => {
     const statList = [
         { name: 'Lực Công', value: stats.attackPower, icon: <GiCrossedSwords title="Lực Công" /> },
         { name: 'Lực Thủ', value: stats.defensePower, icon: <GiShield title="Lực Thủ" /> },
@@ -17,13 +19,14 @@ const CombatStatDisplay: React.FC<CombatStatDisplayProps> = ({ stats }) => {
         { name: 'Xuyên Giáp', value: `${(stats.armorPenetration * 100).toFixed(1)}%`, icon: <GiCrosshair title="Tỉ Lệ Xuyên Giáp" /> },
         { name: 'ST B.Kích', value: `${(stats.critDamage * 100).toFixed(0)}%`, icon: <GiBullseye title="Sát Thương Bạo Kích" /> },
     ];
+     const valueColorClass = isDebuffed ? 'text-red-400' : 'text-sm';
 
     return (
         <div className="grid grid-cols-3 gap-x-4 gap-y-2 pt-2 border-t border-blue-400/20 mt-2">
             {statList.map(stat => (
                  <div key={stat.name} className="flex items-center gap-x-2 text-gray-300" title={`${stat.name}: ${stat.value}`}>
                     <div className="text-yellow-300 text-lg">{stat.icon}</div>
-                    <span className="font-semibold text-sm">{stat.value}</span>
+                    <span className={`font-semibold ${valueColorClass}`}>{stat.value}</span>
                 </div>
             ))}
         </div>

@@ -11,7 +11,7 @@ export interface SkillBonus {
     valuePerLevel: number;
 }
 
-export type EffectType = 'STUN' | 'POISON' | 'BURN' | 'SLOW' | 'HEAL' | 'BUFF' | 'DEBUFF';
+export type EffectType = 'STUN' | 'POISON' | 'BURN' | 'SLOW' | 'HEAL' | 'BUFF' | 'DEBUFF' | 'ENVIRONMENTAL_DEBUFF';
 
 export const EFFECT_TYPE_NAMES: Record<EffectType, string> = {
     STUN: 'Choáng',
@@ -21,6 +21,7 @@ export const EFFECT_TYPE_NAMES: Record<EffectType, string> = {
     HEAL: 'Hồi Phục',
     BUFF: 'Tăng Cường',
     DEBUFF: 'Suy Yếu',
+    ENVIRONMENTAL_DEBUFF: 'Linh Khí Áp Chế',
 };
 
 export interface SkillEffect {
@@ -29,6 +30,7 @@ export interface SkillEffect {
     duration?: number; // In turns
     value?: number; // Base value (e.g., damage for POISON, heal amount for HEAL)
     valuePerLevel?: number; // Extra value per skill level
+    valueIsPercent?: boolean; // If true, value is treated as a percentage (e.g., 0.1 for 10%)
     scalingAttribute?: keyof CharacterAttributes; // Attribute to scale with
     scalingFactor?: number; // How much it scales (e.g., 0.5 * attribute value)
     targetStat?: keyof CombatStats | keyof CharacterAttributes; // For BUFF/DEBUFF

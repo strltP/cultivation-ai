@@ -10,7 +10,7 @@ export const ALL_MONSTERS: MonsterDefinition[] = [
             { itemId: 'material_monster_bone_1', chance: 0.5, quantity: [1, 2] },
             { itemId: 'material_monster_blood_1', chance: 0.2, quantity: [1, 1] },
         ],
-        respawnTimeMinutes: [43200, 86400], // 1-2 months
+        repopulationTimeMinutes: [43200, 86400], // 1-2 months
     },
     {
         baseId: 'monster_hac_ma_chu',
@@ -21,6 +21,6 @@ export const ALL_MONSTERS: MonsterDefinition[] = [
             { itemId: 'material_monster_blood_1', chance: 0.3, quantity: [1, 2] },
             { itemId: 'material_monster_core_1', chance: 0.1, quantity: [1, 1] },
         ],
-        respawnTimeMinutes: [129600, 216000], // 3-5 months
+        repopulationTimeMinutes: [129600, 216000], // 3-5 months
     }
 ];

@@ -224,6 +224,16 @@ export const ALL_CONG_PHAP_BOOKS: Item[] = [
         skillId: 'cong-phap-huyen-10',
     },
     {
+        id: 'book_hoi_thien_thuat',
+        name: 'Hồi Thiên Thuật - Toàn Quyển',
+        description: 'Ghi lại pháp thuật trị liệu cao cấp Hồi Thiên Thuật, có khả năng hồi phục sinh lực theo phần trăm. Nghiên cứu có thể lĩnh ngộ công pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-lime-300" }),
+        stackable: 1,
+        value: 2600,
+        skillId: 'cong-phap-huyen-15',
+    },
+    {
         id: 'book_dia_long_quyen',
         name: 'Địa Long Quyển - Thần Thông',
         description: 'Ghi chép thần thông Địa Long Quyển, triệu hồi rồng đất tấn công kẻ địch. Nghiên cứu có thể lĩnh ngộ công pháp này.',

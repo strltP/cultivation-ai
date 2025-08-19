@@ -11,6 +11,7 @@ import { ALL_INTERACTABLES } from '../data/interactables';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
 import { SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/interactable_spawns';
 import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
+import type { ProceduralMonsterRule } from '../data/npcs/npc_types';
 
 interface WorldDataSource {
     pois: Record<MapID, PointOfInterest[]>;
@@ -57,7 +58,7 @@ const generateInteractablesForMap = (mapId: MapID, allPois: Record<MapID, PointO
             let attempts = 0;
             const MAX_ATTEMPTS_PER_ITEM = 20;
 
-            while (generatedCount < rule.count && attempts < rule.count * MAX_ATTEMPTS_PER_ITEM) {
+            while (generatedCount < rule.initialCount && attempts < rule.initialCount * MAX_ATTEMPTS_PER_ITEM) {
                 attempts++;
                 const x = Math.floor(area.position.x - area.size.width / 2 + Math.random() * area.size.width);
                 const y = Math.floor(area.position.y - area.size.height / 2 + Math.random() * area.size.height);
@@ -147,6 +148,15 @@ export const useWorldManager = (
             updateAndPersistPlayerState(p => {
                 if (!p) return null as any;
                 const newDefeatedIds = [...new Set([...p.defeatedNpcIds, ...deadNpcIds])];
+
+                const newDeathInfo = { ...(p.deathInfo || {}) };
+                deadNpcIds.forEach(id => {
+                    const deadNpc = npcsOnCurrentMap.find(npc => npc.id === id);
+                    if (deadNpc) {
+                        const ageAtDeath = p.time.year - deadNpc.birthTime.year;
+                        newDeathInfo[id] = { age: ageAtDeath };
+                    }
+                });
                 
                 const newJournalEntries = deadNpcMessages.map(message => ({
                     time: p.time,
@@ -157,6 +167,7 @@ export const useWorldManager = (
                 return {
                     ...p,
                     defeatedNpcIds: newDefeatedIds,
+                    deathInfo: newDeathInfo,
                     journal: [...(p.journal || []), ...newJournalEntries]
                 };
             });
@@ -227,8 +238,8 @@ export const useWorldManager = (
 
         const loadAndSetNpcs = async () => {
             const spawnDefinitionsExist = (NPC_SPAWN_DEFINITIONS_BY_MAP[currentMapId] || []).length > 0;
-            const npcsGenerated = playerState.generatedNpcs[currentMapId] && playerState.generatedNpcs[currentMapId].length > 0;
-            const needsGeneration = spawnDefinitionsExist && !npcsGenerated;
+            const mapAlreadyInitialized = playerState.initializedMaps?.includes(currentMapId);
+            const needsGeneration = spawnDefinitionsExist && !mapAlreadyInitialized;
             
             if (needsGeneration && !isLoading) {
                 setIsLoading(true);
@@ -237,7 +248,8 @@ export const useWorldManager = (
                     updateAndPersistPlayerState(prev => {
                         if (!prev || prev.currentMap !== currentMapId) return prev;
                         const newGeneratedNpcs = { ...prev.generatedNpcs, [currentMapId]: newNpcs };
-                        return { ...prev, generatedNpcs: newGeneratedNpcs };
+                        const newInitializedMaps = [...new Set([...(prev.initializedMaps || []), currentMapId])];
+                        return { ...prev, generatedNpcs: newGeneratedNpcs, initializedMaps: newInitializedMaps };
                     });
                 } catch (error) {
                     console.error("Failed to load NPCs for map:", error);
@@ -251,54 +263,55 @@ export const useWorldManager = (
         loadAndSetNpcs();
 
         // --- New Monster Population Check Logic ---
-        const monsterRulesForMap = NPC_SPAWN_DEFINITIONS_BY_MAP[currentMapId]?.filter(def => def.type === 'procedural_monster');
+        const monsterRulesForMap = NPC_SPAWN_DEFINITIONS_BY_MAP[currentMapId]?.filter(def => def.type === 'procedural_monster') as ProceduralMonsterRule[];
         if (monsterRulesForMap && monsterRulesForMap.length > 0) {
             updateAndPersistPlayerState(p => {
                 if (!p) return null as any;
                 
-                let updated = false;
+                let hasChanges = false;
                 const newState = JSON.parse(JSON.stringify(p)); // Deep copy to prevent mutation
                 const allNpcsForMap = newState.generatedNpcs[currentMapId] || [];
                 const defeatedIds = new Set(newState.defeatedNpcIds);
                 let newMonsters: NPC[] = [];
-                let updatedPopCheck = { ...(newState.lastPopCheck || {}) };
+                let nextSpawnCheck = { ...(newState.nextMonsterSpawnCheck || {}) };
 
-                monsterRulesForMap.forEach(ruleDef => {
-                    const rule = ruleDef as any; // Cast to access properties
+                monsterRulesForMap.forEach(rule => {
                     const ruleKey = `${currentMapId}-${rule.areaId}`;
-                    const lastCheckTime = updatedPopCheck[ruleKey];
-                    const lastCheckMinutes = lastCheckTime ? gameTimeToMinutes(lastCheckTime) : 0;
-                    const MONSTER_RESPAWN_CYCLE_MINUTES = 43200; // 1 month
+                    const nextCheckTime = nextSpawnCheck[ruleKey];
+                    const nextCheckMinutes = nextCheckTime ? gameTimeToMinutes(nextCheckTime) : 0;
 
-                    if (now >= lastCheckMinutes + MONSTER_RESPAWN_CYCLE_MINUTES) {
-                        updated = true;
-                        updatedPopCheck[ruleKey] = p.time;
-                        
+                    if (now >= nextCheckMinutes) {
                         const livingMonstersForRule = allNpcsForMap.filter((npc: NPC) => 
                             npc.spawnRuleId === ruleKey && !defeatedIds.has(npc.id)
                         ).length;
-                        
-                        const deficit = rule.count - livingMonstersForRule;
-                        if (deficit > 0) {
+
+                        if (livingMonstersForRule < rule.maxCount) {
+                            hasChanges = true;
+                            
                             const area = (dataSource.mapAreas[currentMapId] || []).find(a => a.id === rule.areaId);
                             if (area) {
-                                for (let i = 0; i < deficit; i++) {
-                                    const baseId = rule.monsterBaseIds[Math.floor(Math.random() * rule.monsterBaseIds.length)];
-                                    const template = ALL_MONSTERS.find(m => m.baseId === baseId);
-                                    if (!template) continue;
-
+                                const baseId = rule.monsterBaseIds[Math.floor(Math.random() * rule.monsterBaseIds.length)];
+                                const template = ALL_MONSTERS.find(m => m.baseId === baseId);
+                                if (template) {
                                     const level = Math.floor(Math.random() * (rule.levelRange[1] - rule.levelRange[0] + 1)) + rule.levelRange[0];
                                     const x = area.position.x - area.size.width / 2 + Math.random() * area.size.width;
                                     const y = area.position.y - area.size.height / 2 + Math.random() * area.size.height;
-                                    const id = `proc-monster-${currentMapId}-${baseId}-${Date.now()}-${i}`;
+                                    const id = `proc-monster-${currentMapId}-${baseId}-${Date.now()}-${Math.random()}`;
+                                    
                                     newMonsters.push(createMonsterFromData(template, level, id, {x, y}, ruleKey, p.time, currentMapId));
+
+                                    const [minTime, maxTime] = template.repopulationTimeMinutes;
+                                    const repopulationMinutes = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
+                                    nextSpawnCheck[ruleKey] = advanceTime(p.time, repopulationMinutes);
                                 }
                             }
                         }
                     }
                 });
-                if (!updated) return p; // No changes
-                newState.lastPopCheck = updatedPopCheck;
+
+                if (!hasChanges) return p;
+
+                newState.nextMonsterSpawnCheck = nextSpawnCheck;
                 newState.generatedNpcs[currentMapId] = [...allNpcsForMap, ...newMonsters];
                 return newState;
             });
@@ -309,10 +322,12 @@ export const useWorldManager = (
     const handleRemoveAndRespawn = useCallback((interactable: Interactable, respawnTimeMultiplier: number = 1) => {
         const template = ALL_INTERACTABLES.find(t => t.baseId === interactable.baseId);
         
-        if (template && template.respawnTimeMinutes) {
+        if (template && template.repopulationTimeMinutes) {
             updateAndPersistPlayerState(p => {
                 if (!p) return null as any;
-                const finalRespawnTimeMins = template.respawnTimeMinutes * respawnTimeMultiplier;
+                const [minTime, maxTime] = template.repopulationTimeMinutes!;
+                const repopulationMinutes = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
+                const finalRespawnTimeMins = repopulationMinutes * respawnTimeMultiplier;
                 const respawnAt = advanceTime(p.time, finalRespawnTimeMins);
                 const newRespawningItem = {
                     originalId: interactable.id,

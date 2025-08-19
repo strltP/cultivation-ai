@@ -9,14 +9,14 @@ import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, Procedural
 import { generateNpcs, GeneratedNpcData } from './geminiService';
 import { REALM_PROGRESSION } from '../constants';
 import { MAPS, MAP_AREAS_BY_MAP } from '../mapdata';
-import { calculateAllStats, getNextCultivationLevel, getRealmLevelInfo } from './cultivationService';
+import { calculateAllStats, getCultivationInfo } from './cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { ALL_ITEMS } from '../data/items/index';
-import { EquipmentSlot } from '../types/equipment';
+import { EquipmentSlot, ITEM_TIER_NAMES } from '../types/equipment';
 import type { LinhCan, LinhCanType, NpcBehavior } from '../types/linhcan';
 import { LINH_CAN_TYPES } from '../types/linhcan';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
-import { FACTIONS, FactionRole } from '../data/factions';
+import { FACTIONS, type FactionRole } from '../data/factions';
 
 function createNpcFromData(data: (GeneratedNpcData | StaticNpcDefinition) & { power?: number }, id: string, position: {x:number, y:number}, gameTime: GameTime, homeMapId: MapID, factionId?: string): NPC {
     const realmIndex = REALM_PROGRESSION.findIndex(r => r.name === data.realmName);
@@ -131,15 +131,7 @@ function createNpcFromData(data: (GeneratedNpcData | StaticNpcDefinition) & { po
     
     const npcCultivationStats = npcCultivationBonuses;
     
-    let age = 0;
-    if ('age' in data && data.age) {
-        age = data.age; // For static NPCs
-    } else {
-        const realmAgeMin = [16, 50, 150, 400, 1000, 2000];
-        const minAge = realmAgeMin[cultivation.realmIndex] || 16;
-        const maxAgeForRealm = finalStats.maxThoNguyen * 0.8;
-        age = Math.floor(Math.random() * (maxAgeForRealm - minAge + 1)) + minAge;
-    }
+    const age = data.age;
 
     const birthTime: GameTime = {
         year: gameTime.year - age,
@@ -298,7 +290,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
         const area = (MAPS[mapId] && MAP_AREAS_BY_MAP[mapId] || []).find(a => a.id === rule.areaId);
         if (!area) continue;
 
-        for (let i = 0; i < rule.count; i++) {
+        for (let i = 0; i < rule.initialCount; i++) {
             const baseId = rule.monsterBaseIds[Math.floor(Math.random() * rule.monsterBaseIds.length)];
             const template = monsterTemplates.get(baseId);
             if (!template) continue;
@@ -342,12 +334,26 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
 
             for (const groupName in generationGroups) {
                 const { role, count } = generationGroups[groupName];
-                const generationPrompt = `Bối cảnh: ${faction.name}.
-Hãy tạo ra ${count} NPC với vai trò là "${role.name}" và cấp độ quyền lực (power level) là ${role.power}.
-Gợi ý về vai trò: "${role.generationHint}".
-Cấp độ quyền lực từ 1-100. Quyền lực càng cao, NPC càng mạnh mẽ, tu vi cao, trang bị tốt, và có địa vị. Hãy dùng chỉ số này để quyết định cảnh giới, thuộc tính, và vật phẩm của NPC.`;
+
+                const minRealm = REALM_PROGRESSION[role.rangeRealm.min.realmIndex];
+                const minLevel = minRealm.levels[role.rangeRealm.min.level];
+                const maxRealm = REALM_PROGRESSION[role.rangeRealm.max.realmIndex];
+                const maxLevel = maxRealm.levels[role.rangeRealm.max.level];
+
+                const promptParts = [
+                    `Bối cảnh: ${faction.name}.`,
+                    `Hãy tạo ra ${count} NPC với vai trò là "${role.name}" và cấp độ quyền lực (power level) là ${role.power}.`,
+                    `**Yêu cầu nghiêm ngặt:**`,
+                    `- Cảnh giới tu luyện: từ ${minRealm.name} ${minLevel.levelName} đến ${maxRealm.name} ${maxLevel.levelName}.`,
+                    `- Tuổi: từ ${role.ageRange[0]} đến ${role.ageRange[1]}. Hãy tạo ra sự đa dạng, có thể có thiên tài trẻ tuổi hoặc người già tư chất kém.`,
+                    `- Tính cách: Dựa trên các từ khóa sau: ${role.personalityTags.join(', ')}.`,
+                    `- Danh hiệu: Có ${Math.round((role.titleChance || 0) * 100)}% khả năng có danh hiệu. Nếu có, chủ đề nên là: ${role.titleThemes.join(', ')}.`,
+                    `- Trang bị: Phẩm chất trang bị nên từ ${ITEM_TIER_NAMES[role.equipmentTierRange[0]]} đến ${ITEM_TIER_NAMES[role.equipmentTierRange[1]]}.`
+                ];
                 
-                const promise = generateNpcs(generationPrompt, count, roleDef.titleChance)
+                const generationPrompt = promptParts.join('\n');
+                
+                const promise = generateNpcs(generationPrompt, count)
                     .then(generatedData => {
                         const spawnablePOIs = roleDef.poiIds.map(id => poisForMap.find(p => p.id === id)).filter((p): p is PointOfInterest => !!p);
                         

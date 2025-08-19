@@ -11,6 +11,13 @@ export const EQUIPMENT_SLOT_NAMES: Record<EquipmentSlot, string> = {
     ACCESSORY: 'Trang Sức'
 };
 
+export const ITEM_TIER_NAMES: Record<SkillTier, string> = {
+    HOANG: 'Hoàng Giai',
+    HUYEN: 'Huyền Giai',
+    DIA: 'Địa Giai',
+    THIEN: 'Thiên Giai'
+};
+
 export type WeaponType = 'SWORD' | 'BLADE' | 'SPEAR' | 'FAN' | 'BOW' | 'STAFF';
 
 export const WEAPON_TYPE_NAMES: Record<WeaponType, string> = {

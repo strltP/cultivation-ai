@@ -12,9 +12,9 @@ export const mapDefinition: GameMap = {
 };
 
 export const mapAreas: MapArea[] = [
-    { id: 'hasl-area-1', name: 'Rìa Rừng U Ám', type: 'zone', position: { x: 1500, y: 3250 }, size: { width: 2800, height: 1500 }, style: { borderColor: 'rgba(74, 222, 128, 0.2)', backgroundColor: 'rgba(74, 222, 128, 0.03)' } },
-    { id: 'hasl-area-2', name: 'Đầm Lầy Hủ Hóa', type: 'zone', position: { x: 1500, y: 1750 }, size: { width: 2000, height: 1500 }, style: { borderColor: 'rgba(139, 92, 246, 0.3)', backgroundColor: 'rgba(139, 92, 246, 0.05)' } },
-    { id: 'hasl-area-3', name: 'Cổ Thụ Lõi', type: 'zone', position: { x: 1500, y: 500 }, size: { width: 2500, height: 1000 }, style: { borderColor: 'rgba(217, 70, 239, 0.2)', backgroundColor: 'rgba(217, 70, 239, 0.04)' } },
+    { id: 'hasl-area-1', name: 'Rìa Rừng U Ám', type: 'zone', position: { x: 1500, y: 3250 }, size: { width: 2800, height: 1500 }, style: { borderColor: 'rgba(74, 222, 128, 0.2)', backgroundColor: 'rgba(74, 222, 128, 0.03)' }, dangerLevel: 1 },
+    { id: 'hasl-area-2', name: 'Đầm Lầy Hủ Hóa', type: 'zone', position: { x: 1500, y: 1750 }, size: { width: 2000, height: 1500 }, style: { borderColor: 'rgba(139, 92, 246, 0.3)', backgroundColor: 'rgba(139, 92, 246, 0.05)' }, dangerLevel: 1 },
+    { id: 'hasl-area-3', name: 'Cổ Thụ Lõi', type: 'zone', position: { x: 1500, y: 500 }, size: { width: 2500, height: 1000 }, style: { borderColor: 'rgba(217, 70, 239, 0.2)', backgroundColor: 'rgba(217, 70, 239, 0.04)' }, dangerLevel: 1 },
 ];
 
 export const pois: PointOfInterest[] = [

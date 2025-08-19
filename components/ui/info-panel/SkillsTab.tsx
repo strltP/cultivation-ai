@@ -65,18 +65,39 @@ const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; curren
                                     <div className="flex items-center justify-between">
                                         <span className="flex items-center gap-2 text-gray-400"><GiCrossedSwords className="text-red-400" /> Sát Thương:</span>
                                         <span className="font-semibold text-red-400" title={titleText}>
-                                            {totalDmg}
+                                            ~{totalDmg}
                                         </span>
                                     </div>
                                 );
                             })()}
                             {skillDef.effects?.map((effect, index) => {
-                                let text = `${EFFECT_TYPE_NAMES[effect.type]} (${effect.chance * 100}%)`;
-                                if(effect.duration) text += `, ${effect.duration} hiệp`;
+                                let text = '';
+                                if (effect.type === 'HEAL') {
+                                    if (effect.valueIsPercent) {
+                                        const totalPercent = ((effect.value || 0) + (effect.valuePerLevel || 0) * (currentLevel - 1)) * 100;
+                                        text = `Hồi Phục: ~${totalPercent.toFixed(0)}% Sinh Lực`;
+                                    } else {
+                                        const baseHeal = (effect.value || 0) + ((effect.valuePerLevel || 0) * (currentLevel - 1));
+                                        let scalingHeal = 0;
+                                        if (effect.scalingAttribute && effect.scalingFactor) {
+                                            scalingHeal = playerState.attributes[effect.scalingAttribute] * effect.scalingFactor;
+                                        }
+                                        const totalHeal = Math.round(baseHeal + scalingHeal);
+                                        text = `Hồi Phục: ~${totalHeal} Sinh Lực`;
+                                    }
+                                } else {
+                                    if (effect.chance === 1) {
+                                        text = `Gây ${EFFECT_TYPE_NAMES[effect.type]}`;
+                                        if(effect.duration) text += ` (${effect.duration} hiệp)`;
+                                    } else {
+                                        text = `${EFFECT_TYPE_NAMES[effect.type]} (${effect.chance * 100}%)`;
+                                        if(effect.duration) text += `, ${effect.duration} hiệp`;
+                                    }
+                                }
                                 return (
                                     <div key={index} className="flex items-center justify-between text-yellow-400/90">
                                         <span className="flex items-center gap-2 text-gray-400"><FaExclamationCircle /> Hiệu ứng:</span>
-                                        <span>{text}</span>
+                                        <span title={`Cơ hội xảy ra: ${effect.chance * 100}%`}>{text}</span>
                                     </div>
                                 )
                             })}
@@ -124,6 +145,27 @@ const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; curren
     );
 };
 
+interface SkillCategoryDisplayProps {
+    title: string;
+    icon: React.ReactNode;
+    skills: { learned: { skillId: string; currentLevel: number; }; def: SkillDef | undefined; }[];
+    playerState: PlayerState;
+    onLevelUpSkill: (skillId: string) => void;
+}
+
+const SkillCategoryDisplay: React.FC<SkillCategoryDisplayProps> = ({ title, icon, skills, playerState, onLevelUpSkill }) => {
+    return (
+        <div>
+            <h3 className="flex items-center gap-3 text-2xl font-semibold mb-3">{icon} {title}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {skills.length > 0 ? skills.map(({ learned, def }) => 
+                    def ? <SkillCard key={def.id} playerState={playerState} skillDef={def} currentLevel={learned.currentLevel} onLevelUp={() => onLevelUpSkill(def.id)} /> : null
+                ) : <p className="text-gray-500 italic col-span-full">Chưa học được công pháp nào.</p>}
+            </div>
+        </div>
+    );
+};
+
 interface SkillsTabProps {
     playerState: PlayerState;
     onLevelUpSkill: (skillId: string) => void;
@@ -144,23 +186,20 @@ const SkillsTab: React.FC<SkillsTabProps> = ({ playerState, onLevelUpSkill }) =>
 
     return (
         <div className="space-y-6">
-            <div>
-                <h3 className="flex items-center gap-3 text-2xl font-semibold text-red-400 mb-3"><FaBookDead /> Công Pháp</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {congPhapList.length > 0 ? congPhapList.map(({ learned, def }) => 
-                        def ? <SkillCard key={def.id} playerState={playerState} skillDef={def} currentLevel={learned.currentLevel} onLevelUp={() => onLevelUpSkill(def.id)} /> : null
-                    ) : <p className="text-gray-500 italic col-span-full">Chưa học được công pháp nào.</p>}
-                </div>
-            </div>
-
-            <div>
-                <h3 className="flex items-center gap-3 text-2xl font-semibold text-blue-400 mb-3"><FaBook /> Tâm Pháp</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {tamPhapList.length > 0 ? tamPhapList.map(({ learned, def }) => 
-                        def ? <SkillCard key={def.id} playerState={playerState} skillDef={def} currentLevel={learned.currentLevel} onLevelUp={() => onLevelUpSkill(def.id)} /> : null
-                    ) : <p className="text-gray-500 italic col-span-full">Chưa học được tâm pháp nào.</p>}
-                </div>
-            </div>
+            <SkillCategoryDisplay
+                title="Công Pháp"
+                icon={<FaBookDead className="text-red-400" />}
+                skills={congPhapList}
+                playerState={playerState}
+                onLevelUpSkill={onLevelUpSkill}
+            />
+            <SkillCategoryDisplay
+                title="Tâm Pháp"
+                icon={<FaBook className="text-blue-400" />}
+                skills={tamPhapList}
+                playerState={playerState}
+                onLevelUpSkill={onLevelUpSkill}
+            />
         </div>
     );
 };

@@ -173,6 +173,9 @@ export const useCombatManager = (
         updateAndPersistPlayerState(p => {
             if (!p) return p;
 
+            const ageAtDeath = p.time.year - npc.birthTime.year;
+            const newDeathInfo = { ...(p.deathInfo || {}), [npc.id]: { age: ageAtDeath } };
+
             // Handle Loot
             let newInventory: InventorySlot[] = JSON.parse(JSON.stringify(p.inventory));
             allLootItems.forEach(itemLoot => {
@@ -206,6 +209,7 @@ export const useCombatManager = (
                 camNgo: p.camNgo + camNgoGained,
                 activeEffects: [],
                 defeatedNpcIds: [...new Set([...p.defeatedNpcIds, npc.id])],
+                deathInfo: newDeathInfo,
                 linhThach: p.linhThach + linhThachDropped,
                 inventory: newInventory,
             };
@@ -328,40 +332,73 @@ export const useCombatManager = (
                 updatedAttacker.mana -= manaCost;
                 addCombatLog(`${updatedAttacker.name} sử dụng [${skillDef.name}]!`, 'info');
 
-                const result = combatService.calculateSkillDamage({state: updatedAttacker}, skillDef, learnedSkill, {state: updatedDefender});
+                if (skillDef.damage) {
+                    const result = combatService.calculateSkillDamage({state: updatedAttacker}, skillDef, learnedSkill, {state: updatedDefender});
 
-                if (result.incompatibilityPenalty) {
-                    addCombatLog(`Nhưng do vũ khí không phù hợp, uy lực của [${skillDef.name}] đã giảm đi đáng kể!`, 'info');
+                    if (result.incompatibilityPenalty) {
+                        addCombatLog(`Nhưng do vũ khí không phù hợp, uy lực của [${skillDef.name}] đã giảm đi đáng kể!`, 'info');
+                    }
+
+                    if (result.isEvaded) {
+                         addCombatLog(`Nhưng ${updatedDefender.name} đã né được!`, 'evade');
+                         showDamage(targetSide, 'Né', 'evade');
+                    } else {
+                        updatedDefender.hp = Math.max(0, updatedDefender.hp - result.damage);
+                        const logType = result.isCritical ? 'critical' : 'damage';
+                        const damageType = result.isCritical ? 'critical' : 'damage';
+                        addCombatLog(`Kỹ năng gây ${result.damage} sát thương cho ${updatedDefender.name}.${result.isCritical ? ' Thật là một đòn chí mạng!' : ''}`, logType);
+                        showDamage(targetSide, result.damage, damageType);
+                    }
                 }
 
-                if (result.isEvaded) {
-                     addCombatLog(`Nhưng ${updatedDefender.name} đã né được!`, 'evade');
-                     showDamage(targetSide, 'Né', 'evade');
-                } else {
-                    updatedDefender.hp = Math.max(0, updatedDefender.hp - result.damage);
-                    const logType = result.isCritical ? 'critical' : 'damage';
-                    const damageType = result.isCritical ? 'critical' : 'damage';
-                    addCombatLog(`Kỹ năng gây ${result.damage} sát thương cho ${updatedDefender.name}.${result.isCritical ? ' Thật là một đòn chí mạng!' : ''}`, logType);
-                    showDamage(targetSide, result.damage, damageType);
-                }
-                 // Apply status effects
+                 // Apply all effects
                 if (skillDef.effects) {
                     skillDef.effects.forEach(effectDef => {
                         if (Math.random() < effectDef.chance) {
-                            const newEffect: ActiveStatusEffect = {
-                                type: effectDef.type,
-                                duration: effectDef.duration || 1,
-                                value: (effectDef.value || 0) + ((effectDef.valuePerLevel || 0) * (learnedSkill.currentLevel - 1)),
-                                sourceSkillId: skillDef.id,
-                            };
-                            
-                            const existingEffectIndex = updatedDefender.activeEffects.findIndex(e => e.type === newEffect.type);
-                            if (existingEffectIndex > -1) {
-                                updatedDefender.activeEffects[existingEffectIndex] = newEffect;
-                            } else {
-                                updatedDefender.activeEffects.push(newEffect);
+                            switch (effectDef.type) {
+                                case 'HEAL': {
+                                    let healAmount = 0;
+                                    if (effectDef.valueIsPercent) {
+                                        const percentValue = (effectDef.value || 0) + ((effectDef.valuePerLevel || 0) * (learnedSkill.currentLevel - 1));
+                                        healAmount = Math.round(updatedAttacker.stats.maxHp * percentValue);
+                                    } else {
+                                        let flatHeal = (effectDef.value || 0) + ((effectDef.valuePerLevel || 0) * (learnedSkill.currentLevel - 1));
+                                        if (effectDef.scalingAttribute && effectDef.scalingFactor) {
+                                            flatHeal += updatedAttacker.attributes[effectDef.scalingAttribute] * effectDef.scalingFactor;
+                                        }
+                                        healAmount = Math.round(flatHeal);
+                                    }
+                                    
+                                    const newHp = Math.min(updatedAttacker.stats.maxHp, updatedAttacker.hp + healAmount);
+                                    const actualHeal = newHp - updatedAttacker.hp;
+                                    updatedAttacker.hp = newHp;
+                                    
+                                    if (actualHeal > 0) {
+                                        addCombatLog(`${updatedAttacker.name} hồi phục ${actualHeal} sinh lực!`, 'heal');
+                                        showDamage(attackerIsPlayer ? 'player' : 'npc', actualHeal, 'heal');
+                                    }
+                                    break;
+                                }
+                                
+                                // Default case for debuffs applied to defender
+                                default: {
+                                    const newEffect: ActiveStatusEffect = {
+                                        type: effectDef.type,
+                                        duration: effectDef.duration || 1,
+                                        value: (effectDef.value || 0) + ((effectDef.valuePerLevel || 0) * (learnedSkill.currentLevel - 1)),
+                                        sourceSkillId: skillDef.id,
+                                    };
+                                    
+                                    const existingEffectIndex = updatedDefender.activeEffects.findIndex(e => e.type === newEffect.type);
+                                    if (existingEffectIndex > -1) {
+                                        updatedDefender.activeEffects[existingEffectIndex] = newEffect;
+                                    } else {
+                                        updatedDefender.activeEffects.push(newEffect);
+                                    }
+                                    addCombatLog(`${skillDef.name} đã gây hiệu ứng [${EFFECT_TYPE_NAMES[effectDef.type]}] lên ${updatedDefender.name}!`, 'info');
+                                    break;
+                                }
                             }
-                            addCombatLog(`${skillDef.name} đã gây hiệu ứng [${EFFECT_TYPE_NAMES[effectDef.type]}] lên ${updatedDefender.name}!`, 'info');
                         }
                     });
                 }

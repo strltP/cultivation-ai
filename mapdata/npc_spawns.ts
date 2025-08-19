@@ -20,21 +20,24 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             type: 'procedural_monster',
             areaId: 'hasl-area-1',
             monsterBaseIds: ['monster_da_lang'],
-            count: 10,
+            initialCount: 5,
+            maxCount: 10,
             levelRange: [1, 4]
         },
         {
             type: 'procedural_monster',
             areaId: 'hasl-area-2',
             monsterBaseIds: ['monster_hac_ma_chu'],
-            count: 8,
+            initialCount: 4,
+            maxCount: 8,
             levelRange: [2, 5]
         },
         {
             type: 'procedural_monster',
             areaId: 'hasl-area-3',
             monsterBaseIds: ['monster_da_lang', 'monster_hac_ma_chu'],
-            count: 5,
+            initialCount: 2,
+            maxCount: 5,
             levelRange: [4, 7]
         }
     ],
@@ -152,10 +155,10 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
         {
             type: 'procedural',
             roles: [
-                { factionId: 'THANH_VAN_MON', roleNames: ['Môn chủ'], count: 1, poiIds: ['tvm-poi-1'], titleChance: 0.3 },
+                { factionId: 'THANH_VAN_MON', roleNames: ['Môn chủ'], count: 1, poiIds: ['tvm-poi-1'] },
                 { factionId: 'THANH_VAN_MON', roleNames: ['Phó môn chủ'], count: 2, poiIds: ['tvm-poi-1', 'tvm-poi-5'] },
                 { factionId: 'THANH_VAN_MON', roleNames: ['Trưởng lão'], count: 3, poiIds: ['tvm-poi-1', 'tvm-poi-2', 'tvm-poi-3', 'tvm-poi-5'] },
-                { factionId: 'THANH_VAN_MON', roleNames: ['Chân truyền đệ tử'], count: 4, poiIds: ['tvm-poi-2', 'tvm-poi-4'], titleChance: 0.05 },
+                { factionId: 'THANH_VAN_MON', roleNames: ['Chân truyền đệ tử'], count: 4, poiIds: ['tvm-poi-2', 'tvm-poi-4'] },
                 { factionId: 'THANH_VAN_MON', roleNames: ['Nội môn đệ tử'], count: 8, poiIds: ['tvm-poi-4'] },
                 { factionId: 'THANH_VAN_MON', roleNames: ['Ngoại môn đệ tử'], count: 12, poiIds: ['tvm-poi-4', 'tvm-poi-7'] }
             ]

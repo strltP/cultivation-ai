@@ -1,5 +1,6 @@
 
 
+
 import { useState, useLayoutEffect, RefObject } from 'react';
 import type { Position } from '../types/common';
 import type { GameMap, PointOfInterest, MapArea } from '../types/map';
@@ -14,6 +15,7 @@ export const useCamera = (
     const [cameraPosition, setCameraPosition] = useState({ x: 0, y: 0 });
     const [currentZone, setCurrentZone] = useState<string | null>(null);
     const [currentArea, setCurrentArea] = useState<string | null>(null);
+    const [dangerLevel, setDangerLevel] = useState<number | null>(null);
 
     useLayoutEffect(() => {
         if (!gameContainerRef.current) return;
@@ -45,7 +47,11 @@ export const useCamera = (
             playerPosition.y <= area.position.y + area.size.height / 2
         );
         setCurrentArea(area ? area.name : null);
+
+        // Prioritize POI danger level over area danger level
+        setDangerLevel(zone?.dangerLevel ?? area?.dangerLevel ?? null);
+
     }, [playerPosition, currentMapData.size, currentPois, currentMapAreas, gameContainerRef]);
 
-    return { cameraPosition, currentZone, currentArea };
+    return { cameraPosition, currentZone, currentArea, dangerLevel };
 };

@@ -58,14 +58,15 @@ export interface MonsterDefinition {
     attributes: CharacterAttributes; // Base for Lvl 1
     baseStats: Omit<CombatStats, 'maxQi' | 'maxMana' | 'maxThoNguyen'>; // Base for Lvl 1, some stats are irrelevant for monsters
     lootTable: { itemId: string; chance: number; quantity: [number, number]; }[];
-    respawnTimeMinutes: [number, number];
+    repopulationTimeMinutes: [number, number];
 }
 
 export interface ProceduralMonsterRule {
     type: 'procedural_monster';
     areaId: string;
     monsterBaseIds: string[]; 
-    count: number;
+    initialCount: number;
+    maxCount: number;
     levelRange: [number, number];
 }
 

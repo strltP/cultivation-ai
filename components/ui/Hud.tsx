@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import type { PlayerState } from '../../types/character';
 import type { GameMap } from '../../types/map';
 import { getCultivationInfo } from '../../services/cultivationService';
-import { FaMapMarkedAlt, FaCompass, FaYinYang, FaEye, FaEyeSlash, FaBookOpen, FaGem, FaIdCard, FaHourglassHalf } from 'react-icons/fa';
+import { FaMapMarkedAlt, FaCompass, FaYinYang, FaEye, FaEyeSlash, FaBookOpen, FaGem, FaIdCard, FaHourglassHalf, FaRadiationAlt } from 'react-icons/fa';
 import { GiGalaxy, GiBrain, GiScrollQuill, GiCaveEntrance } from 'react-icons/gi';
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
 import TimeDisplay from './TimeDisplay';
+import { EFFECT_TYPE_NAMES } from '../../types/skill';
 
 interface HudProps {
   playerState: PlayerState;
@@ -47,6 +48,7 @@ const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoadi
   const age = playerState.time.year - 1;
   const agePercentage = (age / playerState.stats.maxThoNguyen) * 100;
   const ageColorClass = agePercentage > 90 ? 'text-red-400 animate-pulse' : agePercentage > 75 ? 'text-yellow-400' : 'text-gray-400';
+  const isDebuffed = playerState.activeEffects.some(e => e.type === 'ENVIRONMENTAL_DEBUFF');
 
   let locationDisplay = currentMap.name;
     if (currentArea) {
@@ -70,6 +72,16 @@ const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoadi
                             <div className={`flex items-center gap-x-2 text-sm mt-1 ${ageColorClass}`} title="Tuổi / Thọ Nguyên Tối Đa">
                                 <FaHourglassHalf className={agePercentage > 90 ? 'text-red-400' : agePercentage > 75 ? 'text-yellow-400' : 'text-purple-300'} />
                                 <span>Tuổi: {age} / {playerState.stats.maxThoNguyen}</span>
+                            </div>
+                        )}
+                        {playerState.activeEffects.length > 0 && (
+                            <div className="flex items-center gap-x-2 mt-2">
+                                {playerState.activeEffects.map((effect, index) => (
+                                    <div key={index} className="flex items-center gap-1.5 px-2 py-1 bg-red-900/50 rounded-full text-red-300 text-xs" title={EFFECT_TYPE_NAMES[effect.type]}>
+                                        <FaRadiationAlt />
+                                        <span>{EFFECT_TYPE_NAMES[effect.type]}</span>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </>
@@ -118,8 +130,8 @@ const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoadi
                     </div>
                 </div>
 
-                <AttributeDisplay attributes={playerState.attributes} />
-                <CombatStatDisplay stats={playerState.stats} />
+                <AttributeDisplay attributes={playerState.attributes} isDebuffed={isDebuffed} />
+                <CombatStatDisplay stats={playerState.stats} isDebuffed={isDebuffed} />
             </div>
         </div>
       </div>
@@ -129,7 +141,7 @@ const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoadi
 
       {/* Bottom-Left: Location & Currency Info */}
       <div className="absolute bottom-4 left-4 bg-gray-900/70 p-3 rounded-lg border border-gray-600/50 shadow-md backdrop-blur-sm z-20 flex flex-col gap-y-2">
-        <div className="flex items-center gap-x-2 text-purple-300">
+        <div className={`flex items-center gap-x-2 ${isDebuffed ? 'text-red-400 animate-pulse' : 'text-purple-300'}`}>
             <FaCompass />
             <span className="font-semibold text-sm">{locationDisplay}</span>
         </div>

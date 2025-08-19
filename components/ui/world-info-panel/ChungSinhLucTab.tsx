@@ -11,15 +11,17 @@ interface ChungSinhLucTabProps {
 const NpcCard: React.FC<{ npc: NPC; playerState: PlayerState }> = ({ npc, playerState }) => {
     const isMonster = npc.npcType === 'monster';
     const cultivationInfo = !isMonster ? getCultivationInfo(npc.cultivation!) : null;
-    const age = playerState.time.year - npc.birthTime.year;
     const locationName = MAPS[npc.currentMap]?.name || 'Không rõ';
     const isDefeated = playerState.defeatedNpcIds.includes(npc.id);
+    const deathInfo = isDefeated ? playerState.deathInfo?.[npc.id] : undefined;
+    const age = deathInfo ? deathInfo.age : playerState.time.year - npc.birthTime.year;
 
     return (
-        <div className={`bg-gray-800/60 p-4 rounded-lg border border-gray-700 flex flex-col h-full relative overflow-hidden ${isDefeated ? 'opacity-50' : ''}`}>
+        <div className={`bg-gray-800/60 p-4 rounded-lg border border-gray-700 flex flex-col h-full relative overflow-hidden ${isDefeated ? 'opacity-60' : ''}`}>
             {isDefeated && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-2 text-center">
                     <FaSkullCrossbones className="text-5xl text-red-500/70" />
+                    {deathInfo && <span className="text-xs text-red-300 mt-2 font-semibold">Thân tử đạo tiêu lúc {age} tuổi</span>}
                 </div>
             )}
             <div>

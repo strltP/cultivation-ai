@@ -2,7 +2,7 @@ import React from 'react';
 import type { PlayerState, NPC } from '../../types/character';
 import type { CombatState, ActiveStatusEffect } from '../../types/combat';
 import { getCultivationInfo } from '../../services/cultivationService';
-import { FaUserShield, FaUserNinja, FaBolt, FaBurn, FaHandPaper, FaPlusCircle } from 'react-icons/fa';
+import { FaUserShield, FaUserNinja, FaBolt, FaBurn, FaHandPaper, FaPlusCircle, FaRadiationAlt } from 'react-icons/fa';
 import { EFFECT_TYPE_NAMES } from '../../types/skill';
 import { GiWyvern } from 'react-icons/gi';
 
@@ -22,6 +22,7 @@ const effectIcons: Record<ActiveStatusEffect['type'], React.ReactNode> = {
     POISON: <div />, // Add icon later
     BUFF: <div />,
     DEBUFF: <div />,
+    ENVIRONMENTAL_DEBUFF: <FaRadiationAlt className="text-red-400" />,
 };
 
 const CombatantDisplay: React.FC<CombatantDisplayProps> = ({ combatant, isPlayer, isTurn, damageToShow, damageKey }) => {

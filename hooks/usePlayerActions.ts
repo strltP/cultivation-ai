@@ -65,11 +65,11 @@ export const usePlayerActions = (
                 // Advance time first to use it for Qi calculation
                 const newTime = advanceTime(prev.time, MINUTES_PER_TICK);
 
-                // Calculate Qi gain: 1 Qi every 2 hours
+                // Calculate Qi gain: 1 Qi every 6 hours
                 let qiGained = 0;
                 if (!isQiFull) {
-                    // Check if the hour has changed and if the new hour is an even number
-                    if (newTime.hour !== prev.time.hour && newTime.hour % 2 === 0) {
+                    // Check if the hour has changed and if the new hour is a multiple of 6
+                    if (newTime.hour !== prev.time.hour && newTime.hour % 6 === 0) {
                         qiGained = 1;
                     }
                 }
@@ -183,8 +183,8 @@ export const usePlayerActions = (
             const totalMinutesToAdvance = months * DAYS_PER_MONTH * 24 * 60;
             const totalHoursToAdvance = months * DAYS_PER_MONTH * 24;
             
-            const SECLUSION_QI_PER_HOUR_BASE = 0.5;
-            const NGO_TINH_FACTOR_QI = 0.02;
+            const SECLUSION_QI_PER_HOUR_BASE = 0.15;
+            const NGO_TINH_FACTOR_QI = 0.005;
             const realmMultiplier = 1 + (prev.cultivation.realmIndex * 0.15);
             const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (prev.attributes.ngoTinh * NGO_TINH_FACTOR_QI)) * realmMultiplier;
             const totalQiGained = Math.round(qiPerHour * totalHoursToAdvance);
@@ -265,7 +265,7 @@ export const usePlayerActions = (
             const newLearnedSkills = prev.learnedSkills.map(s => 
                 s.skillId === skillId ? { ...s, currentLevel: s.currentLevel + 1 } : s
             );
-            const { finalStats, finalAttributes } = calculateAllStats(prev.attributes, prev.cultivation, prev.cultivationStats, newLearnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
+            const { finalStats, finalAttributes } = calculateAllStats(INITIAL_PLAYER_STATE.attributes, prev.cultivation, prev.cultivationStats, newLearnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
             
             const message = `"${skillDef.name}" đã được tu luyện tới tầng ${skillToLevelUp.currentLevel + 1}! (Tiêu tốn ${cost} Cảm Ngộ và 2 giờ)`;
             setGameMessage(message);

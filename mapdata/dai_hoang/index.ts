@@ -15,7 +15,8 @@ export const mapAreas: MapArea[] = [
         type: 'region',
         position: { x: 2000, y: 3000 }, 
         size: { width: 3800, height: 5800 }, 
-        style: { borderColor: 'rgba(234, 179, 8, 0.4)', backgroundColor: 'rgba(234, 179, 8, 0.05)' } 
+        style: { borderColor: 'rgba(234, 179, 8, 0.4)', backgroundColor: 'rgba(234, 179, 8, 0.05)' },
+        dangerLevel: 2,
     },
     { 
         id: 'dh-area-2', 
@@ -23,7 +24,8 @@ export const mapAreas: MapArea[] = [
         type: 'region',
         position: { x: 6000, y: 3000 }, 
         size: { width: 3800, height: 5800 }, 
-        style: { borderColor: 'rgba(249, 115, 22, 0.4)', backgroundColor: 'rgba(249, 115, 22, 0.05)' } 
+        style: { borderColor: 'rgba(249, 115, 22, 0.4)', backgroundColor: 'rgba(249, 115, 22, 0.05)' },
+        dangerLevel: 3,
     },
 ];
 export const pois: PointOfInterest[] = [

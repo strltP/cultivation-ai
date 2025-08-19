@@ -13,7 +13,8 @@ interface ProceduralSpawnRule {
     type: 'procedural';
     areaId: string; // Tương ứng với 'id' của một MapArea trong file bản đồ
     itemWeights: Record<string, number>; // Ánh xạ từ baseId của vật phẩm đến "trọng số" hiếm của nó
-    count: number; // Tổng số lượng vật phẩm sẽ được sinh ra trong khu vực này
+    initialCount: number; // Số lượng vật phẩm ban đầu
+    maxCount: number; // Số lượng tối đa mà khu vực này sẽ duy trì
 }
 
 // Mỗi bản đồ có thể chứa một danh sách kết hợp cả vật phẩm thủ công và vật phẩm sinh ra ngẫu nhiên
@@ -35,7 +36,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'herb_thanh_phong_hoa': 3,   // Thảo dược hiếm hơn một chút
                 'herb_bach_linh_sam_node': 2,
             },
-            count: 150 // Sinh ra 150 tài nguyên trong đế quốc rộng lớn
+            initialCount: 150,
+            maxCount: 150
         },
         // Quy tắc sinh ngẫu nhiên cho Vô Tận Thảo Nguyên (id: 'area-2')
         {
@@ -49,7 +51,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'herb_bach_linh_sam_node': 10,
                 'herb_phuong_hoang_niet_ban_hoa_node': 1, // Cực hiếm
             },
-            count: 120 // Sinh ra tổng cộng 120 cây thảo dược rải rác trong khu vực này
+            initialCount: 120,
+            maxCount: 120
         },
         // Quy tắc sinh ngẫu nhiên cho Thiên Nguyên Sơn (id: 'area-3')
         {
@@ -65,7 +68,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'herb_ngan_tuy_hoa_node': 2,
                 'stone_tinh_ngan_khoang_node': 1,
             },
-            count: 80 // Sinh ra 80 mỏ khoáng thạch và thảo dược rải rác
+            initialCount: 80,
+            maxCount: 80
         },
         // Quy tắc sinh ngẫu nhiên cho Hoa Phong Châu (id: 'area-5')
         {
@@ -79,7 +83,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'herb_linh_thao_hiem': 2,     // Thảo dược hiếm
                 'herb_tu_van_thao_node': 1,
             },
-            count: 70 
+            initialCount: 70,
+            maxCount: 70 
         },
     ],
     HAC_AM_SAM_LAM: [
@@ -93,7 +98,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'herb_huyet_tinh_chi_node': 8,
                 'herb_am_cot_hoa_node': 4,
             },
-            count: 40,
+            initialCount: 40,
+            maxCount: 40,
         },
         {
             type: 'procedural',
@@ -103,7 +109,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'herb_tuyet_ngoc_chi_node': 6,
                 'stone_co_bia': 1,
             },
-            count: 30,
+            initialCount: 30,
+            maxCount: 30,
         },
         {
             type: 'procedural',
@@ -113,7 +120,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'stone_ma_van_moc_node': 5,
                 'chest_bi_lang_quen': 2,
             },
-            count: 20,
+            initialCount: 20,
+            maxCount: 20,
         }
     ],
     LUC_YEN_THON: [
@@ -126,7 +134,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'herb_tinh_luc_thao_node': 8,
                 'herb_huyet_tinh_chi_node': 3,
             },
-            count: 20,
+            initialCount: 20,
+            maxCount: 20,
         }
     ],
     THAT_HUYEN_THANH: [
@@ -147,7 +156,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'herb_bach_linh_sam_node': 3,
                 'stone_lam_ngoc_node': 2,
             },
-            count: 25
+            initialCount: 25,
+            maxCount: 25
         }
     ],
     DUOC_VIEN: [
@@ -179,7 +189,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'herb_bat_tu_than_moc_diep_node': 5,
                 'herb_cuu_u_huyen_thuy_tinh_node': 2,
             },
-            count: 100,
+            initialCount: 100,
+            maxCount: 100,
         },
         {
             type: 'procedural',
@@ -191,7 +202,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'herb_bach_linh_sam_node': 3,
                 'stone_lam_ngoc_node': 2,
             },
-            count: 120,
+            initialCount: 120,
+            maxCount: 120,
         }
     ],
     HUYEN_NGOC_THANH: [],
@@ -209,7 +221,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'chest_bi_lang_quen': 2,
                 'stone_lam_ngoc_node': 3,
             },
-            count: 150
+            initialCount: 150,
+            maxCount: 150
         },
         {
             type: 'procedural',
@@ -222,7 +235,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
                 'herb_thai_bach_kim_tinh_qua_node': 5,
                 'herb_hon_don_tuc_nhuong_node': 2,
             },
-            count: 100
+            initialCount: 100,
+            maxCount: 100
         },
     ],
     DONG_HAI: [],

@@ -43,7 +43,7 @@ const CombatUI: React.FC<CombatUIProps> = ({ combatState, onAction, onClose, onK
 
     const playerSkills = player.learnedSkills
         .map(ls => ALL_SKILLS.find(s => s.id === ls.skillId))
-        .filter((s): s is Skill => !!(s && s.type === 'CONG_PHAP' && s.damage));
+        .filter((s): s is Skill => !!(s && s.type === 'CONG_PHAP' && (s.damage || s.effects)));
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-around p-8 animate-fade-in" style={combatBackgroundStyle}>

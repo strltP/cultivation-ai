@@ -17,7 +17,11 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
     ...BASE_INITIAL_PLAYER_STATE,
     journal: [],
     saveVersion: CURRENT_SAVE_VERSION,
+    nextMonsterSpawnCheck: {},
+    nextInteractableSpawnCheck: {},
+    harvestedInteractableIds: [],
     lastNpcProgressionCheck: { year: 17, season: 'Xuân', month: 1, day: 1, hour: 8, minute: 0 },
+    deathInfo: {},
 };
 export { DAYS_PER_MONTH };
 
@@ -121,10 +125,13 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         if (!parsed.generatedNpcs) parsed.generatedNpcs = {};
         if (!parsed.generatedInteractables) parsed.generatedInteractables = {};
         if (!parsed.defeatedNpcIds) parsed.defeatedNpcIds = [];
+        if (!parsed.harvestedInteractableIds) parsed.harvestedInteractableIds = [];
+        if (!parsed.deathInfo) parsed.deathInfo = {};
         if (!parsed.plantedPlots) parsed.plantedPlots = [];
-        if (!parsed.respawningInteractables) parsed.respawningInteractables = [];
+        if (parsed.respawningInteractables) delete parsed.respawningInteractables; // Migration from old system
         if (!parsed.respawningNpcs) parsed.respawningNpcs = [];
         if (parsed.useRandomNames === undefined) parsed.useRandomNames = false;
+        if (!parsed.initializedMaps) parsed.initializedMaps = [];
         if (!parsed.nameOverrides) parsed.nameOverrides = {};
         if (parsed.camNgo === undefined) parsed.camNgo = 0;
         if (!parsed.chatHistories) parsed.chatHistories = {};
@@ -137,6 +144,13 @@ const processLoadedState = (parsed: any): PlayerState | null => {
             type: entry.type || 'player'
         }));
         if (!parsed.lastNpcProgressionCheck) parsed.lastNpcProgressionCheck = parsed.time;
+        if (parsed.lastPopCheck) { // Migration
+            parsed.nextMonsterSpawnCheck = parsed.lastPopCheck;
+            delete parsed.lastPopCheck;
+        }
+        if (!parsed.nextMonsterSpawnCheck) parsed.nextMonsterSpawnCheck = {};
+        if (!parsed.nextInteractableSpawnCheck) parsed.nextInteractableSpawnCheck = {};
+
         
         // Add checks for numeric stats that might be missing in old saves.
         if (typeof parsed.hp !== 'number' || isNaN(parsed.hp)) parsed.hp = parsed.stats?.maxHp || 50;
@@ -212,7 +226,7 @@ const processLoadedState = (parsed: any): PlayerState | null => {
 
         // Always recalculate stats on load to apply balancing changes and new properties.
         const { finalStats, finalAttributes } = calculateAllStats(
-            parsed.attributes, 
+            INITIAL_PLAYER_STATE.attributes, 
             parsed.cultivation, 
             parsed.cultivationStats,
             parsed.learnedSkills || [], 

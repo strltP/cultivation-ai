@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { GameProvider, useUI, useCombat, useInteraction, useWorld, usePlayerActions } from './hooks/useGameContext';
 import { useCamera } from './hooks/useCamera';
 import { useGameLoop } from './hooks/useGameLoop';
@@ -10,6 +10,7 @@ import WorldRenderer from './components/world/WorldRenderer';
 import CharacterCreation from './components/CharacterCreation';
 import ChatPanel from './components/ui/ChatPanel';
 import { useDebounce } from './hooks/useDebounce';
+import DangerZoneOverlay from './components/DangerZoneOverlay';
 
 
 const App: React.FC = () => {
@@ -52,6 +53,8 @@ const GameWorld: React.FC = () => {
     const gameContainerRef = React.useRef<HTMLDivElement>(null);
     const playerRef = React.useRef<HTMLDivElement>(null);
     const [isGameOver, setIsGameOver] = React.useState(false);
+    const [isInDangerZone, setIsInDangerZone] = useState(false);
+    const environmentalDamageInterval = useRef<number | null>(null);
 
     // --- CONTEXT HOOKS ---
     const { 
@@ -67,7 +70,7 @@ const GameWorld: React.FC = () => {
         isSeclusionPanelOpen,
     } = useUI(); // playerState is now from context
     const { combatState } = useCombat();
-    const { isLoading, currentPois, currentNpcs, currentInteractables, currentTeleportGates, currentMapAreas } = useWorld();
+    const { isLoading, currentPois, currentNpcs, currentInteractables, currentTeleportGates, currentMapAreas, setGameMessage } = useWorld();
     const { isMeditating } = usePlayerActions();
     const { 
         pendingInteraction, 
@@ -101,15 +104,84 @@ const GameWorld: React.FC = () => {
     const isPaused = !isGameReady || isMapOpen || isJournalOpen || isLoading || !!combatState || isGameOver || !!chatTargetNpc || !!plantingPlot || isAlchemyPanelOpen || isSeclusionPanelOpen;
     useGameLoop(playerState!, updateAndPersistPlayerState, isPaused, isMeditating, pendingInteraction);
     
-    // --- CAMERA ---
+    // --- CAMERA & DANGER ZONE ---
     const currentMapData = allMaps[playerState!.currentMap];
-    const { cameraPosition, currentZone, currentArea } = useCamera(
+    const { cameraPosition, currentZone, currentArea, dangerLevel } = useCamera(
         playerState!.position,
         currentMapData,
         currentPois,
         currentMapAreas,
         gameContainerRef
     );
+
+    // --- DANGER ZONE EFFECTS LOGIC ---
+    useEffect(() => {
+        const playerRealm = playerState.cultivation.realmIndex;
+        const isUnderleveled = dangerLevel !== null && playerRealm < dangerLevel;
+
+        setIsInDangerZone(isUnderleveled);
+
+        // Clear previous interval
+        if (environmentalDamageInterval.current) {
+            clearInterval(environmentalDamageInterval.current);
+            environmentalDamageInterval.current = null;
+        }
+        
+        const hasDebuff = playerState.activeEffects.some(e => e.type === 'ENVIRONMENTAL_DEBUFF');
+
+        if (isUnderleveled) {
+             if (!hasDebuff) {
+                updateAndPersistPlayerState(p => ({
+                    ...p,
+                    activeEffects: [...p.activeEffects, { type: 'ENVIRONMENTAL_DEBUFF', duration: Infinity, value: 0, sourceSkillId: 'world' }]
+                }));
+            }
+
+            environmentalDamageInterval.current = window.setInterval(() => {
+                let messageShown = false;
+                updateAndPersistPlayerState(p => {
+                    if (p.hp <= 0) return p;
+
+                    let newMana = p.mana;
+                    let newHp = p.hp;
+
+                    // Damage Mana first, then HP
+                    if (newMana > 0) {
+                        const manaDamage = Math.max(1, Math.floor(p.stats.maxMana * 0.02)); // 2% max mana damage
+                        newMana = Math.max(0, p.mana - manaDamage);
+                    } else {
+                        const hpDamage = Math.max(1, Math.floor(p.stats.maxHp * 0.01)); // 1% max hp damage
+                        newHp = Math.max(0, p.hp - hpDamage);
+                    }
+                    
+                    if (!messageShown) {
+                         setGameMessage(`Linh khí cuồng bạo ở ${currentZone || currentArea} đang ăn mòn cơ thể bạn!`);
+                         messageShown = true;
+                    }
+
+                    return { ...p, hp: newHp, mana: newMana };
+                });
+            }, 4000); // Damage every 4 seconds
+
+        } else {
+            if (hasDebuff) {
+                 updateAndPersistPlayerState(p => ({
+                    ...p,
+                    activeEffects: p.activeEffects.filter(e => e.type !== 'ENVIRONMENTAL_DEBUFF')
+                }));
+            }
+        }
+
+        // Cleanup function for when component unmounts or dependencies change
+        return () => {
+            if (environmentalDamageInterval.current) {
+                clearInterval(environmentalDamageInterval.current);
+                environmentalDamageInterval.current = null;
+            }
+        };
+
+    }, [dangerLevel, playerState.cultivation.realmIndex, playerState.activeEffects, updateAndPersistPlayerState, currentArea, currentZone, setGameMessage]);
+
     
     // --- EVENT HANDLERS ---
     const handleWorldClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -143,6 +215,7 @@ const GameWorld: React.FC = () => {
 
     return (
         <div ref={gameContainerRef} className={`relative w-full h-full overflow-hidden ${combatState || chatTargetNpc ? '' : 'bg-gray-900'}`}>
+            <DangerZoneOverlay isActive={isInDangerZone} />
             {!combatState && !chatTargetNpc && (
                  <WorldRenderer
                     playerRef={playerRef}
