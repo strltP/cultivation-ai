@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { PlayerState } from '../../types/character';
-import { FaBookDead, FaBook, FaBoxOpen, FaUsers } from 'react-icons/fa';
+import { FaBookDead, FaBook, FaBoxOpen, FaUsers, FaGlobeAsia } from 'react-icons/fa';
 import { GiDiamondHard, GiGalaxy } from 'react-icons/gi';
 import CongPhapTab from './world-info-panel/CongPhapTab';
 import TamPhapTab from './world-info-panel/TamPhapTab';
@@ -8,18 +8,20 @@ import VatPhamTab from './world-info-panel/VatPhamTab';
 import TrangBiTab from './world-info-panel/TrangBiTab';
 import LinhCanWorldInfoTab from './world-info-panel/LinhCanTab';
 import ChungSinhLucTab from './world-info-panel/ChungSinhLucTab';
+import TheGioiTab from './world-info-panel/TheGioiTab';
 
 interface WorldInfoPanelProps {
   onClose: () => void;
   playerState: PlayerState;
 }
 
-type ActiveTab = 'congphap' | 'tamphap' | 'linhcan' | 'vatpham' | 'trangbi' | 'chungsinh';
+type ActiveTab = 'thegioi' | 'congphap' | 'tamphap' | 'linhcan' | 'vatpham' | 'trangbi' | 'chungsinh';
 
 const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({ onClose, playerState }) => {
-    const [activeTab, setActiveTab] = useState<ActiveTab>('congphap');
+    const [activeTab, setActiveTab] = useState<ActiveTab>('thegioi');
 
     const tabs: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
+        { id: 'thegioi', label: 'Tổng Quan Thế Giới', icon: <FaGlobeAsia /> },
         { id: 'congphap', label: 'Công Pháp', icon: <FaBookDead /> },
         { id: 'tamphap', label: 'Tâm Pháp', icon: <FaBook /> },
         { id: 'linhcan', label: 'Linh Căn', icon: <GiGalaxy /> },
@@ -30,6 +32,8 @@ const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({ onClose, playerState })
 
     const renderContent = () => {
         switch (activeTab) {
+            case 'thegioi':
+                return <TheGioiTab />;
             case 'congphap':
                 return <CongPhapTab />;
             case 'tamphap':

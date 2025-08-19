@@ -128,7 +128,11 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         if (!parsed.harvestedInteractableIds) parsed.harvestedInteractableIds = [];
         if (!parsed.deathInfo) parsed.deathInfo = {};
         if (!parsed.plantedPlots) parsed.plantedPlots = [];
-        if (parsed.respawningInteractables) delete parsed.respawningInteractables; // Migration from old system
+        // Migration from an old system used an object here. The new system uses an array.
+        // Ensure it is always an array. If it's an incompatible format, it will be replaced.
+        if (!Array.isArray(parsed.respawningInteractables)) {
+            parsed.respawningInteractables = [];
+        }
         if (!parsed.respawningNpcs) parsed.respawningNpcs = [];
         if (parsed.useRandomNames === undefined) parsed.useRandomNames = false;
         if (!parsed.initializedMaps) parsed.initializedMaps = [];
