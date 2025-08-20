@@ -1,17 +1,21 @@
 import React from 'react';
 import type { PlayerState } from '../../../types/character';
-import type { Skill as SkillDef } from '../../../types/skill';
+import type { Skill as SkillDef, SkillUpgrade } from '../../../types/skill';
 import { ALL_SKILLS, SKILL_TIER_INFO } from '../../../data/skills/skills';
-import { FaBookDead, FaBook, FaPlus, FaBolt, FaExclamationCircle } from 'react-icons/fa';
+import { FaBookDead, FaBook, FaPlus, FaBolt, FaExclamationCircle, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { GiBrain, GiMuscleUp, GiCrossedSwords, GiBroadsword } from 'react-icons/gi';
 import { WEAPON_TYPE_NAMES } from '../../../types/equipment';
 import { EFFECT_TYPE_NAMES } from '../../../types/skill';
+import { calculateSkillAttributesForLevel } from '../../../services/cultivationService';
+
 
 const ATTRIBUTE_NAMES: Record<string, string> = {
     canCot: 'Căn Cốt',
     thanPhap: 'Thân Pháp',
     thanThuc: 'Thần Thức',
     ngoTinh: 'Ngộ Tính',
+    coDuyen: 'Cơ Duyên',
+    tamCanh: 'Tâm Cảnh',
     maxHp: 'Sinh Lực Tối đa',
     maxQi: 'Chân Khí Tối đa',
     maxMana: 'Linh Lực Tối đa',
@@ -20,15 +24,50 @@ const ATTRIBUTE_NAMES: Record<string, string> = {
     speed: 'Tốc Độ',
     critRate: 'Tỉ lệ Bạo kích',
     critDamage: 'ST Bạo kích',
-    evasionRate: 'Tỉ lệ Né tránh',
+    armorPenetration: 'Xuyên Giáp',
+};
+
+const getUpgradeDescription = (upgrade: SkillUpgrade): { text: string, color: string, icon: React.ReactNode }[] => {
+    const descriptions: { text: string, color: string, icon: React.ReactNode }[] = [];
+    if (upgrade.damageIncrease) descriptions.push({ text: `Sát thương +${upgrade.damageIncrease}`, color: 'text-red-400', icon: <GiCrossedSwords /> });
+    if (upgrade.manaCostIncrease) descriptions.push({ text: `Linh lực tiêu hao +${upgrade.manaCostIncrease}`, color: 'text-cyan-400', icon: <FaBolt /> });
+    if (upgrade.manaCostPercentIncrease) descriptions.push({ text: `Linh lực tiêu hao +${upgrade.manaCostPercentIncrease * 100}% tối đa`, color: 'text-cyan-400', icon: <FaBolt /> });
+    
+    if (upgrade.addEffect) {
+        descriptions.push({ text: `Hiệu ứng mới: ${EFFECT_TYPE_NAMES[upgrade.addEffect.type]}`, color: 'text-yellow-300', icon: <FaPlus /> });
+    }
+    if (upgrade.modifyEffect) {
+        const { type, chanceIncrease, durationIncrease, valueIncrease } = upgrade.modifyEffect;
+        if (chanceIncrease) descriptions.push({ text: `${EFFECT_TYPE_NAMES[type]} tỉ lệ +${chanceIncrease * 100}%`, color: 'text-yellow-400', icon: <FaArrowUp /> });
+        if (durationIncrease) descriptions.push({ text: `${EFFECT_TYPE_NAMES[type]} thời gian +${durationIncrease} hiệp`, color: 'text-yellow-400', icon: <FaArrowUp /> });
+        if (valueIncrease) descriptions.push({ text: `${EFFECT_TYPE_NAMES[type]} hiệu quả +${valueIncrease}`, color: 'text-yellow-400', icon: <FaArrowUp /> });
+    }
+
+    if(upgrade.addBonus) {
+        const { targetStat, targetAttribute, modifier, value } = upgrade.addBonus;
+        const targetKey = targetStat || targetAttribute;
+        if(targetKey) {
+            const name = ATTRIBUTE_NAMES[targetKey] || targetKey;
+            const isMultiplier = modifier === 'MULTIPLIER';
+            const displayValue = isMultiplier ? `${(value * 100).toFixed(1)}%` : `${Math.round(value)}`;
+            descriptions.push({ text: `${name} +${displayValue}`, color: 'text-green-300', icon: <FaArrowUp /> });
+        }
+    }
+
+    return descriptions;
 };
 
 const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; currentLevel: number; onLevelUp: () => void }> = ({ playerState, skillDef, currentLevel, onLevelUp }) => {
     const tierInfo = SKILL_TIER_INFO[skillDef.tier];
     const isMaxLevel = currentLevel >= skillDef.maxLevel;
-    const cost = skillDef.enlightenmentBaseCost + currentLevel * skillDef.enlightenmentCostPerLevel;
+
+    const exponent = skillDef.enlightenmentCostExponent || 1;
+    const cost = Math.round(skillDef.enlightenmentBaseCost + skillDef.enlightenmentCostPerLevel * Math.pow(currentLevel, exponent));
+    
     const canAfford = playerState.camNgo >= cost;
 
+    const currentStats = calculateSkillAttributesForLevel(skillDef, currentLevel);
+    const nextLevelUnlock = skillDef.levelBonuses.find(lu => lu.level === currentLevel + 1);
 
     return (
         <div className="bg-gray-800/60 p-4 rounded-lg border border-gray-700 flex flex-col justify-between h-full">
@@ -39,7 +78,7 @@ const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; curren
                 </div>
                 <p className="text-gray-400 mt-2 text-sm italic whitespace-pre-wrap">{skillDef.description}</p>
                 
-                 {/* Details Section */}
+                 {/* Current Stats Section */}
                 <div className="mt-3 pt-3 border-t border-gray-700/50 space-y-1 text-sm">
                     {skillDef.weaponType && (
                         <div className="flex items-center justify-between">
@@ -52,65 +91,38 @@ const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; curren
                             {skillDef.manaCost !== undefined && (
                                 <div className="flex items-center justify-between">
                                     <span className="flex items-center gap-2 text-gray-400"><FaBolt className="text-cyan-400" /> Linh Lực:</span>
-                                    <span className="font-semibold text-cyan-300">{skillDef.manaCost + (skillDef.manaCostPerLevel || 0) * (currentLevel - 1)}</span>
+                                    <span className="font-semibold text-cyan-300">
+                                        { currentStats.manaCost }
+                                        { currentStats.manaCostPercent > 0 && ` + ${Math.round(currentStats.manaCostPercent * 100)}%`}
+                                    </span>
                                 </div>
                             )}
                             {skillDef.damage && (() => {
-                                const baseDmg = skillDef.damage.baseValue + skillDef.damage.valuePerLevel * (currentLevel - 1);
-                                const attackPowerDmg = playerState.stats.attackPower * (skillDef.damage.attackPowerFactor || 0);
-                                const scalingDmg = skillDef.damage.scalingAttribute ? playerState.attributes[skillDef.damage.scalingAttribute] * (skillDef.damage.scalingFactor || 0) : 0;
-                                const totalDmg = Math.round(baseDmg + attackPowerDmg + scalingDmg);
-                                const titleText = `Cơ bản: ${Math.round(baseDmg)}\nLực Công: ${Math.round(attackPowerDmg)}\nThuộc tính: ${Math.round(scalingDmg)}`;
+                                let totalDmg = currentStats.damage;
+                                if (skillDef.damage?.attackPowerFactor) totalDmg += playerState.stats.attackPower * skillDef.damage.attackPowerFactor;
+                                if (skillDef.damage?.scalingAttribute && skillDef.damage.scalingFactor) totalDmg += playerState.attributes[skillDef.damage.scalingAttribute] * skillDef.damage.scalingFactor;
                                 return (
                                     <div className="flex items-center justify-between">
                                         <span className="flex items-center gap-2 text-gray-400"><GiCrossedSwords className="text-red-400" /> Sát Thương:</span>
-                                        <span className="font-semibold text-red-400" title={titleText}>
-                                            ~{totalDmg}
-                                        </span>
+                                        <span className="font-semibold text-red-400">~{Math.round(totalDmg)}</span>
                                     </div>
                                 );
                             })()}
-                            {skillDef.effects?.map((effect, index) => {
-                                let text = '';
-                                if (effect.type === 'HEAL') {
-                                    if (effect.valueIsPercent) {
-                                        const totalPercent = ((effect.value || 0) + (effect.valuePerLevel || 0) * (currentLevel - 1)) * 100;
-                                        text = `Hồi Phục: ~${totalPercent.toFixed(0)}% Sinh Lực`;
-                                    } else {
-                                        const baseHeal = (effect.value || 0) + ((effect.valuePerLevel || 0) * (currentLevel - 1));
-                                        let scalingHeal = 0;
-                                        if (effect.scalingAttribute && effect.scalingFactor) {
-                                            scalingHeal = playerState.attributes[effect.scalingAttribute] * effect.scalingFactor;
-                                        }
-                                        const totalHeal = Math.round(baseHeal + scalingHeal);
-                                        text = `Hồi Phục: ~${totalHeal} Sinh Lực`;
-                                    }
-                                } else {
-                                    if (effect.chance === 1) {
-                                        text = `Gây ${EFFECT_TYPE_NAMES[effect.type]}`;
-                                        if(effect.duration) text += ` (${effect.duration} hiệp)`;
-                                    } else {
-                                        text = `${EFFECT_TYPE_NAMES[effect.type]} (${effect.chance * 100}%)`;
-                                        if(effect.duration) text += `, ${effect.duration} hiệp`;
-                                    }
-                                }
-                                return (
-                                    <div key={index} className="flex items-center justify-between text-yellow-400/90">
-                                        <span className="flex items-center gap-2 text-gray-400"><FaExclamationCircle /> Hiệu ứng:</span>
-                                        <span title={`Cơ hội xảy ra: ${effect.chance * 100}%`}>{text}</span>
-                                    </div>
-                                )
-                            })}
+                             {currentStats.effects.map((effect, index) => (
+                                <div key={index} className="flex items-center justify-between text-yellow-400/90">
+                                    <span className="flex items-center gap-2 text-gray-400"><FaExclamationCircle /> Hiệu ứng:</span>
+                                    <span>{EFFECT_TYPE_NAMES[effect.type]} ({effect.chance * 100}%, {effect.duration} hiệp)</span>
+                                </div>
+                            ))}
                         </>
                     )}
 
-                    {skillDef.type === 'TAM_PHAP' && skillDef.bonuses.map((bonus, index) => {
+                    {skillDef.type === 'TAM_PHAP' && currentStats.bonuses.map((bonus, index) => {
                         const targetKey = bonus.targetStat || bonus.targetAttribute;
                         if (!targetKey) return null;
                         const name = ATTRIBUTE_NAMES[targetKey] || targetKey;
-                        const value = bonus.valuePerLevel * currentLevel;
                         const isMultiplier = bonus.modifier === 'MULTIPLIER';
-                        const displayValue = isMultiplier ? `${(value * 100).toFixed(1)}%` : `${Math.round(value)}`;
+                        const displayValue = isMultiplier ? `${(bonus.value * 100).toFixed(1)}%` : `${Math.round(bonus.value)}`;
 
                         return (
                              <div key={index} className="flex items-center justify-between">
@@ -120,8 +132,23 @@ const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; curren
                         );
                     })}
                 </div>
+                
+                 {/* Next Level Bonus Section */}
+                {!isMaxLevel && nextLevelUnlock && (
+                    <div className="mt-3 pt-3 border-t-2 border-dashed border-yellow-700/50">
+                        <h4 className="font-semibold text-yellow-200 text-center mb-2">Nâng cấp Tầng {currentLevel + 1}</h4>
+                        <div className="space-y-1 text-sm">
+                            {getUpgradeDescription(nextLevelUnlock.upgrade).map((desc, i) => (
+                                <div key={i} className={`flex items-center gap-2 ${desc.color}`}>
+                                    {desc.icon}
+                                    <span>{desc.text}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-4 flex items-center justify-between pt-2">
                 <div className="text-sm font-semibold text-cyan-300">
                     Tầng: <span className="text-xl text-white">{currentLevel}</span> / {skillDef.maxLevel}
                 </div>

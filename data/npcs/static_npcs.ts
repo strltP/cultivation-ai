@@ -1,14 +1,12 @@
-
-
 import type { StaticNpcDefinition } from './npc_types';
 
 export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
     {
-        baseId: 'lao_ma',
+        baseId: 'lao_ma_luc_yen',
         name: 'Lão Mã',
         gender: 'Nam',
-        role: 'Chủ Tiệm Rèn',
-        factionId: 'THAT_HUYEN_THANH',
+        role: 'Thợ Rèn',
+        factionId: 'LUC_YEN_THON',
         power: 40,
         behaviors: ['TRADER', 'GATHERER_ORE'],
         prompt: 'Lão Mã đang cặm cụi bên lò rèn, mồ hôi nhễ nhại. Thấy bạn, lão chỉ gật đầu rồi lại tiếp tục công việc. "Cần rèn gì không, tiểu hữu?"',
@@ -24,6 +22,10 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         equipment: {
             ARMOR: { itemId: 'armor_thiet_giap' }
         },
+        relationships: [
+            { targetNpcId: 'npc-ly-tieu-nhi-luc-yen-1', type: 'father' },
+            { targetNpcId: 'npc-ma-tau-luc-yen-1', type: 'husband' }
+        ],
         linhThach: 150,
         camNgo: 800,
         forSale: [
@@ -33,14 +35,35 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         ]
     },
     {
-        baseId: 'ly_tieu_nhi',
-        name: 'Lý Tiểu Nhị',
-        gender: 'Nam',
-        role: 'Tiểu Nhị Tửu Lâu',
-        factionId: 'THAT_HUYEN_THANH',
-        power: 8,
+        baseId: 'ma_tau_luc_yen',
+        name: 'Mã tẩu',
+        gender: 'Nữ',
+        role: 'Thôn dân',
+        factionId: 'LUC_YEN_THON',
+        power: 5,
         behaviors: ['WANDERER'],
-        prompt: 'Lý Tiểu Nhị nhanh nhẹn lau bàn, thấy bạn liền đon đả mời chào. "Khách quan, ngài muốn dùng chút rượu hay đồ ăn gì không? Thiên Mã Tửu Lâu của chúng tôi có đủ cả."',
+        prompt: 'Một người phụ nữ trung niên phúc hậu đang phơi quần áo, thấy bạn liền mỉm cười chào. "Tiểu hữu đến thôn chơi à? Cần giúp gì cứ nói nhé."',
+        realmName: 'Luyện Khí',
+        levelDescription: 'Tầng 2',
+        attributes: { canCot: 10, thanPhap: 10, thanThuc: 10, ngoTinh: 12, coDuyen: 15, tamCanh: 12 },
+        age: 55,
+        linhCan: [{ type: 'MOC', purity: 30 }],
+        relationships: [
+            { targetNpcId: 'npc-lao-ma-luc-yen-1', type: 'wife' },
+            { targetNpcId: 'npc-ly-tieu-nhi-luc-yen-1', type: 'mother' }
+        ],
+        linhThach: 20,
+        camNgo: 50
+    },
+    {
+        baseId: 'ly_tieu_nhi_luc_yen',
+        name: 'Mã Tiểu Hổ',
+        gender: 'Nam',
+        role: 'Thôn dân',
+        factionId: 'LUC_YEN_THON',
+        power: 8,
+        behaviors: ['WANDERER', 'GATHERER_HERB'],
+        prompt: 'Một thiếu niên trạc tuổi trông khá lanh lợi, đang xách thùng nước đi về phía nhà. "Chào đạo hữu, ta là Mã Tiểu Hổ. Cha ta là thợ rèn giỏi nhất thôn đó!"',
         realmName: 'Luyện Khí',
         levelDescription: 'Tầng 3',
         attributes: { canCot: 8, thanPhap: 15, thanThuc: 14, ngoTinh: 18, coDuyen: 12, tamCanh: 10 },
@@ -64,6 +87,7 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         gender: 'Nam',
         role: 'Chủ Vạn Bảo Lâu',
         factionId: 'THAT_HUYEN_THANH',
+        homePoiId: 'tht-poi-2', // Vạn Bảo Lâu
         power: 60,
         behaviors: ['TRADER', 'SCHOLAR'],
         prompt: 'Vị chưởng quầy vuốt râu mỉm cười, ánh mắt tinh anh đảo qua người bạn. "Tiểu hữu muốn tìm bảo vật gì? Vạn Bảo Lâu của ta trên thông thiên văn, dưới tường địa lý, không gì không có."',
@@ -91,7 +115,7 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
             { itemId: 'armor_huyen_thiet_giap', stock: 1, priceModifier: 1.8 },
             { itemId: 'accessory_tu_linh_boi', stock: 2, priceModifier: 2.2 },
             { itemId: 'book_hoa_cau_thuat', stock: 3, priceModifier: 2.0 },
-            { itemId: 'book_thoi_the_kinh', stock: 3, priceModifier: 2.0 },
+            { itemId: 'book_thoi_the_kinh', stock: 1, priceModifier: 2.5 },
             { itemId: 'book_thiet_bo_sam', stock: 1, priceModifier: 2.5 },
             { itemId: 'book_hoi_thien_thuat', stock: 2, priceModifier: 2.0 },
             { itemId: 'recipe_item_hoi_xuan_dan', stock: 3, priceModifier: 1.5 },
@@ -104,6 +128,7 @@ export const ALL_STATIC_NPCS: StaticNpcDefinition[] = [
         gender: 'Nam',
         role: 'Trưởng thôn',
         factionId: 'LUC_YEN_THON',
+        homePoiId: 'lyt-poi-1', // Nhà Thôn Trưởng
         power: 100,
         behaviors: ['MEDITATOR', 'WANDERER'],
         prompt: 'Vị thôn trưởng già nua đang ngồi bên hiên nhà hút tẩu thuốc, ánh mắt hiền từ nhìn bạn. "Người trẻ tuổi, ngươi từ đâu tới? Lục Yên Thôn chúng ta đã lâu không có khách lạ ghé thăm."',

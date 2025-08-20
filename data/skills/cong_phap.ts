@@ -5,25 +5,33 @@ export const ALL_CONG_PHAP: Skill[] = [
     {
         id: 'cong-phap-hoang-1',
         name: 'Hỏa Cầu Thuật',
-        description: 'Ngưng tụ linh khí thành một quả cầu lửa, tấn công kẻ địch. Sức mạnh tăng theo cấp độ.',
+        description: 'Ngưng tụ linh khí thành một quả cầu lửa, tấn công kẻ địch. Càng ở cấp độ cao, càng tiêu hao nhiều linh lực để duy trì uy thế.',
         type: 'CONG_PHAP',
         tier: 'HOANG',
         maxLevel: 10,
-        manaCost: 10,
-        manaCostPerLevel: 1,
+        manaCost: 20,
         enlightenmentBaseCost: 50,
         enlightenmentCostPerLevel: 10,
+        enlightenmentCostExponent: 1.4,
         damage: {
             baseValue: 15,
-            valuePerLevel: 5,
-            attackPowerFactor: 0.2, // Phép thuật thuần túy, hưởng lợi ít từ Lực Công
+            attackPowerFactor: 0.2, 
             scalingAttribute: 'thanThuc',
             scalingFactor: 0.8
         },
-        effects: [
-            { type: 'BURN', chance: 0.2, duration: 2, value: 3, valuePerLevel: 1 }
-        ],
+        effects: [],
         bonuses: [],
+        levelBonuses: [
+            { level: 2, upgrade: { damageIncrease: 10, manaCostIncrease: 5 } },
+            { level: 3, upgrade: { damageIncrease: 15, manaCostIncrease: 10 } },
+            { level: 4, upgrade: { damageIncrease: 30, manaCostPercentIncrease: 0.02 } },
+            { level: 5, upgrade: { manaCostPercentIncrease: 0.03, addEffect: { type: 'BURN', chance: 0.1, duration: 2, value: 15 } } },
+            { level: 6, upgrade: { manaCostPercentIncrease: 0.03, modifyEffect: { type: 'BURN', chanceIncrease: 0.1 } } },
+            { level: 7, upgrade: { manaCostPercentIncrease: 0.03, modifyEffect: { type: 'BURN', valueIncrease: 10 } } },
+            { level: 8, upgrade: { manaCostPercentIncrease: 0.02, modifyEffect: { type: 'BURN', durationIncrease: 3 } } },
+            { level: 9, upgrade: { damageIncrease: 50, manaCostPercentIncrease: 0.02 } },
+            { level: 10, upgrade: { manaCostPercentIncrease: 0.05, modifyEffect: { type: 'BURN', chanceIncrease: 0.15 } } },
+        ]
     },
     {
         id: 'cong-phap-hoang-2',
@@ -33,12 +41,11 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HOANG',
         maxLevel: 10,
         manaCost: 12,
-        manaCostPerLevel: 1,
         enlightenmentBaseCost: 50,
         enlightenmentCostPerLevel: 10,
+        enlightenmentCostExponent: 1.45,
         damage: {
             baseValue: 12,
-            valuePerLevel: 4,
             attackPowerFactor: 0.2,
             scalingAttribute: 'thanThuc',
             scalingFactor: 0.7
@@ -47,6 +54,10 @@ export const ALL_CONG_PHAP: Skill[] = [
             { type: 'SLOW', chance: 0.3, duration: 2, value: 15 } // 15% speed reduction
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 4, manaCostIncrease: 1 }
+        }))
     },
     {
         id: 'cong-phap-hoang-3',
@@ -56,12 +67,11 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HOANG',
         maxLevel: 10,
         manaCost: 15,
-        manaCostPerLevel: 2,
         enlightenmentBaseCost: 60,
         enlightenmentCostPerLevel: 12,
+        enlightenmentCostExponent: 1.42,
         damage: {
             baseValue: 20,
-            valuePerLevel: 6,
             attackPowerFactor: 0.4, // Có yếu tố vật lý
             scalingAttribute: 'thanThuc',
             scalingFactor: 1.0
@@ -70,6 +80,10 @@ export const ALL_CONG_PHAP: Skill[] = [
              { type: 'STUN', chance: 0.1, duration: 1 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 6, manaCostIncrease: 2 }
+        }))
     },
     {
         id: 'cong-phap-hoang-4',
@@ -79,13 +93,17 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HOANG',
         maxLevel: 5,
         manaCost: 30,
-        manaCostPerLevel: 5,
         enlightenmentBaseCost: 80,
         enlightenmentCostPerLevel: 20,
+        enlightenmentCostExponent: 1.5,
         effects: [
-            { type: 'HEAL', chance: 1, value: 50, valuePerLevel: 20, scalingAttribute: 'ngoTinh', scalingFactor: 1.2 }
+            { type: 'HEAL', chance: 1, value: 50, scalingAttribute: 'ngoTinh', scalingFactor: 1.2 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 4 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { manaCostIncrease: 5, modifyEffect: { type: 'HEAL', valueIncrease: 20 } }
+        }))
     },
     {
         id: 'cong-phap-hoang-5',
@@ -95,12 +113,11 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HOANG',
         maxLevel: 10,
         manaCost: 14,
-        manaCostPerLevel: 1,
         enlightenmentBaseCost: 55,
         enlightenmentCostPerLevel: 11,
+        enlightenmentCostExponent: 1.45,
         damage: {
             baseValue: 10,
-            valuePerLevel: 3,
             attackPowerFactor: 0.1,
             scalingAttribute: 'thanThuc',
             scalingFactor: 0.6
@@ -109,6 +126,10 @@ export const ALL_CONG_PHAP: Skill[] = [
             { type: 'SLOW', chance: 0.4, duration: 2, value: 10 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 3, manaCostIncrease: 1 }
+        }))
     },
     {
         id: 'cong-phap-hoang-6',
@@ -118,18 +139,21 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HOANG',
         maxLevel: 10,
         manaCost: 10,
-        manaCostPerLevel: 1,
         enlightenmentBaseCost: 50,
         enlightenmentCostPerLevel: 9,
+        enlightenmentCostExponent: 1.4,
         damage: {
             baseValue: 13,
-            valuePerLevel: 4,
             attackPowerFactor: 0.3,
             scalingAttribute: 'thanPhap',
             scalingFactor: 0.5
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 4, manaCostIncrease: 1 }
+        }))
     },
     {
         id: 'cong-phap-hoang-7',
@@ -139,18 +163,21 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HOANG',
         maxLevel: 10,
         manaCost: 12,
-        manaCostPerLevel: 2,
         enlightenmentBaseCost: 60,
         enlightenmentCostPerLevel: 12,
+        enlightenmentCostExponent: 1.48,
         damage: {
             baseValue: 18,
-            valuePerLevel: 5,
             attackPowerFactor: 0.5,
             scalingAttribute: 'thanThuc',
             scalingFactor: 0.6
         },
         effects: [],
         bonuses: [],
+         levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 5, manaCostIncrease: 2 }
+        }))
     },
     {
         id: 'cong-phap-hoang-8',
@@ -160,18 +187,21 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HOANG',
         maxLevel: 10,
         manaCost: 9,
-        manaCostPerLevel: 1,
         enlightenmentBaseCost: 45,
         enlightenmentCostPerLevel: 9,
+        enlightenmentCostExponent: 1.38,
         damage: {
             baseValue: 14,
-            valuePerLevel: 4,
             attackPowerFactor: 0.2,
             scalingAttribute: 'thanThuc',
             scalingFactor: 0.7
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 4, manaCostIncrease: 1 }
+        }))
     },
     {
         id: 'cong-phap-hoang-9',
@@ -181,18 +211,21 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HOANG',
         maxLevel: 10,
         manaCost: 18,
-        manaCostPerLevel: 2,
         enlightenmentBaseCost: 65,
         enlightenmentCostPerLevel: 13,
+        enlightenmentCostExponent: 1.43,
         damage: {
             baseValue: 22,
-            valuePerLevel: 7,
             attackPowerFactor: 0.3,
             scalingAttribute: 'canCot',
             scalingFactor: 0.5
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 7, manaCostIncrease: 2 }
+        }))
     },
     {
         id: 'cong-phap-hoang-10',
@@ -202,18 +235,21 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HOANG',
         maxLevel: 10,
         manaCost: 8,
-        manaCostPerLevel: 1,
         enlightenmentBaseCost: 70,
         enlightenmentCostPerLevel: 15,
+        enlightenmentCostExponent: 1.55,
         damage: {
             baseValue: 16,
-            valuePerLevel: 5,
             attackPowerFactor: 0.1,
             scalingAttribute: 'thanThuc',
             scalingFactor: 0.9
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 5, manaCostIncrease: 1 }
+        }))
     },
     {
         id: 'cong-phap-hoang-11',
@@ -223,18 +259,21 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HOANG',
         maxLevel: 5,
         manaCost: 20,
-        manaCostPerLevel: 3,
         enlightenmentBaseCost: 75,
         enlightenmentCostPerLevel: 20,
+        enlightenmentCostExponent: 1.52,
         damage: {
             baseValue: 5,
-            valuePerLevel: 2,
             attackPowerFactor: 0.0,
             scalingAttribute: 'ngoTinh',
             scalingFactor: 0.5
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 4 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 2, manaCostIncrease: 3 }
+        }))
     },
     {
         id: 'cong-phap-hoang-12',
@@ -244,42 +283,150 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HOANG',
         maxLevel: 5,
         manaCost: 25,
-        manaCostPerLevel: 4,
         enlightenmentBaseCost: 80,
         enlightenmentCostPerLevel: 22,
+        enlightenmentCostExponent: 1.53,
         damage: {
             baseValue: 8,
-            valuePerLevel: 3,
             attackPowerFactor: 0.1,
             scalingAttribute: 'thanThuc',
             scalingFactor: 0.4
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 4 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 3, manaCostIncrease: 4 }
+        }))
+    },
+     // -- HOÀNG GIAI - WEAPON SKILLS --
+    {
+        id: 'cong-phap-hoang-13',
+        name: 'Thiết Kiếm Trảm',
+        description: 'Một đường kiếm cơ bản, chém thẳng vào đối thủ. Yêu cầu trang bị Kiếm.',
+        type: 'CONG_PHAP',
+        tier: 'HOANG',
+        weaponType: 'SWORD',
+        maxLevel: 10,
+        manaCost: 8,
+        enlightenmentBaseCost: 50,
+        enlightenmentCostPerLevel: 10,
+        enlightenmentCostExponent: 1.35,
+        damage: {
+            baseValue: 10,
+            attackPowerFactor: 1.1,
+            scalingAttribute: 'thanPhap',
+            scalingFactor: 0.2
+        },
+        bonuses: [],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 4, manaCostIncrease: 1 }
+        }))
+    },
+    {
+        id: 'cong-phap-hoang-14',
+        name: 'Hoành Tảo Thiên Quân',
+        description: 'Vung thương quét ngang một vùng rộng lớn. Yêu cầu trang bị Thương.',
+        type: 'CONG_PHAP',
+        tier: 'HOANG',
+        weaponType: 'SPEAR',
+        maxLevel: 10,
+        manaCost: 12,
+        enlightenmentBaseCost: 60,
+        enlightenmentCostPerLevel: 12,
+        enlightenmentCostExponent: 1.38,
+        damage: {
+            baseValue: 15,
+            attackPowerFactor: 1.0,
+            scalingAttribute: 'canCot',
+            scalingFactor: 0.3
+        },
+        bonuses: [],
+         levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 5, manaCostIncrease: 1 }
+        }))
+    },
+    {
+        id: 'cong-phap-hoang-15',
+        name: 'Liệt Phong Đao Pháp',
+        description: 'Một nhát đao nhanh như gió lốc, khiến đối thủ khó lòng phòng bị. Yêu cầu trang bị Đao.',
+        type: 'CONG_PHAP',
+        tier: 'HOANG',
+        weaponType: 'BLADE',
+        maxLevel: 10,
+        manaCost: 10,
+        enlightenmentBaseCost: 55,
+        enlightenmentCostPerLevel: 11,
+        enlightenmentCostExponent: 1.36,
+        damage: {
+            baseValue: 12,
+            attackPowerFactor: 1.2,
+            scalingAttribute: 'thanPhap',
+            scalingFactor: 0.3
+        },
+        bonuses: [],
+         levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 4, manaCostIncrease: 1 }
+        }))
+    },
+    {
+        id: 'cong-phap-hoang-16',
+        name: 'Thanh Phong Phiến',
+        description: 'Phẩy quạt tạo ra một luồng gió nhẹ, vừa gây sát thương vừa đẩy lùi đối thủ. Yêu cầu trang bị Phiến (Quạt).',
+        type: 'CONG_PHAP',
+        tier: 'HOANG',
+        weaponType: 'FAN',
+        maxLevel: 10,
+        manaCost: 9,
+        enlightenmentBaseCost: 50,
+        enlightenmentCostPerLevel: 10,
+        enlightenmentCostExponent: 1.32,
+        damage: {
+            baseValue: 8,
+            attackPowerFactor: 0.5,
+            scalingAttribute: 'thanThuc',
+            scalingFactor: 0.4
+        },
+        bonuses: [],
+         levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 3, manaCostIncrease: 1 }
+        }))
     },
 
     // -- HUYỀN GIAI --
     {
         id: 'cong-phap-huyen-1',
         name: 'Phong Nhận Kiếm',
-        description: 'Tạo ra những lưỡi kiếm bằng gió sắc bén, tấn công liên tục. Tiêu hao nhiều chân khí nhưng uy lực kinh người.',
+        description: 'Tạo ra những lưỡi kiếm bằng gió sắc bén, tấn công liên tục. Tiêu hao nhiều chân khí nhưng uy lực kinh người. Ở cấp độ cao, nó rút thêm linh lực dựa trên tu vi của người thi triển.',
         type: 'CONG_PHAP',
         tier: 'HUYEN',
         weaponType: 'SWORD',
         maxLevel: 8,
         manaCost: 50,
-        manaCostPerLevel: 10,
         enlightenmentBaseCost: 200,
         enlightenmentCostPerLevel: 40,
+        enlightenmentCostExponent: 1.6,
         damage: {
             baseValue: 40,
-            valuePerLevel: 15,
             attackPowerFactor: 0.8, // Kiếm pháp, hưởng lợi nhiều từ Lực Công
             scalingAttribute: 'thanPhap',
             scalingFactor: 0.5
         },
         effects: [],
         bonuses: [],
+        levelBonuses: [
+            { level: 2, upgrade: { damageIncrease: 15, manaCostIncrease: 10 } },
+            { level: 3, upgrade: { damageIncrease: 15, manaCostIncrease: 10 } },
+            { level: 4, upgrade: { damageIncrease: 20, manaCostIncrease: 10, manaCostPercentIncrease: 0.03 } },
+            { level: 5, upgrade: { damageIncrease: 20, manaCostIncrease: 10 } },
+            { level: 6, upgrade: { damageIncrease: 25, manaCostIncrease: 15 } },
+            { level: 7, upgrade: { damageIncrease: 25, manaCostIncrease: 15 } },
+            { level: 8, upgrade: { damageIncrease: 30, manaCostIncrease: 20, manaCostPercentIncrease: 0.02 } },
+        ]
     },
     {
         id: 'cong-phap-huyen-2',
@@ -289,12 +436,11 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HUYEN',
         maxLevel: 8,
         manaCost: 60,
-        manaCostPerLevel: 12,
         enlightenmentBaseCost: 250,
         enlightenmentCostPerLevel: 50,
+        enlightenmentCostExponent: 1.65,
         damage: {
             baseValue: 60,
-            valuePerLevel: 20,
             attackPowerFactor: 0.3,
             scalingAttribute: 'thanThuc',
             scalingFactor: 1.5
@@ -303,6 +449,10 @@ export const ALL_CONG_PHAP: Skill[] = [
             { type: 'STUN', chance: 0.4, duration: 1 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 20, manaCostIncrease: 12 }
+        }))
     },
     {
         id: 'cong-phap-huyen-3',
@@ -313,18 +463,21 @@ export const ALL_CONG_PHAP: Skill[] = [
         weaponType: 'SWORD',
         maxLevel: 8,
         manaCost: 45,
-        manaCostPerLevel: 8,
         enlightenmentBaseCost: 220,
         enlightenmentCostPerLevel: 45,
+        enlightenmentCostExponent: 1.62,
         damage: {
             baseValue: 70,
-            valuePerLevel: 25,
             attackPowerFactor: 1.0, // Kiếm quang, hưởng 100% từ Lực Công
             scalingAttribute: 'thanThuc',
             scalingFactor: 1.2
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 25, manaCostIncrease: 8 }
+        }))
     },
     {
         id: 'cong-phap-huyen-4',
@@ -334,18 +487,21 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HUYEN',
         maxLevel: 8,
         manaCost: 55,
-        manaCostPerLevel: 10,
         enlightenmentBaseCost: 300,
         enlightenmentCostPerLevel: 60,
+        enlightenmentCostExponent: 1.7,
         damage: {
             baseValue: 30,
-            valuePerLevel: 10,
             attackPowerFactor: 0.2,
             scalingAttribute: 'thanThuc',
             scalingFactor: 1.0
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 10, manaCostIncrease: 10 }
+        }))
     },
     {
         id: 'cong-phap-huyen-5',
@@ -356,18 +512,21 @@ export const ALL_CONG_PHAP: Skill[] = [
         weaponType: 'SWORD',
         maxLevel: 8,
         manaCost: 65,
-        manaCostPerLevel: 15,
         enlightenmentBaseCost: 320,
         enlightenmentCostPerLevel: 65,
+        enlightenmentCostExponent: 1.68,
         damage: {
             baseValue: 80,
-            valuePerLevel: 30,
             attackPowerFactor: 1.2,
             scalingAttribute: 'thanPhap',
             scalingFactor: 0.8
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 30, manaCostIncrease: 15 }
+        }))
     },
     {
         id: 'cong-phap-huyen-6',
@@ -377,18 +536,21 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HUYEN',
         maxLevel: 8,
         manaCost: 80,
-        manaCostPerLevel: 20,
         enlightenmentBaseCost: 350,
         enlightenmentCostPerLevel: 70,
+        enlightenmentCostExponent: 1.66,
         damage: {
             baseValue: 100,
-            valuePerLevel: 35,
             attackPowerFactor: 0.5,
             scalingAttribute: 'canCot',
             scalingFactor: 1.5
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 35, manaCostIncrease: 20 }
+        }))
     },
     {
         id: 'cong-phap-huyen-7',
@@ -398,20 +560,23 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HUYEN',
         maxLevel: 8,
         manaCost: 70,
-        manaCostPerLevel: 15,
         enlightenmentBaseCost: 380,
         enlightenmentCostPerLevel: 75,
+        enlightenmentCostExponent: 1.72,
         damage: {
             baseValue: 50,
-            valuePerLevel: 15,
             attackPowerFactor: 0.3,
             scalingAttribute: 'thanThuc',
             scalingFactor: 1.3
         },
         effects: [
-            { type: 'BURN', chance: 0.8, duration: 3, value: 10, valuePerLevel: 3 }
+            { type: 'BURN', chance: 0.8, duration: 3, value: 10 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 15, manaCostIncrease: 15, modifyEffect: { type: 'BURN', valueIncrease: 3} }
+        }))
     },
     {
         id: 'cong-phap-huyen-8',
@@ -421,12 +586,11 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HUYEN',
         maxLevel: 8,
         manaCost: 75,
-        manaCostPerLevel: 18,
         enlightenmentBaseCost: 360,
         enlightenmentCostPerLevel: 72,
+        enlightenmentCostExponent: 1.69,
         damage: {
             baseValue: 65,
-            valuePerLevel: 22,
             attackPowerFactor: 0.4,
             scalingAttribute: 'thanThuc',
             scalingFactor: 1.4
@@ -435,6 +599,10 @@ export const ALL_CONG_PHAP: Skill[] = [
             { type: 'SLOW', chance: 0.9, duration: 3, value: 30 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 22, manaCostIncrease: 18 }
+        }))
     },
     {
         id: 'cong-phap-huyen-9',
@@ -444,12 +612,11 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HUYEN',
         maxLevel: 8,
         manaCost: 90,
-        manaCostPerLevel: 25,
         enlightenmentBaseCost: 400,
         enlightenmentCostPerLevel: 80,
+        enlightenmentCostExponent: 1.71,
         damage: {
             baseValue: 40,
-            valuePerLevel: 10,
             attackPowerFactor: 0.2,
             scalingAttribute: 'canCot',
             scalingFactor: 1.2
@@ -458,6 +625,10 @@ export const ALL_CONG_PHAP: Skill[] = [
             { type: 'STUN', chance: 0.5, duration: 1 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 10, manaCostIncrease: 25 }
+        }))
     },
     {
         id: 'cong-phap-huyen-10',
@@ -467,12 +638,11 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HUYEN',
         maxLevel: 8,
         manaCost: 85,
-        manaCostPerLevel: 20,
         enlightenmentBaseCost: 420,
         enlightenmentCostPerLevel: 85,
+        enlightenmentCostExponent: 1.75,
         damage: {
             baseValue: 90,
-            valuePerLevel: 30,
             attackPowerFactor: 0.3,
             scalingAttribute: 'thanThuc',
             scalingFactor: 1.8
@@ -481,6 +651,10 @@ export const ALL_CONG_PHAP: Skill[] = [
             { type: 'STUN', chance: 0.6, duration: 1 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 30, manaCostIncrease: 20 }
+        }))
     },
     {
         id: 'cong-phap-huyen-15',
@@ -490,13 +664,120 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'HUYEN',
         maxLevel: 6,
         manaCost: 80,
-        manaCostPerLevel: 15,
         enlightenmentBaseCost: 250,
         enlightenmentCostPerLevel: 50,
+        enlightenmentCostExponent: 1.7,
         effects: [
-            { type: 'HEAL', chance: 1, value: 0.15, valuePerLevel: 0.05, valueIsPercent: true }
+            { type: 'HEAL', chance: 1, value: 0.15, valueIsPercent: true }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { manaCostIncrease: 15, modifyEffect: { type: 'HEAL', valueIncrease: 0.05, valueIsPercent: true } }
+        }))
+    },
+      // -- HUYỀN GIAI - WEAPON SKILLS --
+    {
+        id: 'cong-phap-huyen-11',
+        name: 'Lạc Anh Kiếm Pháp',
+        description: 'Kiếm pháp như hoa rơi, đẹp đẽ nhưng ẩn chứa sát cơ. Yêu cầu trang bị Kiếm.',
+        type: 'CONG_PHAP',
+        tier: 'HUYEN',
+        weaponType: 'SWORD',
+        maxLevel: 8,
+        manaCost: 50,
+        enlightenmentBaseCost: 240,
+        enlightenmentCostPerLevel: 48,
+        enlightenmentCostExponent: 1.6,
+        damage: {
+            baseValue: 55,
+            attackPowerFactor: 1.3,
+            scalingAttribute: 'thanPhap',
+            scalingFactor: 0.6
+        },
+        effects: [],
+        bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 20, manaCostIncrease: 10 }
+        }))
+    },
+    {
+        id: 'cong-phap-huyen-12',
+        name: 'Long Xà Thương Pháp',
+        description: 'Mũi thương xuất ra như rồng bay rắn lượn, biến ảo khôn lường. Yêu cầu trang bị Thương.',
+        type: 'CONG_PHAP',
+        tier: 'HUYEN',
+        weaponType: 'SPEAR',
+        maxLevel: 8,
+        manaCost: 60,
+        enlightenmentBaseCost: 260,
+        enlightenmentCostPerLevel: 52,
+        enlightenmentCostExponent: 1.61,
+        damage: {
+            baseValue: 65,
+            attackPowerFactor: 1.2,
+            scalingAttribute: 'canCot',
+            scalingFactor: 0.8
+        },
+        effects: [],
+        bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 25, manaCostIncrease: 12 }
+        }))
+    },
+     {
+        id: 'cong-phap-huyen-13',
+        name: 'Cuồng Phong Đao',
+        description: 'Đao pháp cuồng bạo, mỗi nhát chém đều mang theo sức mạnh kinh người. Yêu cầu trang bị Đao.',
+        type: 'CONG_PHAP',
+        tier: 'HUYEN',
+        weaponType: 'BLADE',
+        maxLevel: 8,
+        manaCost: 40,
+        enlightenmentBaseCost: 300,
+        enlightenmentCostPerLevel: 60,
+        enlightenmentCostExponent: 1.63,
+        damage: {
+            baseValue: 90,
+            attackPowerFactor: 1.5,
+            scalingAttribute: 'canCot',
+            scalingFactor: 0.5
+        },
+        effects: [],
+        bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 30, manaCostIncrease: 8 }
+        }))
+    },
+    {
+        id: 'cong-phap-huyen-14',
+        name: 'Băng Tâm Phiến',
+        description: 'Vung quạt tạo ra hàn khí, gây sát thương băng giá và làm chậm đối thủ. Yêu cầu trang bị Phiến (Quạt).',
+        type: 'CONG_PHAP',
+        tier: 'HUYEN',
+        weaponType: 'FAN',
+        maxLevel: 8,
+        manaCost: 55,
+        enlightenmentBaseCost: 280,
+        enlightenmentCostPerLevel: 56,
+        enlightenmentCostExponent: 1.64,
+        damage: {
+            baseValue: 45,
+            attackPowerFactor: 0.6,
+            scalingAttribute: 'thanThuc',
+            scalingFactor: 0.9
+        },
+        effects: [
+            { type: 'SLOW', chance: 0.7, duration: 2, value: 20 }
+        ],
+        bonuses: [],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 15, manaCostIncrease: 11 }
+        }))
     },
 
     // -- ĐỊA GIAI --
@@ -508,12 +789,11 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'DIA',
         maxLevel: 6,
         manaCost: 200,
-        manaCostPerLevel: 50,
         enlightenmentBaseCost: 1000,
         enlightenmentCostPerLevel: 200,
+        enlightenmentCostExponent: 1.85,
         damage: {
             baseValue: 150,
-            valuePerLevel: 50,
             attackPowerFactor: 0.6,
             scalingAttribute: 'canCot',
             scalingFactor: 1.5
@@ -522,6 +802,10 @@ export const ALL_CONG_PHAP: Skill[] = [
              { type: 'STUN', chance: 0.3, duration: 2 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 50, manaCostIncrease: 50 }
+        }))
     },
     {
         id: 'cong-phap-dia-2',
@@ -531,12 +815,11 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'DIA',
         maxLevel: 6,
         manaCost: 250,
-        manaCostPerLevel: 70,
         enlightenmentBaseCost: 1200,
         enlightenmentCostPerLevel: 250,
+        enlightenmentCostExponent: 1.9,
         damage: {
             baseValue: 200,
-            valuePerLevel: 70,
             attackPowerFactor: 0.2,
             scalingAttribute: 'thanThuc',
             scalingFactor: 2.5
@@ -545,6 +828,10 @@ export const ALL_CONG_PHAP: Skill[] = [
             { type: 'STUN', chance: 0.8, duration: 1 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 70, manaCostIncrease: 70 }
+        }))
     },
     {
         id: 'cong-phap-dia-3',
@@ -554,12 +841,11 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'DIA',
         maxLevel: 6,
         manaCost: 220,
-        manaCostPerLevel: 60,
         enlightenmentBaseCost: 1100,
         enlightenmentCostPerLevel: 220,
+        enlightenmentCostExponent: 1.88,
         damage: {
             baseValue: 180,
-            valuePerLevel: 60,
             attackPowerFactor: 0.4,
             scalingAttribute: 'thanThuc',
             scalingFactor: 2.0
@@ -568,6 +854,10 @@ export const ALL_CONG_PHAP: Skill[] = [
             { type: 'STUN', chance: 0.6, duration: 1 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 60, manaCostIncrease: 60 }
+        }))
     },
     {
         id: 'cong-phap-dia-4',
@@ -577,12 +867,11 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'DIA',
         maxLevel: 6,
         manaCost: 300,
-        manaCostPerLevel: 80,
         enlightenmentBaseCost: 1300,
         enlightenmentCostPerLevel: 260,
+        enlightenmentCostExponent: 1.86,
         damage: {
             baseValue: 220,
-            valuePerLevel: 75,
             attackPowerFactor: 0.5,
             scalingAttribute: 'thanPhap',
             scalingFactor: 2.2
@@ -591,6 +880,10 @@ export const ALL_CONG_PHAP: Skill[] = [
             { type: 'SLOW', chance: 1.0, duration: 2, value: 20 }
         ],
         bonuses: [],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 75, manaCostIncrease: 80 }
+        }))
     },
     {
         id: 'cong-phap-dia-5',
@@ -601,18 +894,121 @@ export const ALL_CONG_PHAP: Skill[] = [
         weaponType: 'SPEAR',
         maxLevel: 6,
         manaCost: 280,
-        manaCostPerLevel: 75,
         enlightenmentBaseCost: 1400,
         enlightenmentCostPerLevel: 280,
+        enlightenmentCostExponent: 1.92,
         damage: {
             baseValue: 250,
-            valuePerLevel: 80,
             attackPowerFactor: 1.5,
             scalingAttribute: 'canCot',
             scalingFactor: 1.0
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 80, manaCostIncrease: 75 }
+        }))
+    },
+     // -- ĐỊA GIAI - WEAPON SKILLS --
+    {
+        id: 'cong-phap-dia-6',
+        name: 'Vô Tình Kiếm',
+        description: 'Một kiếm vô tình, dứt khoát và lạnh lùng, có tỉ lệ bạo kích cực cao. Yêu cầu trang bị Kiếm.',
+        type: 'CONG_PHAP',
+        tier: 'DIA',
+        weaponType: 'SWORD',
+        maxLevel: 6,
+        manaCost: 300,
+        enlightenmentBaseCost: 1500,
+        enlightenmentCostPerLevel: 300,
+        enlightenmentCostExponent: 1.91,
+        damage: {
+            baseValue: 200,
+            attackPowerFactor: 1.8,
+            scalingAttribute: 'thanThuc',
+            scalingFactor: 1.2
+        },
+        bonuses: [],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 70, manaCostIncrease: 80 }
+        }))
+    },
+    {
+        id: 'cong-phap-dia-7',
+        name: 'Bá Vương Thương',
+        description: 'Một thương đâm thẳng tới, mang theo khí thế của bá vương, có khả năng làm choáng kẻ địch. Yêu cầu trang bị Thương.',
+        type: 'CONG_PHAP',
+        tier: 'DIA',
+        weaponType: 'SPEAR',
+        maxLevel: 6,
+        manaCost: 320,
+        enlightenmentBaseCost: 1600,
+        enlightenmentCostPerLevel: 320,
+        enlightenmentCostExponent: 1.89,
+        damage: {
+            baseValue: 220,
+            attackPowerFactor: 1.6,
+            scalingAttribute: 'canCot',
+            scalingFactor: 1.5
+        },
+        effects: [
+            { type: 'STUN', chance: 0.4, duration: 1 }
+        ],
+        bonuses: [],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 75, manaCostIncrease: 85 }
+        }))
+    },
+    {
+        id: 'cong-phap-dia-8',
+        name: 'Tu La Đao',
+        description: 'Đao pháp tà dị, chém trúng kẻ địch có thể hút một phần sinh lực. Yêu cầu trang bị Đao.',
+        type: 'CONG_PHAP',
+        tier: 'DIA',
+        weaponType: 'BLADE',
+        maxLevel: 6,
+        manaCost: 280,
+        enlightenmentBaseCost: 1800,
+        enlightenmentCostPerLevel: 350,
+        enlightenmentCostExponent: 1.95,
+        damage: {
+            baseValue: 180,
+            attackPowerFactor: 1.7,
+            scalingAttribute: 'thanThuc',
+            scalingFactor: 1.0
+        },
+        bonuses: [],
+         levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 60, manaCostIncrease: 70 }
+        }))
+    },
+    {
+        id: 'cong-phap-dia-9',
+        name: 'Huyễn Ảnh Phiến',
+        description: 'Tạo ra ảo ảnh từ chiếc quạt, gây sát thương và làm giảm khả năng né tránh của đối thủ. Yêu cầu trang bị Phiến (Quạt).',
+        type: 'CONG_PHAP',
+        tier: 'DIA',
+        weaponType: 'FAN',
+        maxLevel: 6,
+        manaCost: 260,
+        enlightenmentBaseCost: 1400,
+        enlightenmentCostPerLevel: 280,
+        enlightenmentCostExponent: 1.87,
+        damage: {
+            baseValue: 160,
+            attackPowerFactor: 0.8,
+            scalingAttribute: 'thanPhap',
+            scalingFactor: 1.8
+        },
+        bonuses: [],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 55, manaCostIncrease: 65 }
+        }))
     },
 
     // -- THIÊN GIAI --
@@ -624,20 +1020,23 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'THIEN',
         maxLevel: 4,
         manaCost: 1000,
-        manaCostPerLevel: 250,
         enlightenmentBaseCost: 5000,
         enlightenmentCostPerLevel: 1000,
+        enlightenmentCostExponent: 2.2,
         damage: {
             baseValue: 500,
-            valuePerLevel: 200,
             attackPowerFactor: 0.1,
             scalingAttribute: 'thanThuc',
             scalingFactor: 3.0
         },
         effects: [
-            { type: 'BURN', chance: 1, duration: 5, value: 50, valuePerLevel: 20 }
+            { type: 'BURN', chance: 1, duration: 5, value: 50 }
         ],
         bonuses: [],
+         levelBonuses: Array.from({ length: 3 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 200, manaCostIncrease: 250, modifyEffect: {type: 'BURN', valueIncrease: 20}}
+        }))
     },
     {
         id: 'cong-phap-thien-2',
@@ -648,18 +1047,21 @@ export const ALL_CONG_PHAP: Skill[] = [
         weaponType: 'SWORD',
         maxLevel: 4,
         manaCost: 1200,
-        manaCostPerLevel: 300,
         enlightenmentBaseCost: 6000,
         enlightenmentCostPerLevel: 1200,
+        enlightenmentCostExponent: 2.3,
         damage: {
             baseValue: 800,
-            valuePerLevel: 300,
             attackPowerFactor: 2.0,
             scalingAttribute: 'thanThuc',
             scalingFactor: 2.0
         },
         effects: [],
         bonuses: [],
+        levelBonuses: Array.from({ length: 3 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 300, manaCostIncrease: 300 }
+        }))
     },
     {
         id: 'cong-phap-thien-3',
@@ -669,281 +1071,20 @@ export const ALL_CONG_PHAP: Skill[] = [
         tier: 'THIEN',
         maxLevel: 4,
         manaCost: 1500,
-        manaCostPerLevel: 400,
         enlightenmentBaseCost: 7000,
         enlightenmentCostPerLevel: 1500,
+        enlightenmentCostExponent: 2.4,
         damage: {
             baseValue: 1000,
-            valuePerLevel: 400,
             attackPowerFactor: 1.0,
             scalingAttribute: 'canCot',
             scalingFactor: 2.5
         },
         effects: [],
         bonuses: [],
-    },
-    // -- HOÀNG GIAI - WEAPON SKILLS --
-    {
-        id: 'cong-phap-hoang-13',
-        name: 'Thiết Kiếm Trảm',
-        description: 'Một đường kiếm cơ bản, chém thẳng vào đối thủ. Yêu cầu trang bị Kiếm.',
-        type: 'CONG_PHAP',
-        tier: 'HOANG',
-        weaponType: 'SWORD',
-        maxLevel: 10,
-        manaCost: 8,
-        manaCostPerLevel: 1,
-        enlightenmentBaseCost: 50,
-        enlightenmentCostPerLevel: 10,
-        damage: {
-            baseValue: 10,
-            valuePerLevel: 4,
-            attackPowerFactor: 1.1,
-            scalingAttribute: 'thanPhap',
-            scalingFactor: 0.2
-        },
-        bonuses: [],
-    },
-    {
-        id: 'cong-phap-hoang-14',
-        name: 'Hoành Tảo Thiên Quân',
-        description: 'Vung thương quét ngang một vùng rộng lớn. Yêu cầu trang bị Thương.',
-        type: 'CONG_PHAP',
-        tier: 'HOANG',
-        weaponType: 'SPEAR',
-        maxLevel: 10,
-        manaCost: 12,
-        manaCostPerLevel: 1,
-        enlightenmentBaseCost: 60,
-        enlightenmentCostPerLevel: 12,
-        damage: {
-            baseValue: 15,
-            valuePerLevel: 5,
-            attackPowerFactor: 1.0,
-            scalingAttribute: 'canCot',
-            scalingFactor: 0.3
-        },
-        bonuses: [],
-    },
-    {
-        id: 'cong-phap-hoang-15',
-        name: 'Liệt Phong Đao Pháp',
-        description: 'Một nhát đao nhanh như gió lốc, khiến đối thủ khó lòng phòng bị. Yêu cầu trang bị Đao.',
-        type: 'CONG_PHAP',
-        tier: 'HOANG',
-        weaponType: 'BLADE',
-        maxLevel: 10,
-        manaCost: 10,
-        manaCostPerLevel: 1,
-        enlightenmentBaseCost: 55,
-        enlightenmentCostPerLevel: 11,
-        damage: {
-            baseValue: 12,
-            valuePerLevel: 4,
-            attackPowerFactor: 1.2,
-            scalingAttribute: 'thanPhap',
-            scalingFactor: 0.3
-        },
-        bonuses: [],
-    },
-    {
-        id: 'cong-phap-hoang-16',
-        name: 'Thanh Phong Phiến',
-        description: 'Phẩy quạt tạo ra một luồng gió nhẹ, vừa gây sát thương vừa đẩy lùi đối thủ. Yêu cầu trang bị Phiến (Quạt).',
-        type: 'CONG_PHAP',
-        tier: 'HOANG',
-        weaponType: 'FAN',
-        maxLevel: 10,
-        manaCost: 9,
-        manaCostPerLevel: 1,
-        enlightenmentBaseCost: 50,
-        enlightenmentCostPerLevel: 10,
-        damage: {
-            baseValue: 8,
-            valuePerLevel: 3,
-            attackPowerFactor: 0.5,
-            scalingAttribute: 'thanThuc',
-            scalingFactor: 0.4
-        },
-        bonuses: [],
-    },
-     // -- HUYỀN GIAI - WEAPON SKILLS --
-    {
-        id: 'cong-phap-huyen-11',
-        name: 'Lạc Anh Kiếm Pháp',
-        description: 'Kiếm pháp như hoa rơi, đẹp đẽ nhưng ẩn chứa sát cơ. Yêu cầu trang bị Kiếm.',
-        type: 'CONG_PHAP',
-        tier: 'HUYEN',
-        weaponType: 'SWORD',
-        maxLevel: 8,
-        manaCost: 50,
-        manaCostPerLevel: 10,
-        enlightenmentBaseCost: 240,
-        enlightenmentCostPerLevel: 48,
-        damage: {
-            baseValue: 55,
-            valuePerLevel: 20,
-            attackPowerFactor: 1.3,
-            scalingAttribute: 'thanPhap',
-            scalingFactor: 0.6
-        },
-        effects: [],
-        bonuses: [],
-    },
-    {
-        id: 'cong-phap-huyen-12',
-        name: 'Long Xà Thương Pháp',
-        description: 'Mũi thương xuất ra như rồng bay rắn lượn, biến ảo khôn lường. Yêu cầu trang bị Thương.',
-        type: 'CONG_PHAP',
-        tier: 'HUYEN',
-        weaponType: 'SPEAR',
-        maxLevel: 8,
-        manaCost: 60,
-        manaCostPerLevel: 12,
-        enlightenmentBaseCost: 260,
-        enlightenmentCostPerLevel: 52,
-        damage: {
-            baseValue: 65,
-            valuePerLevel: 25,
-            attackPowerFactor: 1.2,
-            scalingAttribute: 'canCot',
-            scalingFactor: 0.8
-        },
-        effects: [],
-        bonuses: [],
-    },
-     {
-        id: 'cong-phap-huyen-13',
-        name: 'Cuồng Phong Đao',
-        description: 'Đao pháp cuồng bạo, mỗi nhát chém đều mang theo sức mạnh kinh người. Yêu cầu trang bị Đao.',
-        type: 'CONG_PHAP',
-        tier: 'HUYEN',
-        weaponType: 'BLADE',
-        maxLevel: 8,
-        manaCost: 40,
-        manaCostPerLevel: 8,
-        enlightenmentBaseCost: 300,
-        enlightenmentCostPerLevel: 60,
-        damage: {
-            baseValue: 90,
-            valuePerLevel: 30,
-            attackPowerFactor: 1.5,
-            scalingAttribute: 'canCot',
-            scalingFactor: 0.5
-        },
-        effects: [],
-        bonuses: [],
-    },
-    {
-        id: 'cong-phap-huyen-14',
-        name: 'Băng Tâm Phiến',
-        description: 'Vung quạt tạo ra hàn khí, gây sát thương băng giá và làm chậm đối thủ. Yêu cầu trang bị Phiến (Quạt).',
-        type: 'CONG_PHAP',
-        tier: 'HUYEN',
-        weaponType: 'FAN',
-        maxLevel: 8,
-        manaCost: 55,
-        manaCostPerLevel: 11,
-        enlightenmentBaseCost: 280,
-        enlightenmentCostPerLevel: 56,
-        damage: {
-            baseValue: 45,
-            valuePerLevel: 15,
-            attackPowerFactor: 0.6,
-            scalingAttribute: 'thanThuc',
-            scalingFactor: 0.9
-        },
-        effects: [
-            { type: 'SLOW', chance: 0.7, duration: 2, value: 20 }
-        ],
-        bonuses: [],
-    },
-    // -- ĐỊA GIAI - WEAPON SKILLS --
-    {
-        id: 'cong-phap-dia-6',
-        name: 'Vô Tình Kiếm',
-        description: 'Một kiếm vô tình, dứt khoát và lạnh lùng, có tỉ lệ bạo kích cực cao. Yêu cầu trang bị Kiếm.',
-        type: 'CONG_PHAP',
-        tier: 'DIA',
-        weaponType: 'SWORD',
-        maxLevel: 6,
-        manaCost: 300,
-        manaCostPerLevel: 80,
-        enlightenmentBaseCost: 1500,
-        enlightenmentCostPerLevel: 300,
-        damage: {
-            baseValue: 200,
-            valuePerLevel: 70,
-            attackPowerFactor: 1.8,
-            scalingAttribute: 'thanThuc',
-            scalingFactor: 1.2
-        },
-        bonuses: [],
-    },
-    {
-        id: 'cong-phap-dia-7',
-        name: 'Bá Vương Thương',
-        description: 'Một thương đâm thẳng tới, mang theo khí thế của bá vương, có khả năng làm choáng kẻ địch. Yêu cầu trang bị Thương.',
-        type: 'CONG_PHAP',
-        tier: 'DIA',
-        weaponType: 'SPEAR',
-        maxLevel: 6,
-        manaCost: 320,
-        manaCostPerLevel: 85,
-        enlightenmentBaseCost: 1600,
-        enlightenmentCostPerLevel: 320,
-        damage: {
-            baseValue: 220,
-            valuePerLevel: 75,
-            attackPowerFactor: 1.6,
-            scalingAttribute: 'canCot',
-            scalingFactor: 1.5
-        },
-        effects: [
-            { type: 'STUN', chance: 0.4, duration: 1 }
-        ],
-        bonuses: [],
-    },
-    {
-        id: 'cong-phap-dia-8',
-        name: 'Tu La Đao',
-        description: 'Đao pháp tà dị, chém trúng kẻ địch có thể hút một phần sinh lực. Yêu cầu trang bị Đao.',
-        type: 'CONG_PHAP',
-        tier: 'DIA',
-        weaponType: 'BLADE',
-        maxLevel: 6,
-        manaCost: 280,
-        manaCostPerLevel: 70,
-        enlightenmentBaseCost: 1800,
-        enlightenmentCostPerLevel: 350,
-        damage: {
-            baseValue: 180,
-            valuePerLevel: 60,
-            attackPowerFactor: 1.7,
-            scalingAttribute: 'thanThuc',
-            scalingFactor: 1.0
-        },
-        bonuses: [],
-    },
-    {
-        id: 'cong-phap-dia-9',
-        name: 'Huyễn Ảnh Phiến',
-        description: 'Tạo ra ảo ảnh từ chiếc quạt, gây sát thương và làm giảm khả năng né tránh của đối thủ. Yêu cầu trang bị Phiến (Quạt).',
-        type: 'CONG_PHAP',
-        tier: 'DIA',
-        weaponType: 'FAN',
-        maxLevel: 6,
-        manaCost: 260,
-        manaCostPerLevel: 65,
-        enlightenmentBaseCost: 1400,
-        enlightenmentCostPerLevel: 280,
-        damage: {
-            baseValue: 160,
-            valuePerLevel: 55,
-            attackPowerFactor: 0.8,
-            scalingAttribute: 'thanPhap',
-            scalingFactor: 1.8
-        },
-        bonuses: [],
+        levelBonuses: Array.from({ length: 3 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { damageIncrease: 400, manaCostIncrease: 400 }
+        }))
     },
 ];

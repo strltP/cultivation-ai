@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ALL_ITEMS } from '../../../data/items/index';
 import type { Item, ItemType } from '../../../types/item';
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const ITEM_TYPE_NAMES: Record<ItemType, string> = {
     material: 'Nguyên Liệu',
@@ -13,6 +14,8 @@ const ITEM_TYPE_NAMES: Record<ItemType, string> = {
     recipe: 'Đan Phương',
     tool: 'Công Cụ',
 };
+
+const ITEMS_PER_PAGE = 6;
 
 const ItemInfoCard: React.FC<{ itemDef: Item }> = ({ itemDef }) => {
     return (
@@ -34,6 +37,8 @@ const ItemInfoCard: React.FC<{ itemDef: Item }> = ({ itemDef }) => {
 };
 
 const VatPhamTab: React.FC = () => {
+    const [currentPages, setCurrentPages] = useState<Record<string, number>>({});
+
     const groupedItems = ALL_ITEMS.reduce((acc, item) => {
         const type = item.type;
         if (type === 'equipment') { // Exclude equipment from this tab
@@ -47,22 +52,57 @@ const VatPhamTab: React.FC = () => {
     }, {} as Record<string, Item[]>);
 
     const typeOrder: ItemType[] = ['material', 'seed', 'consumable', 'recipe', 'book', 'quest', 'tool'];
+    
+    const handlePageChange = (type: ItemType, newPage: number) => {
+        setCurrentPages(prev => ({ ...prev, [type]: newPage }));
+    };
 
     return (
         <div className="space-y-8">
             {typeOrder.map(type => {
-                if (!groupedItems[type] || groupedItems[type].length === 0) return null;
+                const itemsForType = groupedItems[type];
+                if (!itemsForType || itemsForType.length === 0) return null;
+
+                const totalItems = itemsForType.length;
+                const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+                const currentPage = currentPages[type] || 0;
+                const startIndex = currentPage * ITEMS_PER_PAGE;
+                const endIndex = startIndex + ITEMS_PER_PAGE;
+                const paginatedItems = itemsForType.slice(startIndex, endIndex);
                 
                 return (
                     <div key={type}>
                         <h2 className="text-2xl font-bold text-yellow-200 mb-4 pb-2 border-b-2 border-yellow-200/50">
                             {ITEM_TYPE_NAMES[type]}
                         </h2>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            {groupedItems[type].map(item => (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-[368px]">
+                            {paginatedItems.map(item => (
                                 <ItemInfoCard key={item.id} itemDef={item} />
                             ))}
                         </div>
+                        {totalPages > 1 && (
+                            <div className="mt-4 flex justify-center items-center gap-4">
+                                <button
+                                    onClick={() => handlePageChange(type, currentPage - 1)}
+                                    disabled={currentPage === 0}
+                                    className="p-2 bg-gray-700 rounded-full hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+                                    aria-label="Trang trước"
+                                >
+                                    <FaChevronLeft />
+                                </button>
+                                <span className="text-gray-300 font-semibold">
+                                    Trang {currentPage + 1} / {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => handlePageChange(type, currentPage + 1)}
+                                    disabled={currentPage >= totalPages - 1}
+                                    className="p-2 bg-gray-700 rounded-full hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+                                    aria-label="Trang sau"
+                                >
+                                    <FaChevronRight />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 );
             })}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { PlayerState, NPC } from '../types/character';
+import type { PlayerState, NPC, ApiUsageStats } from '../types/character';
 import type { Interactable } from '../types/interaction';
 import type { TeleportLocation, PointOfInterest, MapArea, MapID } from '../types/map';
 import type { Position } from '../types/common';
@@ -99,7 +99,8 @@ export const useWorldManager = (
     playerState: PlayerState,
     updateAndPersistPlayerState: (updater: React.SetStateAction<PlayerState>) => void,
     setGameMessage: (message: string | null) => void,
-    dataSource: WorldDataSource
+    dataSource: WorldDataSource,
+    trackApiCall: (functionName: keyof ApiUsageStats['calls'], tokenCount: number) => void
 ) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [currentInteractables, setCurrentInteractables] = useState<Interactable[]>([]);
@@ -244,7 +245,8 @@ export const useWorldManager = (
             if (needsGeneration && !isLoading) {
                 setIsLoading(true);
                 try {
-                    const newNpcs = await loadNpcsForMap(currentMapId, POIS_BY_MAP, playerState.time);
+                    const { npcs: newNpcs, totalTokenCount } = await loadNpcsForMap(currentMapId, POIS_BY_MAP, playerState.time);
+                    trackApiCall('generateNpcs', totalTokenCount);
                     updateAndPersistPlayerState(prev => {
                         if (!prev || prev.currentMap !== currentMapId) return prev;
                         const newGeneratedNpcs = { ...prev.generatedNpcs, [currentMapId]: newNpcs };
@@ -317,7 +319,7 @@ export const useWorldManager = (
             });
         }
 
-    }, [playerState, dataSource, isLoading, updateAndPersistPlayerState, setGameMessage]); 
+    }, [playerState, dataSource, isLoading, updateAndPersistPlayerState, setGameMessage, trackApiCall]); 
 
     const handleRemoveAndRespawn = useCallback((interactable: Interactable, respawnTimeMultiplier: number = 1) => {
         const template = ALL_INTERACTABLES.find(t => t.baseId === interactable.baseId);

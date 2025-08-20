@@ -22,6 +22,16 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
     harvestedInteractableIds: [],
     lastNpcProgressionCheck: { year: 17, season: 'Xuân', month: 1, day: 1, hour: 8, minute: 0 },
     deathInfo: {},
+    apiUsageStats: {
+        totalTokens: 0,
+        calls: {
+            getInteractionResponse: 0,
+            getNpcDefeatDecision: 0,
+            generateNpcs: 0,
+            generatePlaceNames: 0,
+            sendMessage: 0,
+        }
+    },
 };
 export { DAYS_PER_MONTH };
 
@@ -37,62 +47,64 @@ export const generateRandomLinhCan = (): LinhCan[] => {
     const BASE_ELEMENTS: LinhCanType[] = ['KIM', 'MOC', 'THUY', 'HOA', 'THO'];
     
     const VARIANT_COMBINATIONS: Record<string, LinhCanType> = {
-        // Băng (Băng) = Thủy + Kim (Sinh) | Thủy + Hỏa (Khắc)
         'KIM-THUY': 'BĂNG', 'THUY-KIM': 'BĂNG',
         'THUY-HOA': 'BĂNG', 'HOA-THUY': 'BĂNG',
-
-        // Lôi (Sét) = Mộc + Hỏa (Sinh) | Hỏa + Kim (Khắc)
         'MOC-HOA': 'LOI', 'HOA-MOC': 'LOI',
         'HOA-KIM': 'LOI', 'KIM-HOA': 'LOI',
-        
-        // Phong (Gió) = Kim + Mộc (Khắc) | Mộc + Thổ (Khắc)
         'KIM-MOC': 'PHONG', 'MOC-KIM': 'PHONG',
         'MOC-THO': 'PHONG', 'THO-MOC': 'PHONG',
-
-        // Quang (Ánh sáng) = Hỏa + Thổ (Sinh) | Thổ + Kim (Sinh)
         'HOA-THO': 'QUANG', 'THO-HOA': 'QUANG',
         'KIM-THO': 'QUANG', 'THO-KIM': 'QUANG',
-
-        // Ám (Bóng tối) = Thổ + Thủy (Khắc) | Thủy + Mộc (Sinh)
         'THUY-THO': 'AM', 'THO-THUY': 'AM',
         'THUY-MOC': 'AM', 'MOC-THUY': 'AM',
     };
+    
+    const roll = Math.random();
+    let numBaseRoots = 0;
+    let hasVariant = false;
 
-    const numBaseRoots = Math.floor(Math.random() * 5) + 1;
+    // Tỉ lệ độ hiếm do người dùng đề xuất
+    if (roll < 0.05) { // 5% Thiên Linh Căn (1)
+        numBaseRoots = 1;
+    } else if (roll < 0.25) { // 20% Chân Linh Căn (2)
+        numBaseRoots = 2;
+    } else if (roll < 0.30) { // 5% Dị Linh Căn (2+1)
+        numBaseRoots = 2;
+        hasVariant = true;
+    } else if (roll < 0.65) { // 35% Chân Linh Căn (3)
+        numBaseRoots = 3;
+    } else if (roll < 0.90) { // 25% Ngụy Linh Căn (4)
+        numBaseRoots = 4;
+    } else { // 10% Ngụy Linh Căn (5)
+        numBaseRoots = 5;
+    }
+
     const shuffledBaseElements = [...BASE_ELEMENTS].sort(() => 0.5 - Math.random());
     
     const baseRoots: LinhCan[] = shuffledBaseElements.slice(0, numBaseRoots).map(type => ({
         type: type,
-        purity: Math.floor(Math.random() * 91) + 10, // Purity from 10 to 100 for base roots
+        purity: Math.floor(Math.random() * 91) + 10,
     }));
-
-    let finalRoots: LinhCan[] = [...baseRoots];
-
-    // Dị linh căn giờ đây chỉ có thể được tạo ra từ Chân Linh Căn (chính xác là 2 linh căn ngũ hành)
-    const canHaveVariant = numBaseRoots === 2;
-    const hasVariantChance = 0.3; // 30% chance
-
-    if (canHaveVariant && Math.random() < hasVariantChance) {
-        // Chọn hai linh căn để kết hợp
-        const shuffledBaseRoots = [...baseRoots].sort(() => 0.5 - Math.random());
-        const root1 = shuffledBaseRoots[0];
-        const root2 = shuffledBaseRoots[1];
+    
+    if (hasVariant) {
+        // Đảm bảo có đúng 2 linh căn gốc để tạo biến dị
+        const root1 = baseRoots[0];
+        const root2 = baseRoots[1];
         
-        const combinationKey = `${root1.type}-${root2.type}`;
-        const variantType = VARIANT_COMBINATIONS[combinationKey];
+        const combinationKey1 = `${root1.type}-${root2.type}`;
+        const combinationKey2 = `${root2.type}-${root1.type}`;
+        const variantType = VARIANT_COMBINATIONS[combinationKey1] || VARIANT_COMBINATIONS[combinationKey2];
 
         if (variantType) {
             const newVariantRoot: LinhCan = {
                 type: variantType,
-                // Độ thuần khiết phải cao hơn hai linh căn gốc
-                purity: Math.min(100, Math.max(root1.purity, root2.purity) + Math.floor(Math.random() * 16) + 5) // +5 to 20 higher
+                purity: Math.min(100, Math.max(root1.purity, root2.purity) + Math.floor(Math.random() * 16) + 5)
             };
-            // Thêm dị linh căn mới vào danh sách, KHÔNG thay thế các linh căn gốc.
-            finalRoots.push(newVariantRoot);
+            return [...baseRoots, newVariantRoot];
         }
     }
-
-    return finalRoots;
+    
+    return baseRoots;
 };
 
 const processLoadedState = (parsed: any): PlayerState | null => {
@@ -154,6 +166,18 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         }
         if (!parsed.nextMonsterSpawnCheck) parsed.nextMonsterSpawnCheck = {};
         if (!parsed.nextInteractableSpawnCheck) parsed.nextInteractableSpawnCheck = {};
+        if (!parsed.apiUsageStats) {
+            parsed.apiUsageStats = {
+                totalTokens: 0,
+                calls: {
+                    getInteractionResponse: 0,
+                    getNpcDefeatDecision: 0,
+                    generateNpcs: 0,
+                    generatePlaceNames: 0,
+                    sendMessage: 0,
+                }
+            };
+        }
 
         
         // Add checks for numeric stats that might be missing in old saves.

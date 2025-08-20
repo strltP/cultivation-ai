@@ -1,11 +1,7 @@
-
-
-
-
 import { REALM_PROGRESSION } from '../constants';
 import { INITIAL_PLAYER_STATE as BASE_INITIAL_PLAYER_STATE } from '../hooks/usePlayerPersistence';
 import type { CultivationState, CharacterAttributes, CombatStats } from '../types/stats';
-import type { LearnedSkill, Skill } from '../types/skill';
+import type { LearnedSkill, Skill, SkillEffect, SkillBonus, SkillUpgrade } from '../types/skill';
 import type { ActiveStatusEffect } from '../types/combat';
 import type { InventorySlot, Item } from '../types/item';
 import type { EquipmentSlot } from '../types/equipment';
@@ -67,6 +63,54 @@ export const getLinhCanTierInfo = (linhCan: LinhCan[]): { name: string; qiMultip
     return { name, qiMultiplier, color };
 };
 
+export interface CalculatedSkillAttributes {
+    manaCost: number;
+    manaCostPercent: number;
+    damage: number;
+    effects: SkillEffect[];
+    bonuses: SkillBonus[]; // for Tam Phap
+}
+
+export function calculateSkillAttributesForLevel(skillDef: Skill, level: number): CalculatedSkillAttributes {
+    // Initial values from level 1 definition
+    let manaCost = skillDef.manaCost || 0;
+    let manaCostPercent = 0;
+    let damage = skillDef.damage?.baseValue || 0;
+    let effects: SkillEffect[] = JSON.parse(JSON.stringify(skillDef.effects || []));
+    let bonuses: SkillBonus[] = JSON.parse(JSON.stringify(skillDef.bonuses || []));
+
+    // Apply upgrades cumulatively up to the target level
+    for (let i = 2; i <= level; i++) {
+        const levelUnlock = skillDef.levelBonuses.find(lu => lu.level === i);
+        if (!levelUnlock) continue;
+
+        const { upgrade } = levelUnlock;
+        
+        if (upgrade.damageIncrease) damage += upgrade.damageIncrease;
+        if (upgrade.manaCostIncrease) manaCost += upgrade.manaCostIncrease;
+        if (upgrade.manaCostPercentIncrease) manaCostPercent += upgrade.manaCostPercentIncrease;
+        
+        if (upgrade.addEffect) {
+            effects.push(JSON.parse(JSON.stringify(upgrade.addEffect)));
+        }
+        
+        if (upgrade.modifyEffect) {
+            const effectToModify = effects.find(e => e.type === upgrade.modifyEffect!.type);
+            if (effectToModify) {
+                if (upgrade.modifyEffect.chanceIncrease) effectToModify.chance = Math.min(1, (effectToModify.chance || 0) + upgrade.modifyEffect.chanceIncrease);
+                if (upgrade.modifyEffect.durationIncrease) effectToModify.duration = (effectToModify.duration || 0) + upgrade.modifyEffect.durationIncrease;
+                if (upgrade.modifyEffect.valueIncrease) effectToModify.value = (effectToModify.value || 0) + upgrade.modifyEffect.valueIncrease;
+            }
+        }
+        
+        if (upgrade.addBonus) {
+            bonuses.push(JSON.parse(JSON.stringify(upgrade.addBonus)));
+        }
+    }
+
+    return { manaCost, manaCostPercent, damage, effects, bonuses };
+}
+
 
 export const calculateAllStats = (
     baseAttributes: CharacterAttributes, 
@@ -98,20 +142,20 @@ export const calculateAllStats = (
     learnedSkills.forEach(learnedSkill => {
         const skillDef = allSkills.find(s => s.id === learnedSkill.skillId);
         if (skillDef?.type === 'TAM_PHAP') {
-            skillDef.bonuses.forEach(bonus => {
-                const bonusValue = bonus.valuePerLevel * learnedSkill.currentLevel;
+            const calculatedBonuses = calculateSkillAttributesForLevel(skillDef, learnedSkill.currentLevel).bonuses;
+            calculatedBonuses.forEach(bonus => {
                 if (bonus.targetAttribute) {
                     if (bonus.modifier === 'ADDITIVE') {
-                        modifiedAttributes[bonus.targetAttribute] += bonusValue;
+                        modifiedAttributes[bonus.targetAttribute] += bonus.value;
                     } else if (bonus.modifier === 'MULTIPLIER') {
-                        modifiedAttributes[bonus.targetAttribute] *= (1 + bonusValue);
+                        modifiedAttributes[bonus.targetAttribute] *= (1 + bonus.value);
                     }
                 }
                 if (bonus.targetStat) {
                     if (bonus.modifier === 'ADDITIVE') {
-                        finalStats[bonus.targetStat] += bonusValue;
+                        finalStats[bonus.targetStat] += bonus.value;
                     } else if (bonus.modifier === 'MULTIPLIER') {
-                        finalStats[bonus.targetStat] *= (1 + bonusValue);
+                        finalStats[bonus.targetStat] *= (1 + bonus.value);
                     }
                 }
             });

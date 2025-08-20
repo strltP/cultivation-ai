@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import type { PlayerState, NPC, ChatMessage } from '../types/character';
+import type { PlayerState, NPC, ChatMessage, ApiUsageStats } from '../types/character';
 import type { Position } from '../types/common';
 import type { Dialogue, Interactable } from '../types/interaction';
 import type { MapID, PointOfInterest, TeleportLocation, GameMap } from '../types/map';
@@ -22,6 +22,7 @@ type InteractionDependencies = {
     setIsAlchemyPanelOpen: (isOpen: boolean) => void;
     addJournalEntry: (message: string) => void;
     allMaps: Record<string, GameMap>;
+    trackApiCall: (functionName: keyof ApiUsageStats['calls'], tokenCount: number) => void;
 };
 
 type InteractionBlockers = { 
@@ -53,7 +54,7 @@ export const useInteractionManager = (
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
     
-    const { handleAddItemToInventory, handleAddLinhThach, handleRemoveAndRespawn, handleChallenge, handleInitiateTrade, setPlantingPlot, setIsAlchemyPanelOpen, addJournalEntry, allMaps } = dependencies;
+    const { handleAddItemToInventory, handleAddLinhThach, handleRemoveAndRespawn, handleChallenge, handleInitiateTrade, setPlantingPlot, setIsAlchemyPanelOpen, addJournalEntry, allMaps, trackApiCall } = dependencies;
 
     const processInteraction = useCallback(async (target: Interactable) => {
         stopAllActions.current();
@@ -71,7 +72,8 @@ export const useInteractionManager = (
         if (!currentStateWithAdvancedTime) return;
 
         setIsLoading(true);
-        const response = await getInteractionResponse(currentStateWithAdvancedTime, target, ALL_ITEMS);
+        const { data: response, tokenCount } = await getInteractionResponse(currentStateWithAdvancedTime, target, ALL_ITEMS);
+        trackApiCall('getInteractionResponse', tokenCount);
         setIsLoading(false);
 
         if (!response) {
@@ -106,7 +108,7 @@ export const useInteractionManager = (
         if (target.type === 'chest') {
             handleRemoveAndRespawn(target as Interactable);
         }
-    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, handleAddLinhThach, handleAddItemToInventory, handleRemoveAndRespawn, stopAllActions, addJournalEntry]);
+    }, [updateAndPersistPlayerState, setIsLoading, setGameMessage, handleAddLinhThach, handleAddItemToInventory, handleRemoveAndRespawn, stopAllActions, addJournalEntry, trackApiCall]);
 
     const handleTeleport = useCallback((gate: TeleportLocation) => {
         stopAllActions.current();
@@ -384,7 +386,7 @@ export const useInteractionManager = (
         const chatSession = createChatSession(playerState, npc, savedHistory);
         setActiveChat(chatSession);
         setChatTargetNpc(npc);
-        setChatHistory(savedHistory.length > 0 ? savedHistory : [{ role: 'model', text: npc.prompt }]);
+        setChatHistory(savedHistory);
     }, [playerState, stopAllActions, setGameMessage]);
 
     const handleSendMessage = useCallback(async (message: string) => {
@@ -396,6 +398,9 @@ export const useInteractionManager = (
 
         try {
             const response = await activeChat.sendMessage({ message });
+            const tokenCount = response.usageMetadata?.totalTokenCount || 0;
+            trackApiCall('sendMessage', tokenCount);
+            
             const modelMessage: ChatMessage = { role: 'model', text: response.text };
             
             setChatHistory(prev => [...prev, modelMessage]);
@@ -415,7 +420,7 @@ export const useInteractionManager = (
         } finally {
             setIsChatLoading(false);
         }
-    }, [activeChat, isChatLoading, chatTargetNpc, updateAndPersistPlayerState]);
+    }, [activeChat, isChatLoading, chatTargetNpc, updateAndPersistPlayerState, trackApiCall]);
 
     const handleCloseChat = useCallback(() => {
         setActiveChat(null);
@@ -423,6 +428,93 @@ export const useInteractionManager = (
         setChatHistory([]);
         setIsChatLoading(false);
     }, []);
+
+    const handleGiftItem = useCallback((itemInventoryIndex: number, quantity: number) => {
+        if (!chatTargetNpc) return;
+
+        const itemSlot = playerState.inventory[itemInventoryIndex];
+        if (!itemSlot || itemSlot.quantity < quantity) {
+            setGameMessage("Không đủ vật phẩm để tặng.");
+            return;
+        }
+        const itemDef = ALL_ITEMS.find(i => i.id === itemSlot.itemId);
+        if (!itemDef) return;
+
+        updateAndPersistPlayerState((p: PlayerState) => {
+            if (!p) return p;
+            const currentItemSlot = p.inventory[itemInventoryIndex];
+            if (!currentItemSlot || currentItemSlot.quantity < quantity) {
+                return p;
+            }
+
+            const newInventory = JSON.parse(JSON.stringify(p.inventory));
+            if (newInventory[itemInventoryIndex].quantity > quantity) {
+                newInventory[itemInventoryIndex].quantity -= quantity;
+            } else {
+                newInventory.splice(itemInventoryIndex, 1);
+            }
+
+            const newGeneratedNpcs = JSON.parse(JSON.stringify(p.generatedNpcs));
+            const npcsOnMap = newGeneratedNpcs[p.currentMap] || [];
+            const npcIndex = npcsOnMap.findIndex((n: NPC) => n.id === chatTargetNpc.id);
+            
+            if (npcIndex === -1) return p;
+
+            const currentNpc = npcsOnMap[npcIndex];
+            if (!currentNpc.inventory) currentNpc.inventory = [];
+            let remainingQuantity = quantity;
+            if (itemDef.stackable > 1) {
+                for (const npcSlot of currentNpc.inventory) {
+                    if (remainingQuantity <= 0) break;
+                    if (npcSlot.itemId === itemDef.id && npcSlot.quantity < itemDef.stackable) {
+                        const canAdd = itemDef.stackable - npcSlot.quantity;
+                        const amountToAdd = Math.min(remainingQuantity, canAdd);
+                        npcSlot.quantity += amountToAdd;
+                        remainingQuantity -= amountToAdd;
+                    }
+                }
+            }
+            while(remainingQuantity > 0) {
+                const amountForNewStack = Math.min(remainingQuantity, itemDef.stackable);
+                currentNpc.inventory.push({ itemId: itemDef.id, quantity: amountForNewStack });
+                remainingQuantity -= amountForNewStack;
+            }
+
+            return { ...p, inventory: newInventory, generatedNpcs: newGeneratedNpcs };
+        });
+        
+        handleSendMessage(`(Hệ thống: ${playerState.name} đã tặng bạn ${quantity}x ${itemDef.name}.)`);
+
+    }, [chatTargetNpc, playerState, updateAndPersistPlayerState, handleSendMessage, setGameMessage]);
+
+    const handleGiftLinhThach = useCallback((amount: number) => {
+        if (!chatTargetNpc || amount <= 0) return;
+        
+        if (playerState.linhThach < amount) {
+            setGameMessage("Không đủ Linh Thạch để tặng.");
+            return;
+        }
+
+        updateAndPersistPlayerState((p: PlayerState) => {
+            if (!p || p.linhThach < amount) return p;
+
+            const newLinhThach = p.linhThach - amount;
+
+            const newGeneratedNpcs = JSON.parse(JSON.stringify(p.generatedNpcs));
+            const npcsOnMap = newGeneratedNpcs[p.currentMap] || [];
+            const npcIndex = npcsOnMap.findIndex((n: NPC) => n.id === chatTargetNpc.id);
+
+            if (npcIndex === -1) return p;
+
+            const currentNpc = npcsOnMap[npcIndex];
+            currentNpc.linhThach = (currentNpc.linhThach || 0) + amount;
+
+            return { ...p, linhThach: newLinhThach, generatedNpcs: newGeneratedNpcs };
+        });
+
+        handleSendMessage(`(Hệ thống: ${playerState.name} đã tặng bạn ${amount.toLocaleString()} Linh Thạch.)`);
+
+    }, [chatTargetNpc, playerState, updateAndPersistPlayerState, handleSendMessage, setGameMessage]);
 
     return {
         activeDialogue, setActiveDialogue,
@@ -437,11 +529,13 @@ export const useInteractionManager = (
         handleEnterPoi,
         handleGenericInteraction,
         handleGatherInteractable,
-        handleViewInfoInteractable,
         handleDestroyInteractable,
+        handleViewInfoInteractable,
         handleInitiateTrade,
         handleStartChat,
         handleSendMessage,
         handleCloseChat,
+        handleGiftItem,
+        handleGiftLinhThach,
     };
 };

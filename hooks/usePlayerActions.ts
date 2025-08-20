@@ -181,53 +181,56 @@ export const usePlayerActions = (
         });
     }, [updateAndPersistPlayerState, setGameMessage, stopAllActions]);
 
-    const handleStartSeclusion = useCallback(async (months: number) => {
-        if (months <= 0) return;
+    const handleStartSeclusion = useCallback(async (days: number) => {
+        if (days <= 0) return;
         stopAllActions.current();
         setIsSimulating(true);
 
+        const monthsToSkip = Math.floor(days / DAYS_PER_MONTH);
         let tempState = { ...playerState };
         const collectedReportEntries: JournalEntry[] = [];
 
-        for (let i = 0; i < months; i++) {
-            setSimulationProgress({ current: i + 1, total: months });
-
-            // Simulate one month at a time
-            const { updatedNpcs: npcsAfterActions, newJournalEntries: actionJournalEntries } = processNpcActionsForTimeSkip(tempState, 1);
-            let stateAfterActions = { ...tempState, generatedNpcs: npcsAfterActions };
-
-            const { updatedNpcs: finalNpcs, newJournalEntries: progressionJournalEntries } = processNpcTimeSkip(stateAfterActions, 1);
-            
-            // Collect entries for the report
-            collectedReportEntries.push(...actionJournalEntries, ...progressionJournalEntries);
-
-            // Update time for the next iteration
-            const timeAfterMonth = advanceTime(tempState.time, DAYS_PER_MONTH * 24 * 60);
-            tempState = { ...tempState, time: timeAfterMonth, generatedNpcs: finalNpcs };
-
-            // Yield to the main thread to allow UI updates
-            await new Promise(resolve => setTimeout(resolve, 0));
+        if (monthsToSkip > 0) {
+            for (let i = 0; i < monthsToSkip; i++) {
+                setSimulationProgress({ current: i + 1, total: monthsToSkip });
+                
+                const { updatedNpcs: npcsAfterActions, newJournalEntries: actionJournalEntries } = processNpcActionsForTimeSkip(tempState, 1);
+                let stateAfterActions = { ...tempState, generatedNpcs: npcsAfterActions };
+    
+                const { updatedNpcs: finalNpcs, newJournalEntries: progressionJournalEntries } = processNpcTimeSkip(stateAfterActions, 1);
+                
+                collectedReportEntries.push(...actionJournalEntries, ...progressionJournalEntries);
+    
+                const timeAfterMonth = advanceTime(tempState.time, DAYS_PER_MONTH * 24 * 60);
+                tempState = { ...tempState, time: timeAfterMonth, generatedNpcs: finalNpcs };
+    
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
         }
+        
+        const finalTime = advanceTime(playerState.time, days * 24 * 60);
 
         // --- Player Progression ---
-        const totalHoursToAdvance = months * DAYS_PER_MONTH * 24;
+        const totalHoursToAdvance = days * 24;
         const SECLUSION_QI_PER_HOUR_BASE = 0.15;
         const NGO_TINH_FACTOR_QI = 0.005;
         const realmMultiplier = 1 + (playerState.cultivation.realmIndex * 0.15);
         const qiPerHour = (SECLUSION_QI_PER_HOUR_BASE + (playerState.attributes.ngoTinh * NGO_TINH_FACTOR_QI)) * realmMultiplier;
         const totalQiGained = Math.round(qiPerHour * totalHoursToAdvance);
         
-        const CAM_NGO_PER_MONTH_BASE = 10;
-        const totalCamNgoGained = Math.round((CAM_NGO_PER_MONTH_BASE + playerState.attributes.ngoTinh * 0.5 + playerState.attributes.tamCanh * 0.5) * months);
+        const CAM_NGO_PER_DAY_BASE = 10 / DAYS_PER_MONTH;
+        const ngoTinhFactor = 0.5 / DAYS_PER_MONTH;
+        const tamCanhFactor = 0.5 / DAYS_PER_MONTH;
+        const totalCamNgoGained = Math.round((CAM_NGO_PER_DAY_BASE + playerState.attributes.ngoTinh * ngoTinhFactor + playerState.attributes.tamCanh * tamCanhFactor) * days);
 
         const newQi = Math.min(playerState.stats.maxQi, playerState.qi + totalQiGained);
         const newCamNgo = playerState.camNgo + totalCamNgoGained;
 
-        const message = `Bế quan ${months} tháng kết thúc. Chân khí tăng ${totalQiGained.toLocaleString()}, Cảm ngộ tăng ${totalCamNgoGained.toLocaleString()}.`;
+        const message = `Bế quan kết thúc. Chân khí tăng ${totalQiGained.toLocaleString()}, Cảm ngộ tăng ${totalCamNgoGained.toLocaleString()}.`;
         setGameMessage(message);
         
         const playerJournalEntry: JournalEntry = {
-            time: tempState.time,
+            time: finalTime,
             message: message,
             type: 'player',
         };
@@ -235,12 +238,12 @@ export const usePlayerActions = (
         // Final state update
         updateAndPersistPlayerState(prev => ({
             ...prev,
-            time: tempState.time,
+            time: finalTime,
             qi: newQi,
             camNgo: newCamNgo,
             hp: prev.stats.maxHp,
             mana: prev.stats.maxMana,
-            generatedNpcs: tempState.generatedNpcs,
+            generatedNpcs: tempState.generatedNpcs, // Use the NPC state from after the monthly simulation
             journal: [...(prev.journal || []), ...collectedReportEntries, playerJournalEntry],
         }));
 
@@ -285,8 +288,10 @@ export const usePlayerActions = (
                 setGameMessage("Kỹ năng đã đạt tầng tối đa.");
                 return prev;
             }
+            
+            const exponent = skillDef.enlightenmentCostExponent || 1;
+            const cost = Math.round(skillDef.enlightenmentBaseCost + skillDef.enlightenmentCostPerLevel * Math.pow(skillToLevelUp.currentLevel, exponent));
 
-            const cost = skillDef.enlightenmentBaseCost + skillToLevelUp.currentLevel * skillDef.enlightenmentCostPerLevel;
             if (prev.camNgo < cost) {
                 setGameMessage("Điểm cảm ngộ không đủ để đột phá.");
                 return prev;

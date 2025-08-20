@@ -132,7 +132,7 @@ export const ALL_INTERACTABLES: InteractableTemplate[] = [
         type: 'herb',
         prompt: 'Một bụi Tinh Lực Thảo xanh mướt, tràn đầy sinh khí, có thể hái lượm.',
         loot: [{ itemId: 'material_tinh_luc_thao', quantity: [1, 3], chance: 0.95 }],
-        repopulationTimeMinutes: [21600, 43200], // 15-30 days
+        repopulationTimeMinutes: [216000, 432000], // 15-30 days
     },
     {
         baseId: 'herb_da_hop_hoa_node',

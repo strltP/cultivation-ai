@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MAPS, MAP_AREAS_BY_MAP, POIS_BY_MAP } from '../../../../mapdata';
 import type { MapID, PointOfInterestType } from '../../../../types/map';
-import { FaGlobeAsia, FaMap, FaCity, FaLandmark, FaGopuram, FaHome, FaSkullCrossbones, FaUniversity, FaChevronRight } from 'react-icons/fa';
+import { FaGlobeAsia, FaMap, FaCity, FaLandmark, FaGopuram, FaHome, FaSkullCrossbones, FaUniversity, FaChevronRight, FaUsers } from 'react-icons/fa';
 
 const POI_ICONS: Record<PointOfInterestType, React.ReactNode> = {
     village: <FaHome className="inline-block text-green-300" />,
@@ -10,6 +10,7 @@ const POI_ICONS: Record<PointOfInterestType, React.ReactNode> = {
     dungeon: <FaSkullCrossbones className="inline-block text-red-400" />,
     landmark: <FaLandmark className="inline-block text-gray-300" />,
     building: <FaUniversity className="inline-block text-purple-300" />,
+    clan: <FaUsers className="inline-block text-orange-300" />,
 };
 
 const TheGioiTab: React.FC = () => {

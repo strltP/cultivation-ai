@@ -1,7 +1,7 @@
 
 import React from 'react';
 import type { PointOfInterest, PointOfInterestType } from '../types/map';
-import { FaCity, FaGopuram, FaHome, FaSkullCrossbones, FaLandmark, FaUniversity } from 'react-icons/fa';
+import { FaCity, FaGopuram, FaHome, FaSkullCrossbones, FaLandmark, FaUniversity, FaUsers } from 'react-icons/fa';
 
 interface PointOfInterestProps {
   poi: PointOfInterest;
@@ -15,6 +15,7 @@ const POI_STYLES: { [key in PointOfInterestType]: { icon: React.ReactNode; color
     dungeon: { icon: <FaSkullCrossbones size={32}/>, color: 'text-red-400', shadow: 'drop-shadow(0 0 8px #f87171)' },
     landmark: { icon: <FaLandmark size={32}/>, color: 'text-gray-300', shadow: 'drop-shadow(0 0 8px #d1d5db)' },
     building: { icon: <FaUniversity size={32}/>, color: 'text-purple-300', shadow: 'drop-shadow(0 0 8px #c084fc)'},
+    clan: { icon: <FaUsers size={40}/>, color: 'text-orange-300', shadow: 'drop-shadow(0 0 10px #fdba74)'},
 };
 
 

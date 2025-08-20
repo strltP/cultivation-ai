@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useMemo, useEffect, ReactNode } from 'react';
-import type { PlayerState, NPC, ChatMessage, JournalEntry } from '../types/character';
+import type { PlayerState, NPC, ChatMessage, JournalEntry, ApiUsageStats } from '../types/character';
 import type { Position } from '../types/common';
 import type { GameMap, MapArea, PointOfInterest, TeleportLocation, MapID } from '../types/map';
 import type { Dialogue, Interactable } from '../types/interaction';
@@ -11,6 +11,7 @@ import { useInteractionManager } from './useInteractionManager';
 import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP, MAP_AREAS_BY_MAP } from '../mapdata';
 import { advanceTime, gameTimeToMinutes } from '../services/timeService';
 import { ALL_ITEMS } from '../data/items/index';
+import { ALL_INTERACTABLES } from '../data/interactables';
 import { ALL_RECIPES } from '../../data/alchemy_recipes';
 import type { CombatState, PlayerAction } from '../types/combat';
 import { generatePlaceNames, PlaceToName } from '../services/geminiService';
@@ -75,7 +76,7 @@ interface IPlayerActionsContext {
     handleUseItem: (itemIndex: number) => void;
     handleTalismanTeleport: (targetMap: MapID) => void;
     handleCraftItem: (recipeId: string) => void;
-    handleStartSeclusion: (months: number) => void;
+    handleStartSeclusion: (days: number) => void;
 }
 
 interface ICombatContext {
@@ -114,6 +115,8 @@ interface IInteractionContext {
     handleStartChat: (npc: NPC) => void;
     handleSendMessage: (message: string) => Promise<void>;
     handleCloseChat: () => void;
+    handleGiftItem: (itemInventoryIndex: number, quantity: number) => void;
+    handleGiftLinhThach: (amount: number) => void;
 }
 
 
@@ -166,8 +169,31 @@ interface GameProviderProps {
 export const GameProvider: React.FC<GameProviderProps> = ({ children, playerState, updateAndPersistPlayerState }) => {
     const [isGameReady, setIsGameReady] = useState(false);
     const [isGeneratingNames, setIsGeneratingNames] = useState(false);
+
+    const trackApiCall = useCallback((functionName: keyof ApiUsageStats['calls'], tokenCount: number) => {
+        if (tokenCount === 0) return;
+        updateAndPersistPlayerState((p: PlayerState) => {
+            if (!p) return p;
+            const stats = JSON.parse(JSON.stringify(
+                p.apiUsageStats || {
+                    totalTokens: 0,
+                    calls: {
+                        getInteractionResponse: 0,
+                        getNpcDefeatDecision: 0,
+                        generateNpcs: 0,
+                        generatePlaceNames: 0,
+                        sendMessage: 0,
+                    }
+                }
+            ));
+            
+            stats.totalTokens = (stats.totalTokens || 0) + tokenCount;
+            stats.calls[functionName] = (stats.calls[functionName] || 0) + 1;
+            
+            return { ...p, apiUsageStats: stats };
+        });
+    }, [updateAndPersistPlayerState]);
     
-    // Game Initialization Logic (e.g., generating names)
     useEffect(() => {
         const initializeGame = async () => {
             if (playerState.useRandomNames && (!playerState.nameOverrides || Object.keys(playerState.nameOverrides).length === 0)) {
@@ -186,7 +212,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                 });
                 Object.values(TELEPORT_GATES_BY_MAP).flat().forEach(gate => placesToName.push({ id: gate.id, type: 'Trận Pháp', originalName: gate.name }));
 
-                const overrides = await generatePlaceNames(placesToName);
+                const { data: overrides, tokenCount } = await generatePlaceNames(placesToName);
+                trackApiCall('generatePlaceNames', tokenCount);
                 
                 updateAndPersistPlayerState(p => ({ ...p, nameOverrides: overrides }));
                 setIsGeneratingNames(false);
@@ -194,9 +221,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
             setIsGameReady(true);
         };
         initializeGame();
-    }, []); // Run only once on mount
+    }, []);
 
-    // NPC Action Logic (Movement & Intent)
     useEffect(() => {
         if (!isGameReady || !playerState || !playerState.time) return;
 
@@ -204,18 +230,41 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         const monthsPassed = (playerState.time.year - lastCheck.year) * 12 + (playerState.time.month - lastCheck.month);
         
         if (monthsPassed >= 1) {
-             const { updatedNpcs, newJournalEntries } = processNpcActionsForTimeSkip(playerState, monthsPassed);
-             if (newJournalEntries.length > 0 || JSON.stringify(updatedNpcs) !== JSON.stringify(playerState.generatedNpcs)) {
-                  updateAndPersistPlayerState(p => {
+            const { updatedNpcs, newJournalEntries, harvestedInteractables } = processNpcActionsForTimeSkip(playerState, monthsPassed);
+            
+            if (newJournalEntries.length > 0 || harvestedInteractables.length > 0 || JSON.stringify(updatedNpcs) !== JSON.stringify(playerState.generatedNpcs)) {
+                  updateAndPersistPlayerState((p: PlayerState) => {
                     if (!p) return p;
+                    
+                    let newRespawningInteractables = [...p.respawningInteractables];
+                    if (harvestedInteractables.length > 0) {
+                        for (const interactable of harvestedInteractables) {
+                            const template = ALL_INTERACTABLES.find(t => t.baseId === interactable.baseId);
+                            if (template && template.repopulationTimeMinutes) {
+                                const [minTime, maxTime] = template.repopulationTimeMinutes;
+                                const repopulationMinutes = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
+                                const respawnAt = advanceTime(p.time, repopulationMinutes);
+                                newRespawningInteractables.push({
+                                    originalId: interactable.id,
+                                    baseId: interactable.baseId,
+                                    mapId: interactable.mapId,
+                                    areaId: interactable.areaId,
+                                    originalPosition: interactable.position,
+                                    respawnAt: respawnAt,
+                                });
+                            }
+                        }
+                    }
+
                     return {
                         ...p,
                         generatedNpcs: updatedNpcs,
                         journal: [...(p.journal || []), ...newJournalEntries],
                         lastNpcProgressionCheck: p.time,
+                        respawningInteractables: newRespawningInteractables,
                     };
                 });
-             }
+            }
         }
     }, [playerState.time.month, playerState.time.year, isGameReady, playerState, updateAndPersistPlayerState]);
 
@@ -306,7 +355,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         pois: effectivePois,
         mapAreas: effectiveMapAreas,
         teleportGates: effectiveTeleportGates,
-    });
+    }, trackApiCall);
 
     const playerActions = usePlayerActionsManager(
         playerState,
@@ -320,11 +369,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
     const combatManager = useCombatManager(
         playerState, updateAndPersistPlayerState, setGameMessage, addJournalEntry, stopAllActions,
         inventoryManager.handleAddItemToInventory,
-        inventoryManager.handleAddLinhThach
+        inventoryManager.handleAddLinhThach,
+        trackApiCall
     );
 
     const handleInitiateTrade = (npcToTradeWith: NPC) => {
-        // Find the most up-to-date version of the NPC from the player state to prevent using a stale object.
         const freshNpc = playerState.generatedNpcs[playerState.currentMap]?.find(n => n.id === npcToTradeWith.id);
 
         if (!freshNpc) {
@@ -332,7 +381,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
             return;
         }
         stopAllActions.current();
-        setTradingNpc(freshNpc); // Use the fresh NPC object
+        setTradingNpc(freshNpc);
     };
 
     const interactionManager = useInteractionManager(
@@ -348,7 +397,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
             setPlantingPlot,
             setIsAlchemyPanelOpen,
             addJournalEntry,
-            allMaps
+            allMaps,
+            trackApiCall,
         },
         stopAllActions
     );
@@ -404,7 +454,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
             updateAndPersistPlayerState(prev => {
                 if (!prev) return prev;
 
-                // 1. Consume the item
                 const newInventory = [...prev.inventory];
                 const itemSlot = newInventory[itemIndexToConsume];
 
@@ -419,7 +468,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                     newInventory.splice(itemIndexToConsume, 1);
                 }
                 
-                const timeAdvanced = advanceTime(prev.time, 24 * 60); // Teleporting takes 1 day
+                const timeAdvanced = advanceTime(prev.time, 24 * 60);
                 
                 const landingPositions: Record<MapID, Position> = {
                     'BAC_VUC': { x: 400, y: 400 },
@@ -436,6 +485,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                     'THANH_VAN_MON': { x: 1500, y: 3800 },
                     'DUOC_VIEN': { x: 1000, y: 1300 },
                     'HAC_AM_SAM_LAM': { x: 1500, y: 3800 },
+                    'MOC_GIA': { x: 1250, y: 1700 },
+                    'TIEU_GIA': { x: 1400, y: 1900 },
                 };
 
                 return {

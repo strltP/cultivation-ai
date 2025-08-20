@@ -9,6 +9,8 @@ import * as moLinhThanhData from './thien_nam/thuong_lan_de_quoc/mo_linh_thanh/i
 import * as luuLyTongData from './thien_nam/thuong_lan_de_quoc/that_huyen_thanh/luu_ly_tong';
 import * as vanBaoLauData from './thien_nam/thuong_lan_de_quoc/that_huyen_thanh/van_bao_lau';
 import * as thienMaTuuLauData from './thien_nam/thuong_lan_de_quoc/that_huyen_thanh/thien_ma_tuu_lau';
+import * as mocGiaData from './thien_nam/thuong_lan_de_quoc/that_huyen_thanh/moc_gia';
+import * as tieuGiaData from './thien_nam/thuong_lan_de_quoc/mo_linh_thanh/tieu_gia';
 import * as thanhVanMonData from './thien_nam/thien_nguyen_son/thanh_van_mon';
 import * as duocVienData from './thien_nam/thien_nguyen_son/thanh_van_mon/duoc_vien';
 import * as lucYenThonData from './thien_nam/thuong_lan_de_quoc/luc_yen_thon/index';
@@ -32,6 +34,8 @@ const allMapData = {
     THANH_VAN_MON: thanhVanMonData,
     DUOC_VIEN: duocVienData,
     LUC_YEN_THON: lucYenThonData,
+    MOC_GIA: mocGiaData,
+    TIEU_GIA: tieuGiaData,
     BAC_VUC: bacVucData,
     HUYEN_NGOC_THANH: huyenNgocThanhData,
     DAI_HOANG: daiHoangData,

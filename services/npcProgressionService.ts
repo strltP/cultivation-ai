@@ -35,7 +35,7 @@ export const processNpcTimeSkip = (
             let intentMultiplier = 1.0;
             if (npc.currentIntent) {
                 switch (npc.currentIntent.type) {
-                    case 'MEDITATE':  intentMultiplier = 2.0; break;
+                    case 'MEDITATE':  intentMultiplier = 1.2; break; // Giảm từ 2.0
                     case 'GATHER':    intentMultiplier = 0.5; break;
                     case 'HUNT':      intentMultiplier = 0.5; break;
                     case 'TRADE':     intentMultiplier = 0.3; break;
@@ -44,8 +44,8 @@ export const processNpcTimeSkip = (
             }
             const BASE_QI_PER_HOUR = 0.08;
             const NGO_TINH_QI_FACTOR = 0.003;
-            const BASE_CAM_NGO_PER_HOUR = 0.1;
-            const NGO_TINH_CAM_NGO_FACTOR = 0.02;
+            const BASE_CAM_NGO_PER_HOUR = 1 / 90; // ~0.0111, giảm từ 0.1
+            const NGO_TINH_CAM_NGO_FACTOR = 1 / 450; // ~0.0022, giảm từ 0.02
             const realmMultiplier = 1 + (npc.cultivation.realmIndex * 0.15);
             
             const qiPerHour = (BASE_QI_PER_HOUR + (npc.attributes.ngoTinh * NGO_TINH_QI_FACTOR)) * realmMultiplier * intentMultiplier;

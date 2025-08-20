@@ -1,4 +1,5 @@
 import type { Skill } from '../../types/skill';
+import type { CharacterAttributes, CombatStats } from '../../types/stats';
 
 export const ALL_TAM_PHAP: Skill[] = [
     // -- HOÀNG GIAI --
@@ -11,9 +12,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 5,
         enlightenmentBaseCost: 40,
         enlightenmentCostPerLevel: 15,
+        enlightenmentCostExponent: 1.5,
         bonuses: [
-            { targetStat: 'maxMana', modifier: 'ADDITIVE', valuePerLevel: 20 },
+            { targetStat: 'maxMana', modifier: 'ADDITIVE', value: 20 },
         ],
+        levelBonuses: Array.from({ length: 4 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'maxMana', modifier: 'ADDITIVE', value: 20 } }
+        }))
     },
     {
         id: 'tam-phap-hoang-2',
@@ -24,9 +30,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 10,
         enlightenmentBaseCost: 40,
         enlightenmentCostPerLevel: 10,
+        enlightenmentCostExponent: 1.45,
         bonuses: [
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', valuePerLevel: 15 },
+            { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 15 },
         ],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 15 } }
+        }))
     },
     {
         id: 'tam-phap-hoang-3',
@@ -37,9 +48,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 10,
         enlightenmentBaseCost: 60,
         enlightenmentCostPerLevel: 20,
+        enlightenmentCostExponent: 1.6,
         bonuses: [
-            { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', valuePerLevel: 2 },
+            { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', value: 2 },
         ],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', value: 2 } }
+        }))
     },
     {
         id: 'tam-phap-hoang-4',
@@ -50,9 +66,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 10,
         enlightenmentBaseCost: 45,
         enlightenmentCostPerLevel: 10,
+        enlightenmentCostExponent: 1.48,
         bonuses: [
-            { targetAttribute: 'canCot', modifier: 'ADDITIVE', valuePerLevel: 1 },
+            { targetAttribute: 'canCot', modifier: 'ADDITIVE', value: 1 },
         ],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetAttribute: 'canCot', modifier: 'ADDITIVE', value: 1 } }
+        }))
     },
     {
         id: 'tam-phap-hoang-5',
@@ -63,9 +84,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 10,
         enlightenmentBaseCost: 45,
         enlightenmentCostPerLevel: 10,
+        enlightenmentCostExponent: 1.48,
         bonuses: [
-            { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', valuePerLevel: 1 },
+            { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 1 },
         ],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 1 } }
+        }))
     },
     {
         id: 'tam-phap-hoang-6',
@@ -76,9 +102,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 10,
         enlightenmentBaseCost: 50,
         enlightenmentCostPerLevel: 12,
+        enlightenmentCostExponent: 1.52,
         bonuses: [
-            { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', valuePerLevel: 1 },
+            { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', value: 1 },
         ],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', value: 1 } }
+        }))
     },
     {
         id: 'tam-phap-hoang-7',
@@ -89,9 +120,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 10,
         enlightenmentBaseCost: 50,
         enlightenmentCostPerLevel: 12,
+        enlightenmentCostExponent: 1.52,
         bonuses: [
-            { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', valuePerLevel: 1 },
+            { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', value: 1 },
         ],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', value: 1 } }
+        }))
     },
     {
         id: 'tam-phap-hoang-8',
@@ -102,9 +138,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 5,
         enlightenmentBaseCost: 80,
         enlightenmentCostPerLevel: 20,
+        enlightenmentCostExponent: 1.55,
         bonuses: [
-            { targetStat: 'critRate', modifier: 'ADDITIVE', valuePerLevel: 0.002 }, // +0.2% per level
+            { targetStat: 'critRate', modifier: 'ADDITIVE', value: 0.002 }, // +0.2% per level
         ],
+        levelBonuses: Array.from({ length: 4 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'critRate', modifier: 'ADDITIVE', value: 0.002 } }
+        }))
     },
     {
         id: 'tam-phap-hoang-9',
@@ -115,9 +156,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 5,
         enlightenmentBaseCost: 80,
         enlightenmentCostPerLevel: 20,
+        enlightenmentCostExponent: 1.55,
         bonuses: [
-            { targetStat: 'speed', modifier: 'ADDITIVE', valuePerLevel: 1 },
+            { targetStat: 'speed', modifier: 'ADDITIVE', value: 1 },
         ],
+        levelBonuses: Array.from({ length: 4 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'speed', modifier: 'ADDITIVE', value: 1 } }
+        }))
     },
     {
         id: 'tam-phap-hoang-10',
@@ -128,9 +174,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 10,
         enlightenmentBaseCost: 40,
         enlightenmentCostPerLevel: 10,
+        enlightenmentCostExponent: 1.46,
         bonuses: [
-            { targetStat: 'defensePower', modifier: 'ADDITIVE', valuePerLevel: 2 },
+            { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 2 },
         ],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 2 } }
+        }))
     },
     {
         id: 'tam-phap-hoang-11',
@@ -141,9 +192,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 10,
         enlightenmentBaseCost: 40,
         enlightenmentCostPerLevel: 10,
+        enlightenmentCostExponent: 1.46,
         bonuses: [
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', valuePerLevel: 2 },
+            { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 2 },
         ],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 2 } }
+        }))
     },
     {
         id: 'tam-phap-hoang-12',
@@ -154,10 +210,23 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 10,
         enlightenmentBaseCost: 50,
         enlightenmentCostPerLevel: 15,
+        enlightenmentCostExponent: 1.49,
         bonuses: [
-            { targetStat: 'defensePower', modifier: 'ADDITIVE', valuePerLevel: 5 },
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', valuePerLevel: 10 },
+            { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 5 },
+            { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 10 },
         ],
+        levelBonuses: Array.from({ length: 9 }, (_, i) => {
+            const level = i + 2;
+            const isHpLevel = level % 2 === 1; // Levels 3, 5, 7, 9 add HP
+            return {
+                level,
+                upgrade: {
+                    addBonus: isHpLevel
+                        ? { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 10 }
+                        : { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 5 }
+                }
+            };
+        })
     },
 
     // -- HUYỀN GIAI --
@@ -170,9 +239,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 8,
         enlightenmentBaseCost: 180,
         enlightenmentCostPerLevel: 35,
+        enlightenmentCostExponent: 1.7,
         bonuses: [
-            { targetStat: 'defensePower', modifier: 'ADDITIVE', valuePerLevel: 5 },
+            { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 5 },
         ],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 5 } }
+        }))
     },
     {
         id: 'tam-phap-huyen-2',
@@ -183,9 +257,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 8,
         enlightenmentBaseCost: 180,
         enlightenmentCostPerLevel: 35,
+        enlightenmentCostExponent: 1.7,
         bonuses: [
-            { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', valuePerLevel: 4 },
+            { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 4 },
         ],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 4 } }
+        }))
     },
     {
         id: 'tam-phap-huyen-3',
@@ -196,10 +275,23 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 8,
         enlightenmentBaseCost: 250,
         enlightenmentCostPerLevel: 50,
+        enlightenmentCostExponent: 1.75,
         bonuses: [
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', valuePerLevel: 50 },
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', valuePerLevel: 3 },
+            { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 50 },
+            { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 3 },
         ],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => {
+            const level = i + 2;
+            const isAttackPowerLevel = level % 2 === 1; // Levels 3, 5, 7 add Attack Power
+            return {
+                level,
+                upgrade: {
+                    addBonus: isAttackPowerLevel
+                        ? { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 3 }
+                        : { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 50 }
+                }
+            };
+        })
     },
     {
         id: 'tam-phap-huyen-4',
@@ -210,10 +302,15 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 8,
         enlightenmentBaseCost: 200,
         enlightenmentCostPerLevel: 40,
+        enlightenmentCostExponent: 1.72,
         bonuses: [
-            { targetAttribute: 'canCot', modifier: 'ADDITIVE', valuePerLevel: 3 },
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', valuePerLevel: 30 },
+            { targetAttribute: 'canCot', modifier: 'ADDITIVE', value: 3 },
+            { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 30 },
         ],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetAttribute: 'canCot', modifier: 'ADDITIVE', value: 3 } }
+        }))
     },
     {
         id: 'tam-phap-huyen-5',
@@ -224,10 +321,23 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 8,
         enlightenmentBaseCost: 220,
         enlightenmentCostPerLevel: 45,
+        enlightenmentCostExponent: 1.73,
         bonuses: [
-            { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', valuePerLevel: 3 },
-            { targetStat: 'speed', modifier: 'ADDITIVE', valuePerLevel: 2 },
+            { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 3 },
+            { targetStat: 'speed', modifier: 'ADDITIVE', value: 2 },
         ],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => {
+            const level = i + 2;
+            const isSpeedLevel = level % 2 === 1; // Levels 3, 5, 7 add Speed
+            return {
+                level,
+                upgrade: {
+                    addBonus: isSpeedLevel
+                        ? { targetStat: 'speed', modifier: 'ADDITIVE', value: 2 }
+                        : { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 3 }
+                }
+            };
+        })
     },
     {
         id: 'tam-phap-huyen-6',
@@ -238,10 +348,15 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 8,
         enlightenmentBaseCost: 280,
         enlightenmentCostPerLevel: 60,
+        enlightenmentCostExponent: 1.78,
         bonuses: [
-            { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', valuePerLevel: 3 },
-            { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', valuePerLevel: 3 },
+            { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', value: 3 },
+            { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', value: 3 },
         ],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', value: 3 } }
+        }))
     },
     {
         id: 'tam-phap-huyen-7',
@@ -252,10 +367,15 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 8,
         enlightenmentBaseCost: 300,
         enlightenmentCostPerLevel: 65,
+        enlightenmentCostExponent: 1.76,
         bonuses: [
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', valuePerLevel: 8 },
-            { targetStat: 'critDamage', modifier: 'ADDITIVE', valuePerLevel: 0.05 }, // +5% crit damage
+            { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 8 },
+            { targetStat: 'critDamage', modifier: 'ADDITIVE', value: 0.05 }, // +5% crit damage
         ],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 8 } }
+        }))
     },
     {
         id: 'tam-phap-huyen-8',
@@ -266,10 +386,15 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 8,
         enlightenmentBaseCost: 260,
         enlightenmentCostPerLevel: 55,
+        enlightenmentCostExponent: 1.74,
         bonuses: [
-            { targetStat: 'defensePower', modifier: 'ADDITIVE', valuePerLevel: 10 },
-            { targetStat: 'speed', modifier: 'ADDITIVE', valuePerLevel: -1 },
+            { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 10 },
+            { targetStat: 'speed', modifier: 'ADDITIVE', value: -1 },
         ],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 10 } }
+        }))
     },
     {
         id: 'tam-phap-huyen-9',
@@ -280,9 +405,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 8,
         enlightenmentBaseCost: 240,
         enlightenmentCostPerLevel: 50,
+        enlightenmentCostExponent: 1.77,
         bonuses: [
-            { targetStat: 'maxMana', modifier: 'ADDITIVE', valuePerLevel: 40 },
+            { targetStat: 'maxMana', modifier: 'ADDITIVE', value: 40 },
         ],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'maxMana', modifier: 'ADDITIVE', value: 40 } }
+        }))
     },
     {
         id: 'tam-phap-huyen-10',
@@ -293,10 +423,15 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 8,
         enlightenmentBaseCost: 400,
         enlightenmentCostPerLevel: 100,
+        enlightenmentCostExponent: 1.8,
         bonuses: [
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', valuePerLevel: 15 },
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', valuePerLevel: -20 },
+            { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 15 },
+            { targetStat: 'maxHp', modifier: 'ADDITIVE', value: -20 },
         ],
+        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 15 } }
+        }))
     },
     
     // -- ĐỊA GIAI --
@@ -309,9 +444,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 6,
         enlightenmentBaseCost: 1000,
         enlightenmentCostPerLevel: 200,
+        enlightenmentCostExponent: 1.9,
         bonuses: [
-            { targetStat: 'attackPower', modifier: 'MULTIPLIER', valuePerLevel: 0.05 }, // +5% per level
+            { targetStat: 'attackPower', modifier: 'MULTIPLIER', value: 0.05 }, // +5% per level
         ],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'attackPower', modifier: 'MULTIPLIER', value: 0.05 } }
+        }))
     },
     {
         id: 'tam-phap-dia-2',
@@ -322,12 +462,24 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 6,
         enlightenmentBaseCost: 1500,
         enlightenmentCostPerLevel: 300,
+        enlightenmentCostExponent: 2.0,
         bonuses: [
-            { targetAttribute: 'canCot', modifier: 'ADDITIVE', valuePerLevel: 5 },
-            { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', valuePerLevel: 5 },
-            { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', valuePerLevel: 5 },
-            { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', valuePerLevel: 5 },
+            { targetAttribute: 'canCot', modifier: 'ADDITIVE', value: 5 },
+            { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 5 },
+            { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', value: 5 },
+            { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', value: 5 },
         ],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => {
+            const level = i + 2;
+            const attributesToCycle: (keyof CharacterAttributes)[] = ['canCot', 'thanPhap', 'thanThuc', 'ngoTinh', 'tamCanh'];
+            const attribute = attributesToCycle[i % attributesToCycle.length];
+            return {
+                level,
+                upgrade: {
+                    addBonus: { targetAttribute: attribute, modifier: 'ADDITIVE', value: 5 }
+                }
+            };
+        })
     },
     {
         id: 'tam-phap-dia-3',
@@ -338,10 +490,15 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 6,
         enlightenmentBaseCost: 1200,
         enlightenmentCostPerLevel: 250,
+        enlightenmentCostExponent: 1.92,
         bonuses: [
-            { targetStat: 'critRate', modifier: 'ADDITIVE', valuePerLevel: 0.01 }, // +1% crit rate
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', valuePerLevel: 200 },
+            { targetStat: 'critRate', modifier: 'ADDITIVE', value: 0.01 }, // +1% crit rate
+            { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 200 },
         ],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'critRate', modifier: 'ADDITIVE', value: 0.01 } } 
+        }))
     },
     {
         id: 'tam-phap-dia-4',
@@ -352,9 +509,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 6,
         enlightenmentBaseCost: 2000,
         enlightenmentCostPerLevel: 400,
+        enlightenmentCostExponent: 1.95,
         bonuses: [
-            { targetStat: 'maxMana', modifier: 'MULTIPLIER', valuePerLevel: 0.2 }, // +20% per level
+            { targetStat: 'maxMana', modifier: 'MULTIPLIER', value: 0.2 }, // +20% per level
         ],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'maxMana', modifier: 'MULTIPLIER', value: 0.2 } }
+        }))
     },
     {
         id: 'tam-phap-dia-5',
@@ -365,10 +527,15 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 6,
         enlightenmentBaseCost: 1800,
         enlightenmentCostPerLevel: 350,
+        enlightenmentCostExponent: 1.94,
         bonuses: [
-            { targetAttribute: 'canCot', modifier: 'ADDITIVE', valuePerLevel: 8 },
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', valuePerLevel: 250 },
+            { targetAttribute: 'canCot', modifier: 'ADDITIVE', value: 8 },
+            { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 250 },
         ],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetAttribute: 'canCot', modifier: 'ADDITIVE', value: 8 } }
+        }))
     },
     {
         id: 'tam-phap-dia-6',
@@ -379,11 +546,16 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 6,
         enlightenmentBaseCost: 2200,
         enlightenmentCostPerLevel: 450,
+        enlightenmentCostExponent: 2.05,
         bonuses: [
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', valuePerLevel: 300 },
-            { targetStat: 'critDamage', modifier: 'ADDITIVE', valuePerLevel: 0.1 },
-            { targetStat: 'defensePower', modifier: 'MULTIPLIER', valuePerLevel: -0.05 },
+            { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 300 },
+            { targetStat: 'critDamage', modifier: 'ADDITIVE', value: 0.1 },
+            { targetStat: 'defensePower', modifier: 'MULTIPLIER', value: -0.05 },
         ],
+        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 300 } }
+        }))
     },
 
     // -- THIÊN GIAI --
@@ -396,10 +568,15 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 4,
         enlightenmentBaseCost: 5000,
         enlightenmentCostPerLevel: 1000,
+        enlightenmentCostExponent: 2.3,
         bonuses: [
-            { targetStat: 'maxHp', modifier: 'MULTIPLIER', valuePerLevel: 0.2 }, // +20% HP
-            { targetStat: 'defensePower', modifier: 'MULTIPLIER', valuePerLevel: 0.15 }, // +15% Def
+            { targetStat: 'maxHp', modifier: 'MULTIPLIER', value: 0.2 }, // +20% HP
+            { targetStat: 'defensePower', modifier: 'MULTIPLIER', value: 0.15 }, // +15% Def
         ],
+        levelBonuses: Array.from({ length: 3 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'maxHp', modifier: 'MULTIPLIER', value: 0.2 } }
+        }))
     },
     {
         id: 'tam-phap-thien-2',
@@ -410,13 +587,25 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 4,
         enlightenmentBaseCost: 8000,
         enlightenmentCostPerLevel: 2000,
+        enlightenmentCostExponent: 2.5,
         bonuses: [
-            { targetAttribute: 'canCot', modifier: 'MULTIPLIER', valuePerLevel: 0.1 },
-            { targetAttribute: 'thanPhap', modifier: 'MULTIPLIER', valuePerLevel: 0.1 },
-            { targetAttribute: 'thanThuc', modifier: 'MULTIPLIER', valuePerLevel: 0.1 },
-            { targetAttribute: 'ngoTinh', modifier: 'MULTIPLIER', valuePerLevel: 0.1 },
-            { targetStat: 'maxMana', modifier: 'MULTIPLIER', valuePerLevel: 0.2 },
+            { targetAttribute: 'canCot', modifier: 'MULTIPLIER', value: 0.1 },
+            { targetAttribute: 'thanPhap', modifier: 'MULTIPLIER', value: 0.1 },
+            { targetAttribute: 'thanThuc', modifier: 'MULTIPLIER', value: 0.1 },
+            { targetAttribute: 'ngoTinh', modifier: 'MULTIPLIER', value: 0.1 },
+            { targetStat: 'maxMana', modifier: 'MULTIPLIER', value: 0.2 },
         ],
+        levelBonuses: Array.from({ length: 3 }, (_, i) => {
+             const level = i + 2;
+            const attributesToCycle: (keyof CharacterAttributes)[] = ['canCot', 'thanPhap', 'thanThuc', 'ngoTinh', 'tamCanh'];
+            const attribute = attributesToCycle[i % attributesToCycle.length];
+            return {
+                level,
+                upgrade: {
+                    addBonus: { targetAttribute: attribute, modifier: 'MULTIPLIER', value: 0.1 }
+                }
+            };
+        })
     },
     {
         id: 'tam-phap-thien-3',
@@ -427,10 +616,15 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 4,
         enlightenmentBaseCost: 6000,
         enlightenmentCostPerLevel: 1500,
+        enlightenmentCostExponent: 2.4,
         bonuses: [
-            { targetStat: 'attackPower', modifier: 'MULTIPLIER', valuePerLevel: 0.25 },
-            { targetStat: 'critRate', modifier: 'MULTIPLIER', valuePerLevel: 0.04 },
+            { targetStat: 'attackPower', modifier: 'MULTIPLIER', value: 0.25 },
+            { targetStat: 'critRate', modifier: 'MULTIPLIER', value: 0.04 },
         ],
+        levelBonuses: Array.from({ length: 3 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetStat: 'attackPower', modifier: 'MULTIPLIER', value: 0.25 } }
+        }))
     },
     {
         id: 'tam-phap-thien-4',
@@ -441,9 +635,14 @@ export const ALL_TAM_PHAP: Skill[] = [
         maxLevel: 4,
         enlightenmentBaseCost: 5500,
         enlightenmentCostPerLevel: 1300,
+        enlightenmentCostExponent: 2.35,
         bonuses: [
-            { targetAttribute: 'thanPhap', modifier: 'MULTIPLIER', valuePerLevel: 0.2 },
-            { targetStat: 'speed', modifier: 'MULTIPLIER', valuePerLevel: 0.05 },
+            { targetAttribute: 'thanPhap', modifier: 'MULTIPLIER', value: 0.2 },
+            { targetStat: 'speed', modifier: 'MULTIPLIER', value: 0.05 },
         ],
+        levelBonuses: Array.from({ length: 3 }, (_, i) => ({
+            level: i + 2,
+            upgrade: { addBonus: { targetAttribute: 'thanPhap', modifier: 'MULTIPLIER', value: 0.2 } }
+        }))
     }
 ];

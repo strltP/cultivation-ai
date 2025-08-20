@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { SKILL_TIER_INFO } from '../../../data/skills/skills';
 import { ALL_CONG_PHAP } from '../../../data/skills/cong_phap';
@@ -65,7 +66,6 @@ const SkillInfoCard: React.FC<{ skillDef: Skill }> = ({ skillDef }) => {
                         <span className="text-gray-300 font-semibold">Tiêu hao Linh Lực:</span>
                         <span className="text-cyan-300 font-bold">
                             {manaCost}
-                            {skillDef.manaCostPerLevel && skillDef.manaCostPerLevel > 0 ? ` (+${skillDef.manaCostPerLevel} mỗi tầng)` : ''}
                         </span>
                     </div>
                 )}

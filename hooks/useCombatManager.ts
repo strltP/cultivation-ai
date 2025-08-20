@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { PlayerState, NPC } from '../types/character';
+import type { PlayerState, NPC, ApiUsageStats } from '../types/character';
 import type { CombatState, CombatLogEntry, PlayerAction, NpcAction, NpcDecision, ActiveStatusEffect } from '../types/combat';
 import type { Interactable } from '../types/interaction';
 import * as combatService from '../services/combatService';
@@ -12,6 +12,7 @@ import type { InventorySlot } from '../types/item';
 import { INVENTORY_SIZE } from '../constants';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
 import { advanceTime, gameTimeToMinutes } from '../services/timeService';
+import { calculateSkillAttributesForLevel } from '../services/cultivationService';
 
 
 export const useCombatManager = (
@@ -21,7 +22,8 @@ export const useCombatManager = (
     addJournalEntry: (message: string) => void,
     stopAllActions: React.MutableRefObject<() => void>,
     handleAddItemToInventory: (itemId: string, quantity: number) => void,
-    handleAddLinhThach: (amount: number) => void
+    handleAddLinhThach: (amount: number) => void,
+    trackApiCall: (functionName: keyof ApiUsageStats['calls'], tokenCount: number) => void
 ) => {
     const [combatState, setCombatState] = useState<CombatState | null>(null);
 
@@ -275,10 +277,11 @@ export const useCombatManager = (
     }, [combatState, setGameMessage, updateAndPersistPlayerState, addJournalEntry]);
 
     const handleNpcDecision = useCallback((cs: CombatState) => {
-        getNpcDefeatDecision(cs.npc, cs.player).then(decision => {
+        getNpcDefeatDecision(cs.npc, cs.player).then(({ data: decision, tokenCount }) => {
+            trackApiCall('getNpcDefeatDecision', tokenCount);
             setCombatState(s => s ? { ...s, isProcessing: false, npcDecision: decision } : null);
         });
-    }, []);
+    }, [trackApiCall]);
 
     const getCombatEndState = useCallback((currentState: CombatState, winner: 'player' | 'npc'): CombatState => {
         if (currentState.combatEnded) return currentState;
@@ -328,8 +331,10 @@ export const useCombatManager = (
             const learnedSkill = updatedAttacker.learnedSkills.find(s => s.skillId === action.skillId);
             
             if (skillDef && learnedSkill) {
-                const manaCost = (skillDef.manaCost || 0) + ((skillDef.manaCostPerLevel || 0) * (learnedSkill.currentLevel -1));
-                updatedAttacker.mana -= manaCost;
+                const calculatedAttrs = calculateSkillAttributesForLevel(skillDef, learnedSkill.currentLevel);
+                const totalManaCost = calculatedAttrs.manaCost + Math.floor(updatedAttacker.stats.maxMana * calculatedAttrs.manaCostPercent);
+
+                updatedAttacker.mana -= totalManaCost;
                 addCombatLog(`${updatedAttacker.name} sử dụng [${skillDef.name}]!`, 'info');
 
                 if (skillDef.damage) {
@@ -351,20 +356,19 @@ export const useCombatManager = (
                     }
                 }
 
-                 // Apply all effects
-                if (skillDef.effects) {
-                    skillDef.effects.forEach(effectDef => {
+                 // Apply all effects from the calculated attributes
+                if (calculatedAttrs.effects) {
+                    calculatedAttrs.effects.forEach(effectDef => {
                         if (Math.random() < effectDef.chance) {
                             switch (effectDef.type) {
                                 case 'HEAL': {
                                     let healAmount = 0;
                                     if (effectDef.valueIsPercent) {
-                                        const percentValue = (effectDef.value || 0) + ((effectDef.valuePerLevel || 0) * (learnedSkill.currentLevel - 1));
-                                        healAmount = Math.round(updatedAttacker.stats.maxHp * percentValue);
+                                        healAmount = Math.round(updatedAttacker.stats.maxHp * (effectDef.value || 0));
                                     } else {
-                                        let flatHeal = (effectDef.value || 0) + ((effectDef.valuePerLevel || 0) * (learnedSkill.currentLevel - 1));
+                                        let flatHeal = effectDef.value || 0;
                                         if (effectDef.scalingAttribute && effectDef.scalingFactor) {
-                                            flatHeal += updatedAttacker.attributes[effectDef.scalingAttribute] * effectDef.scalingFactor;
+                                            healAmount += updatedAttacker.attributes[effectDef.scalingAttribute] * effectDef.scalingFactor;
                                         }
                                         healAmount = Math.round(flatHeal);
                                     }
@@ -385,7 +389,7 @@ export const useCombatManager = (
                                     const newEffect: ActiveStatusEffect = {
                                         type: effectDef.type,
                                         duration: effectDef.duration || 1,
-                                        value: (effectDef.value || 0) + ((effectDef.valuePerLevel || 0) * (learnedSkill.currentLevel - 1)),
+                                        value: effectDef.value || 0,
                                         sourceSkillId: skillDef.id,
                                     };
                                     

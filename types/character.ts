@@ -8,8 +8,10 @@ import type { LinhCan, NpcBehavior } from './linhcan';
 import type { ActiveStatusEffect } from './combat';
 import type { Interactable } from './interaction';
 
+export type ChatMessageRole = 'user' | 'model' | 'system';
+
 export interface ChatMessage {
-  role: 'user' | 'model';
+  role: ChatMessageRole;
   text: string;
 }
 
@@ -38,6 +40,13 @@ export interface PathStep {
     targetPosition: Position;
 }
 
+export type RelationshipType = 'father' | 'mother' | 'son' | 'daughter' | 'older_brother' | 'younger_brother' | 'older_sister' | 'younger_sister' | 'sibling' | 'master' | 'disciple' | 'husband' | 'wife';
+
+export interface NpcRelationship {
+    targetNpcId: string; // The ID of the NPC this relationship points to
+    type: RelationshipType; // The type of relationship from this NPC's perspective
+}
+
 export interface NPC {
   id: string;
   name: string;
@@ -50,14 +59,16 @@ export interface NPC {
   factionId?: string; // ID của thế lực NPC thuộc về
   power?: number; // Chỉ số quyền lực trong một thế lực
   behaviors?: NpcBehavior[]; // Thẻ hành vi AI, ví dụ: ['FIGHTER', 'TRADER']
+  personalityTags?: string[]; // Thẻ tính cách, ví dụ: ['Kiêu ngạo', 'Cẩn thận']
   cannotChallengeUntil?: GameTime;
   position: Position;
   currentMap: MapID; // Bản đồ NPC đang ở
   homeMapId: MapID;
-  homePosition: Position;
+  homePoiId?: string; // ID of the Point of Interest that is the NPC's home.
   cannotActUntil?: GameTime; // NPC cannot get a new intent until this time has passed.
   prompt: string;
   birthTime: GameTime;
+  relationships?: NpcRelationship[]; // Mối quan hệ của NPC
 
   // NPC stats
   cultivation?: CultivationState;
@@ -104,6 +115,17 @@ export interface GameTime {
     day: number;
     hour: number;
     minute: number;
+}
+
+export interface ApiUsageStats {
+    totalTokens: number;
+    calls: {
+        getInteractionResponse: number;
+        getNpcDefeatDecision: number;
+        generateNpcs: number;
+        generatePlaceNames: number;
+        sendMessage: number; // For chat
+    };
 }
 
 export interface PlayerState {
@@ -167,4 +189,5 @@ export interface PlayerState {
   // Feature flags
   useRandomNames: boolean;
   nameOverrides?: Record<string, string>;
+  apiUsageStats?: ApiUsageStats;
 }

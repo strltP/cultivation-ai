@@ -8,8 +8,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             roles: [
                 {
                     factionId: 'THAT_HUYEN_THANH',
-                    roleNames: ['Tán tu'],
-                    count: 10, // Thêm 10 Tán tu lang thang trên đại lục
+                    roleDistribution: [{ roleName: 'Tán tu', count: 10 }],
                     poiIds: [], // Sinh ra ngẫu nhiên ở bất kỳ đâu
                 }
             ]
@@ -47,14 +46,16 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             roles: [
                 {
                     factionId: 'THAT_HUYEN_THANH',
-                    roleNames: ['Tán tu', 'Vệ binh', 'Thường dân'],
-                    count: 15,
+                    roleDistribution: [
+                        { roleName: 'Tán tu', count: 5 },
+                        { roleName: 'Vệ binh', count: 5 },
+                        { roleName: 'Thường dân', count: 5 }
+                    ],
                     poiIds: [],
                 },
                  {
                     factionId: 'THAT_HUYEN_THANH',
-                    roleNames: ['Chủ tiệm lớn'],
-                    count: 2,
+                    roleDistribution: [{ roleName: 'Chủ tiệm lớn', count: 2 }],
                     poiIds: ['tht-poi-1', 'tht-poi-2'],
                 }
             ]
@@ -66,8 +67,12 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             roles: [
                 {
                     factionId: 'THAT_HUYEN_THANH',
-                    roleNames: ['Tán tu', 'Vệ binh', 'Thường dân', 'Tiểu nhị'],
-                    count: 12,
+                    roleDistribution: [
+                        { roleName: 'Tán tu', count: 4 },
+                        { roleName: 'Vệ binh', count: 3 },
+                        { roleName: 'Thường dân', count: 3 },
+                        { roleName: 'Tiểu nhị', count: 2 }
+                    ],
                     poiIds: ['mlt-poi-1', 'mlt-poi-2', 'mlt-poi-3', 'mlt-poi-4'],
                 }
             ]
@@ -75,18 +80,14 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
     ],
     THIEN_MA_TUU_LAU: [
         {
-            type: 'static',
-            id: 'npc-ly-tieu-nhi-1',
-            baseId: 'ly_tieu_nhi',
-            position: { x: 300, y: 350 }
-        },
-        {
             type: 'procedural',
             roles: [
                 {
                     factionId: 'THAT_HUYEN_THANH',
-                    roleNames: ['Tán tu', 'Thường dân'],
-                    count: 4,
+                    roleDistribution: [
+                        { roleName: 'Tán tu', count: 2 },
+                        { roleName: 'Thường dân', count: 2 }
+                    ],
                     poiIds: [], 
                 }
             ]
@@ -105,33 +106,52 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             type: 'static',
             id: 'npc-luc-thon-truong-1',
             baseId: 'luc_thon_truong',
-            position: { x: 1000, y: 600 }
+            position: { x: 1250, y: 550 }
+        },
+        {
+            type: 'static',
+            id: 'npc-lao-ma-luc-yen-1',
+            baseId: 'lao_ma_luc_yen',
+            position: { x: 400, y: 600 } // Lò Rèn
+        },
+        {
+            type: 'static',
+            id: 'npc-ma-tau-luc-yen-1',
+            baseId: 'ma_tau_luc_yen',
+            position: { x: 750, y: 1200 } // Nhà Dân
+        },
+        {
+            type: 'static',
+            id: 'npc-ly-tieu-nhi-luc-yen-1',
+            baseId: 'ly_tieu_nhi_luc_yen',
+            position: { x: 1250, y: 1000 } // Giếng Cổ
         },
         {
             type: 'procedural',
             roles: [
                 {
                     factionId: 'LUC_YEN_THON',
-                    roleNames: ['Lão bản'],
-                    count: 1,
+                    roleDistribution: [{ roleName: 'Lão bản', count: 1 }],
                     poiIds: ['lyt-poi-2']
                 },
                 {
                     factionId: 'LUC_YEN_THON',
-                    roleNames: ['Thợ săn'],
-                    count: 2,
-                    poiIds: ['lyt-poi-3']
+                    roleDistribution: [{ roleName: 'Thợ săn', count: 2 }],
+                    poiIds: []
                 },
                 {
                     factionId: 'LUC_YEN_THON',
-                    roleNames: ['Nông dân'],
-                    count: 5,
-                    poiIds: ['lyt-poi-3']
+                    roleDistribution: [{ roleName: 'Nông dân', count: 3 }],
+                    poiIds: ['lyt-poi-9']
                 },
                 {
                     factionId: 'LUC_YEN_THON',
-                    roleNames: ['Nguyên anh ẩn tu'],
-                    count: 1,
+                    roleDistribution: [{ roleName: 'Thường dân', count: 4 }],
+                    poiIds: ['lyt-poi-3', 'lyt-poi-5', 'lyt-poi-6', 'lyt-poi-7']
+                },
+                {
+                    factionId: 'LUC_YEN_THON',
+                    roleDistribution: [{ roleName: 'Ẩn thế tu sĩ', count: 1 }],
                     poiIds: []
                 }
             ]
@@ -144,8 +164,11 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             roles: [
                 {
                     factionId: 'THAT_HUYEN_THANH', // Using a generic city dweller faction for now
-                    roleNames: ['Tán tu', 'Vệ binh', 'Thường dân'],
-                    count: 10,
+                    roleDistribution: [
+                        { roleName: 'Tán tu', count: 4 },
+                        { roleName: 'Vệ binh', count: 3 },
+                        { roleName: 'Thường dân', count: 3 }
+                    ],
                     poiIds: ['hth-poi-1', 'hth-poi-2', 'hth-poi-3', 'hth-poi-4', 'hth-poi-5'],
                 }
             ]
@@ -155,12 +178,36 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
         {
             type: 'procedural',
             roles: [
-                { factionId: 'THANH_VAN_MON', roleNames: ['Môn chủ'], count: 1, poiIds: ['tvm-poi-1'] },
-                { factionId: 'THANH_VAN_MON', roleNames: ['Phó môn chủ'], count: 2, poiIds: ['tvm-poi-1', 'tvm-poi-5'] },
-                { factionId: 'THANH_VAN_MON', roleNames: ['Trưởng lão'], count: 3, poiIds: ['tvm-poi-1', 'tvm-poi-2', 'tvm-poi-3', 'tvm-poi-5'] },
-                { factionId: 'THANH_VAN_MON', roleNames: ['Chân truyền đệ tử'], count: 4, poiIds: ['tvm-poi-2', 'tvm-poi-4'] },
-                { factionId: 'THANH_VAN_MON', roleNames: ['Nội môn đệ tử'], count: 8, poiIds: ['tvm-poi-4'] },
-                { factionId: 'THANH_VAN_MON', roleNames: ['Ngoại môn đệ tử'], count: 12, poiIds: ['tvm-poi-4', 'tvm-poi-7'] }
+                { 
+                    factionId: 'THANH_VAN_MON', 
+                    roleDistribution: [{ roleName: 'Môn chủ', count: 1 }], 
+                    poiIds: ['tvm-poi-1'] 
+                },
+                { 
+                    factionId: 'THANH_VAN_MON', 
+                    roleDistribution: [{ roleName: 'Phó môn chủ', count: 2 }], 
+                    poiIds: ['tvm-poi-1', 'tvm-poi-5'] 
+                },
+                { 
+                    factionId: 'THANH_VAN_MON', 
+                    roleDistribution: [{ roleName: 'Trưởng lão', count: 3 }], 
+                    poiIds: ['tvm-poi-1', 'tvm-poi-2', 'tvm-poi-3', 'tvm-poi-5'] 
+                },
+                { 
+                    factionId: 'THANH_VAN_MON', 
+                    roleDistribution: [{ roleName: 'Chân truyền đệ tử', count: 4 }], 
+                    poiIds: ['tvm-poi-2', 'tvm-poi-4'] 
+                },
+                { 
+                    factionId: 'THANH_VAN_MON', 
+                    roleDistribution: [{ roleName: 'Nội môn đệ tử', count: 8 }], 
+                    poiIds: ['tvm-poi-4'] 
+                },
+                { 
+                    factionId: 'THANH_VAN_MON', 
+                    roleDistribution: [{ roleName: 'Ngoại môn đệ tử', count: 12 }], 
+                    poiIds: ['tvm-poi-4', 'tvm-poi-7'] 
+                }
             ]
         }
     ],
@@ -173,9 +220,42 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             roles: [
                 {
                     factionId: 'THANH_VAN_MON',
-                    roleNames: ['Ngoại môn đệ tử'],
-                    count: 2,
+                    roleDistribution: [{ roleName: 'Ngoại môn đệ tử', count: 2 }],
                     poiIds: [],
+                }
+            ]
+        }
+    ],
+    MOC_GIA: [
+        {
+            type: 'procedural',
+            roles: [
+                {
+                    factionId: 'MOC_GIA',
+                    roleDistribution: [
+                        { roleName: 'Tộc trưởng', count: 1 },
+                        { roleName: 'Trưởng lão', count: 2 },
+                        { roleName: 'Dược sư', count: 2 },
+                        { roleName: 'Đệ tử', count: 3 }
+                    ],
+                    poiIds: ['mg-poi-1', 'mg-poi-2', 'mg-poi-3'],
+                }
+            ]
+        }
+    ],
+    TIEU_GIA: [
+        {
+            type: 'procedural',
+            roles: [
+                {
+                    factionId: 'TIEU_GIA',
+                    roleDistribution: [
+                        { roleName: 'Tộc trưởng', count: 1 },
+                        { roleName: 'Trưởng lão', count: 2 },
+                        { roleName: 'Đệ tử tinh anh', count: 3 },
+                        { roleName: 'Đệ tử', count: 4 }
+                    ],
+                    poiIds: ['tg-poi-1', 'tg-poi-2', 'tg-poi-3'],
                 }
             ]
         }

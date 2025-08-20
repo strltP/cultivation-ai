@@ -5,8 +5,10 @@ import type { InventorySlot } from '../types/item';
 import { DAYS_PER_MONTH } from '../constants';
 import { advanceTime, gameTimeToMinutes } from './timeService';
 import { getMapPath, generateGlobalNpcIntent } from './npcIntentService';
-import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP } from '../mapdata';
+import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP, MAP_AREAS_BY_MAP } from '../mapdata';
 import { FACTIONS } from '../data/factions';
+import { ALL_INTERACTABLES } from '../data/interactables';
+import type { Interactable } from '../types/interaction';
 
 
 export const formatIntentDescriptionForJournal = (npcName: string, intent: NpcIntent): string => {
@@ -34,8 +36,11 @@ export const formatCurrentIntentStatus = (npc: NPC): string => {
     if (!intent) return 'Không có mục tiêu hiện tại.';
 
     const allPois = Object.values(POIS_BY_MAP).flat();
+    const allAreas = Object.values(MAP_AREAS_BY_MAP).flat();
     const destinationPoi = allPois.find(p => p.id === intent.destinationPoiId);
-    const destinationName = `${destinationPoi?.name || 'một nơi nào đó'} (${MAPS[intent.destinationMapId]?.name || 'Bản đồ không rõ'})`;
+    const destinationArea = allAreas.find(a => a.id === intent.destinationPoiId);
+
+    const destinationName = `${destinationPoi?.name || destinationArea?.name || 'một nơi nào đó'} (${MAPS[intent.destinationMapId]?.name || 'Bản đồ không rõ'})`;
 
     let actionText = '';
     const isTraveling = npc.intentProgress?.isTraveling;
@@ -96,19 +101,22 @@ const addItemToNpcInventory = (inventory: InventorySlot[], itemId: string, quant
 export const handleNpcActionCompletion = (
     npc: NPC, 
     currentTime: GameTime,
-    allPoisByMap: Record<MapID, PointOfInterest[]>
-): { updatedNpc: Partial<NPC>, journalEntry: JournalEntry } | null => {
+    allPoisByMap: Record<MapID, PointOfInterest[]>,
+    generatedInteractablesForMap: Interactable[]
+): { updatedNpc: Partial<NPC>, journalEntry: JournalEntry, harvestedInteractable?: Interactable } | null => {
     if (!npc.currentIntent || npc.npcType === 'monster') return null;
 
     const updatedNpc: Partial<NPC> = {};
     let actionCompletionMessage = '';
+    let harvestedInteractable: Interactable | undefined = undefined;
 
     const intent = npc.currentIntent;
     const duration = intent.durationMonths;
 
     const destinationPoi = allPoisByMap[intent.destinationMapId]?.find(p => p.id === intent.destinationPoiId);
+    const destinationArea = MAP_AREAS_BY_MAP[intent.destinationMapId]?.find(a => a.id === intent.destinationPoiId);
     const destinationMapName = MAPS[intent.destinationMapId]?.name || 'Nơi Vô Định';
-    const destinationName = destinationPoi ? `${destinationPoi.name} (${destinationMapName})` : 'một nơi nào đó';
+    const destinationName = destinationPoi?.name || destinationArea?.name ? `${destinationPoi?.name || destinationArea?.name} (${destinationMapName})` : 'một nơi nào đó';
 
 
     // Step 1: Handle the outcome of the completed action and generate a message for it.
@@ -118,20 +126,36 @@ export const handleNpcActionCompletion = (
             break;
         }
         case 'GATHER': {
-            const possibleItems = intent.gatherTargetType === 'herb'
-                ? ['material_linh_thao', 'material_tinh_luc_thao', 'material_huyet_tinh_chi', 'material_bach_linh_sam']
-                : ['material_huyen_thiet', 'material_tinh_thiet', 'material_thanh_cuong_thach', 'material_lam_ngoc'];
             let newInventory = npc.inventory || [];
             const itemsFound: Record<string, number> = {};
-            const findCount = Math.ceil(duration * (1 + npc.attributes.coDuyen / 20));
-            for (let i = 0; i < findCount; i++) {
-                if(Math.random() < 0.6) {
-                    const itemId = possibleItems[Math.floor(Math.random() * possibleItems.length)];
-                    const quantity = Math.floor(Math.random() * 2) + 1;
-                    newInventory = addItemToNpcInventory(newInventory, itemId, quantity);
-                    itemsFound[itemId] = (itemsFound[itemId] || 0) + quantity;
+            
+            // Check if the destination is an area and try to harvest a real node
+            if(destinationArea) {
+                const gatherableNodes = generatedInteractablesForMap.filter(i => {
+                    if(i.areaId !== destinationArea.id) return false;
+                    if(intent.gatherTargetType === 'herb' && i.type !== 'herb') return false;
+                    if(intent.gatherTargetType === 'stone' && i.type !== 'stone') return false;
+                    return true;
+                });
+
+                if(gatherableNodes.length > 0) {
+                    harvestedInteractable = gatherableNodes[Math.floor(Math.random() * gatherableNodes.length)];
+                    const template = ALL_INTERACTABLES.find(t => t.baseId === harvestedInteractable!.baseId);
+                    
+                    if (template?.loot) {
+                        template.loot.forEach(lootRule => {
+                            if (Math.random() < lootRule.chance) {
+                                const quantity = Math.floor(Math.random() * (lootRule.quantity[1] - lootRule.quantity[0] + 1)) + lootRule.quantity[0];
+                                if (quantity > 0) {
+                                    newInventory = addItemToNpcInventory(newInventory, lootRule.itemId, quantity);
+                                    itemsFound[lootRule.itemId] = (itemsFound[lootRule.itemId] || 0) + quantity;
+                                }
+                            }
+                        });
+                    }
                 }
             }
+
             updatedNpc.inventory = newInventory;
             const foundItemsStr = Object.keys(itemsFound).map(id => `${itemsFound[id]}x ${ALL_ITEMS.find(i => i.id === id)?.name || 'Vật phẩm'}`).join(', ');
             actionCompletionMessage = foundItemsStr ? `${npc.name} đã đi thu thập tài nguyên tại ${destinationName} trong ${duration} tháng và tìm thấy: ${foundItemsStr}.` : `${npc.name} đã đi thu thập tài nguyên tại ${destinationName} trong ${duration} tháng nhưng không có thu hoạch gì.`;
@@ -165,8 +189,6 @@ export const handleNpcActionCompletion = (
             break;
         }
         case 'WANDERER': {
-            // This intent is for travel only and has 0 duration at destination.
-            // This function should not be called for it, but we handle it just in case.
             actionCompletionMessage = `${npc.name} đã đến ${destinationName}.`;
             break;
         }
@@ -175,30 +197,42 @@ export const handleNpcActionCompletion = (
     if (!actionCompletionMessage) return null;
 
     // Step 2: Set up the return trip OR go idle
-    let restMonths = Math.floor(Math.random() * 3) + 1; // Default: 1-3 months rest
+    let restMonths = Math.floor(Math.random() * 3) + 1;
     let restAndReturnMessage = '';
 
     const faction = FACTIONS.find(f => f.id === npc.factionId);
     const role = faction?.roles.find(r => r.name === npc.role);
 
     if (role && role.fixedPositionChance && Math.random() < role.fixedPositionChance) {
-        // Long rest period for important roles
-        restMonths = Math.floor(Math.random() * 7) + 6; // 6-12 months
+        restMonths = Math.floor(Math.random() * 7) + 6;
     }
-
-    const needsToReturnHome = npc.homeMapId && npc.homePosition && (npc.currentMap !== npc.homeMapId || Math.hypot(npc.position.x - npc.homePosition.x, npc.position.y - npc.homePosition.y) > 10);
-
+    
+    const allPois = Object.values(allPoisByMap).flat();
+    const homeMapData = MAPS[npc.homeMapId];
+    const needsToReturnHome = homeMapData && (npc.currentMap !== npc.homeMapId);
+    
     if (needsToReturnHome) {
         restAndReturnMessage = `Sau đó, ${npc.name} quyết định trở về nhà và nghỉ ngơi ${restMonths} tháng.`;
         const mapPath = getMapPath(npc.currentMap, npc.homeMapId!);
         
+        let returnPosition = { x: homeMapData.size.width / 2, y: homeMapData.size.height / 2 };
+        
+        const homePoi = npc.homePoiId ? allPois.find(p => p.id === npc.homePoiId) : undefined;
+        if (homePoi && Math.random() < 0.7) {
+            returnPosition.x = homePoi.position.x - homePoi.size.width / 2 + Math.random() * homePoi.size.width;
+            returnPosition.y = homePoi.position.y - homePoi.size.height / 2 + Math.random() * homePoi.size.height;
+        } else {
+            returnPosition.x = Math.random() * homeMapData.size.width;
+            returnPosition.y = Math.random() * homeMapData.size.height;
+        }
+
         if (mapPath) {
             const pathSteps: PathStep[] = [];
             for (let i = 0; i < mapPath.length; i++) {
                 const currentMapId = mapPath[i];
                 if (i < mapPath.length - 1) {
                     const nextMapId = mapPath[i + 1];
-                    const entryPoi = POIS_BY_MAP[currentMapId]?.find(p => p.targetMap === nextMapId);
+                    const entryPoi = allPoisByMap[currentMapId]?.find(p => p.targetMap === nextMapId);
                     const entryGate = TELEPORT_GATES_BY_MAP[currentMapId]?.find(g => g.targetMap === nextMapId);
                     const exitPoint = entryPoi || entryGate;
                     if (exitPoint) {
@@ -207,7 +241,7 @@ export const handleNpcActionCompletion = (
                         pathSteps.length = 0; break;
                     }
                 } else {
-                    pathSteps.push({ mapId: currentMapId, targetPosition: npc.homePosition! });
+                    pathSteps.push({ mapId: currentMapId, targetPosition: returnPosition });
                 }
             }
 
@@ -217,7 +251,7 @@ export const handleNpcActionCompletion = (
                     description: `Đang trên đường trở về ${MAPS[npc.homeMapId!].name}.`,
                     destinationPoiId: 'HOME',
                     destinationMapId: npc.homeMapId!,
-                    destinationPosition: npc.homePosition!,
+                    destinationPosition: returnPosition,
                     durationMonths: 0,
                     path: pathSteps
                 };
@@ -236,7 +270,6 @@ export const handleNpcActionCompletion = (
         restAndReturnMessage = `Sau đó, ${npc.name} quyết định nghỉ ngơi tại chỗ ${restMonths} tháng.`;
     }
     
-    // Step 3: Set cooldown for getting the *next* long-term intent
     const restMinutes = restMonths * DAYS_PER_MONTH * 24 * 60;
     updatedNpc.cannotActUntil = advanceTime(currentTime, restMinutes);
     updatedNpc.lastDecisionTime = currentTime;
@@ -244,17 +277,18 @@ export const handleNpcActionCompletion = (
     const finalJournalMessage = `${actionCompletionMessage} ${restAndReturnMessage}`.trim();
     const journalEntry: JournalEntry = { time: currentTime, message: finalJournalMessage, type: 'world' };
 
-    return { updatedNpc, journalEntry };
+    return { updatedNpc, journalEntry, harvestedInteractable };
 };
 
 export const processNpcActionsForTimeSkip = (
     currentState: PlayerState,
     monthsToSkip: number
-): { updatedNpcs: Record<string, NPC[]>, newJournalEntries: JournalEntry[] } => {
-     const newGeneratedNpcs = JSON.parse(JSON.stringify(currentState.generatedNpcs));
+): { updatedNpcs: Record<string, NPC[]>, newJournalEntries: JournalEntry[], harvestedInteractables: (Interactable & { mapId: MapID })[] } => {
+    const newGeneratedNpcs = JSON.parse(JSON.stringify(currentState.generatedNpcs));
     let hasChanges = false;
     const newGlobalJournalEntries: JournalEntry[] = [];
     const minutesPassed = monthsToSkip * DAYS_PER_MONTH * 24 * 60;
+    const harvestedInteractables: (Interactable & { mapId: MapID })[] = [];
     
     const npcsToGetIntentFor: { npc: NPC }[] = [];
     const nowMinutes = gameTimeToMinutes(currentState.time);
@@ -265,7 +299,6 @@ export const processNpcActionsForTimeSkip = (
             if (npc.npcType !== 'cultivator' || !npc.cultivation) continue;
             if (currentState.defeatedNpcIds.includes(npc.id)) continue;
 
-            // Progress current intent (travel or at destination)
             if (npc.path && typeof npc.currentPathStepIndex === 'number' && npc.intentProgress?.isTraveling) {
                 hasChanges = true;
                 const currentStep = npc.path[npc.currentPathStepIndex];
@@ -302,24 +335,26 @@ export const processNpcActionsForTimeSkip = (
                 const timeSpent = Math.min(minutesPassed, npc.intentProgress.timeAtDestination || 0);
                 npc.intentProgress.timeAtDestination = (npc.intentProgress.timeAtDestination || 0) - timeSpent;
                 if (npc.intentProgress.timeAtDestination <= 0) {
-                    const result = handleNpcActionCompletion(npc, currentState.time, POIS_BY_MAP);
+                    const interactablesForMap = currentState.generatedInteractables[npc.currentMap] || [];
+                    const result = handleNpcActionCompletion(npc, currentState.time, POIS_BY_MAP, interactablesForMap);
                     if (result) {
                         Object.assign(npc, result.updatedNpc);
                         if (!npc.actionHistory) npc.actionHistory = [];
                         npc.actionHistory.push(result.journalEntry);
                         newGlobalJournalEntries.push(result.journalEntry);
+                        if (result.harvestedInteractable) {
+                             harvestedInteractables.push({ ...result.harvestedInteractable, mapId: npc.currentMap });
+                        }
                     }
                 }
             }
 
-            // Check if NPC can get a new intent
             let canGetNewIntent = true;
             if (npc.cannotActUntil) {
                 if (nowMinutes < gameTimeToMinutes(npc.cannotActUntil)) { canGetNewIntent = false; } 
                 else { npc.cannotActUntil = undefined; hasChanges = true; }
             }
             
-            // Generate new intent if needed and allowed
             if (canGetNewIntent && !npc.currentIntent) {
                 npcsToGetIntentFor.push({ npc });
             }
@@ -362,5 +397,5 @@ export const processNpcActionsForTimeSkip = (
         newGeneratedNpcs[to].push(npc);
     });
 
-    return { updatedNpcs: newGeneratedNpcs, newJournalEntries: newGlobalJournalEntries };
+    return { updatedNpcs: newGeneratedNpcs, newJournalEntries: newGlobalJournalEntries, harvestedInteractables };
 };

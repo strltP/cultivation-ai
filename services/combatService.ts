@@ -4,6 +4,7 @@ import type { PlayerState, NPC } from '../types/character';
 import type { NpcAction, CombatState } from '../types/combat';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { ALL_ITEMS } from '../data/items/index';
+import { calculateSkillAttributesForLevel } from './cultivationService';
 
 export interface DamageResult {
     damage: number;
@@ -45,8 +46,7 @@ export const calculateSkillDamage = (
     learnedSkill: LearnedSkill,
     defender: { state: PlayerState | NPC }
 ): DamageResult => {
-    const { damage: damageDef } = skill;
-    if (!damageDef) return { damage: 0, isCritical: false, isEvaded: false };
+    if (!skill.damage) return { damage: 0, isCritical: false, isEvaded: false };
 
     // 1. Evasion check based on speed
     const dodgeChance = (defender.state.stats.speed / (defender.state.stats.speed + caster.state.stats.speed * 4.5));
@@ -70,17 +70,18 @@ export const calculateSkillDamage = (
     // 2. Check for critical hit (skills can also crit)
     const isCritical = Math.random() < caster.state.stats.critRate;
 
-    // 3. Calculate base damage from skill definition and level
-    let baseDamage = damageDef.baseValue + (damageDef.valuePerLevel * (learnedSkill.currentLevel - 1));
+    // 3. Calculate base damage from skill definition and level using the new helper
+    const calculatedAttrs = calculateSkillAttributesForLevel(skill, learnedSkill.currentLevel);
+    let baseDamage = calculatedAttrs.damage;
 
     // 4. Add scaling from Attack Power
-    if (damageDef.attackPowerFactor) {
-        baseDamage += caster.state.stats.attackPower * damageDef.attackPowerFactor;
+    if (skill.damage.attackPowerFactor) {
+        baseDamage += caster.state.stats.attackPower * skill.damage.attackPowerFactor;
     }
 
     // 5. Add scaling from other attributes
-    if (damageDef.scalingAttribute && damageDef.scalingFactor) {
-        baseDamage += caster.state.attributes[damageDef.scalingAttribute] * damageDef.scalingFactor;
+    if (skill.damage.scalingAttribute && skill.damage.scalingFactor) {
+        baseDamage += caster.state.attributes[skill.damage.scalingAttribute] * skill.damage.scalingFactor;
     }
     
     // Add some randomness
@@ -105,7 +106,12 @@ export const getNpcDeterministicAction = (combatState: CombatState, allSkills: S
 
     const usableSkills = npc.learnedSkills.map(ls => {
         const skillDef = allSkills.find(s => s.id === ls.skillId);
-        return (skillDef && skillDef.type === 'CONG_PHAP' && (skillDef.manaCost ?? 0) <= npc.mana) ? skillDef : null;
+        if (!skillDef || skillDef.type !== 'CONG_PHAP') return null;
+        
+        const calculatedAttrs = calculateSkillAttributesForLevel(skillDef, ls.currentLevel);
+        const totalManaCost = calculatedAttrs.manaCost + Math.floor(npc.stats.maxMana * calculatedAttrs.manaCostPercent);
+
+        return (totalManaCost <= npc.mana) ? skillDef : null;
     }).filter((s): s is Skill => s !== null);
 
     const healingSkill = usableSkills.find(s => s.effects?.some(e => e.type === 'HEAL'));
@@ -117,7 +123,7 @@ export const getNpcDeterministicAction = (combatState: CombatState, allSkills: S
         };
     }
     
-    const offensiveSkills = usableSkills.filter(s => !s.effects?.some(e => e.type === 'HEAL'));
+    const offensiveSkills = usableSkills.filter(s => s.damage && s.damage.baseValue > 0);
 
     if (offensiveSkills.length === 0) {
         return { type: 'ATTACK', reasoning: 'Bảo tồn linh lực, sử dụng đòn tấn công cơ bản.' };

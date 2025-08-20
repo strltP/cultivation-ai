@@ -25,6 +25,7 @@ export const pois: PointOfInterest[] = [
     { id: 'mlt-poi-2', name: 'Diễn Võ Trường', type: 'landmark', position: { x: 2400, y: 900 }, size: { width: 900, height: 750 } },
     { id: 'mlt-poi-3', name: 'Yên Vũ Các', type: 'building', position: { x: 900, y: 1950 }, size: { width: 750, height: 600 } },
     { id: 'mlt-poi-4', name: 'Lạc Âm Phường', type: 'building', position: { x: 2250, y: 2040 }, size: { width: 600, height: 540 } },
+    { id: 'mlt-poi-tieu-gia', name: 'Tiêu Gia', type: 'clan', position: { x: 1800, y: 1600 }, size: { width: 1000, height: 800 }, targetMap: 'TIEU_GIA', targetPosition: { x: 1400, y: 1900 } },
 ];
 
 export const teleportGates: TeleportLocation[] = [

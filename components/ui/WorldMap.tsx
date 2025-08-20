@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { PlayerState } from '../../types/character';
 import type { PointOfInterest, GameMap, PointOfInterestType, MapArea, TeleportLocation, MapID } from '../../types/map';
-import { FaUserCircle, FaCity, FaGopuram, FaHome, FaSkullCrossbones, FaLandmark, FaUniversity } from 'react-icons/fa';
+import { FaUserCircle, FaCity, FaGopuram, FaHome, FaSkullCrossbones, FaLandmark, FaUniversity, FaUsers } from 'react-icons/fa';
 import { GiPortal } from 'react-icons/gi';
 
 interface WorldMapProps {
@@ -20,6 +20,7 @@ const POI_ICONS: Record<PointOfInterestType, React.ReactNode> = {
     dungeon: <FaSkullCrossbones />,
     landmark: <FaLandmark />,
     building: <FaUniversity />,
+    clan: <FaUsers />,
 };
 
 const MIN_SCALE = 0.1;

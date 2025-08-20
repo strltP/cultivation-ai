@@ -1,6 +1,11 @@
 import type { NPC, PlayerState, NpcIntent, PathStep } from '../types/character';
-import type { MapID, PointOfInterest, TeleportLocation } from '../types/map';
-import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP } from '../mapdata';
+import type { MapID, PointOfInterest, TeleportLocation, MapArea } from '../types/map';
+import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP, MAP_AREAS_BY_MAP } from '../mapdata';
+import type { Position } from '../types/common';
+import { SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/interactable_spawns';
+import { ALL_INTERACTABLES } from '../data/interactables';
+import type { ProceduralSpawnRule } from '../mapdata/interactable_spawns';
+
 
 // Hàm trợ giúp để chọn một mục ngẫu nhiên dựa trên trọng số
 const weightedRandom = <T>(items: { item: T; weight: number }[]): T | null => {
@@ -88,6 +93,27 @@ export const getMapPath = (startMapId: MapID, endMapId: MapID): MapID[] | null =
     return null;
 };
 
+// Helper function to check if an area contains specific resource types based on spawn rules
+const areaHasResources = (mapId: MapID, areaId: string, requiredType: 'herb' | 'stone'): boolean => {
+    const spawnDefs = SPAWN_DEFINITIONS_BY_MAP[mapId];
+    if (!spawnDefs) return false;
+
+    const proceduralRule = spawnDefs.find((def): def is ProceduralSpawnRule => 
+        'type' in def && def.type === 'procedural' && def.areaId === areaId
+    );
+    
+    if (!proceduralRule) return false;
+
+    for (const baseId in proceduralRule.itemWeights) {
+        const itemTemplate = ALL_INTERACTABLES.find(item => item.baseId === baseId);
+        if (itemTemplate && itemTemplate.type === requiredType) {
+            return true; // Found at least one matching resource type
+        }
+    }
+
+    return false;
+};
+
 
 export const generateGlobalNpcIntent = (
     npc: NPC,
@@ -134,60 +160,90 @@ export const generateGlobalNpcIntent = (
     if (!selectedAction) return null;
 
     // --- Tìm các điểm đến phù hợp trên toàn thế giới ---
-    let candidatePois: { poi: PointOfInterest, mapId: MapID }[] = [];
-    
-    for (const mapIdStr in allPoisByMap) {
-        const mapId = mapIdStr as MapID;
-        for (const poi of allPoisByMap[mapId]) {
-            // Lọc theo cảnh giới
-            if (poi.minRealmIndex !== undefined && npc.cultivation.realmIndex < poi.minRealmIndex) {
-                continue;
-            }
+     type CandidateDestination = {
+        id: string;
+        name: string;
+        mapId: MapID;
+        position: Position;
+        size: { width: number; height: number };
+        isArea: boolean;
+        dangerLevel: number | null;
+    };
+    let candidateDestinations: CandidateDestination[] = [];
 
-            // Lọc theo phe phái
-            if (poi.allowedFactionIds && poi.allowedFactionIds.length > 0) {
-                if (!npc.factionId || !poi.allowedFactionIds.includes(npc.factionId)) {
-                    continue; // NPC không được phép vào đây
+    // --- Logic to select destinations based on action type ---
+    if (selectedAction === 'GATHER' && gatherType) {
+        // GATHER intent now ONLY targets MapAreas with the correct resources.
+        for (const mapIdStr in MAP_AREAS_BY_MAP) {
+            const mapId = mapIdStr as MapID;
+            for (const area of MAP_AREAS_BY_MAP[mapId]) {
+                if (area.dangerLevel !== undefined && npc.cultivation.realmIndex < area.dangerLevel) continue;
+                if (area.allowedFactionIds && area.allowedFactionIds.length > 0) {
+                     if (!npc.factionId || !area.allowedFactionIds.includes(npc.factionId)) continue;
+                }
+                // Check if this area actually has the resources the NPC wants
+                if (areaHasResources(mapId, area.id, gatherType)) {
+                     candidateDestinations.push({ id: area.id, name: area.name, mapId, position: area.position, size: area.size, isArea: true, dangerLevel: area.dangerLevel ?? null });
                 }
             }
-            
-            // Lọc theo loại hành động
-            let isMatch = false;
-            switch (selectedAction) {
-                case 'MEDITATE': isMatch = poi.type === 'sect' || poi.type === 'landmark'; break;
-                case 'GATHER': isMatch = poi.type === 'dungeon' || poi.type === 'landmark'; break;
-                case 'HUNT': isMatch = poi.type === 'dungeon'; break;
-                case 'TRADE': isMatch = poi.type === 'city' || poi.type === 'village'; break;
+        }
+    } else {
+        // Logic for other actions (MEDITATE, HUNT, TRADE) remains targeting POIs.
+        for (const mapIdStr in allPoisByMap) {
+            const mapId = mapIdStr as MapID;
+            for (const poi of allPoisByMap[mapId]) {
+                if (poi.minRealmIndex !== undefined && npc.cultivation.realmIndex < poi.minRealmIndex) continue;
+                if (poi.allowedFactionIds && poi.allowedFactionIds.length > 0) {
+                    if (!npc.factionId || !poi.allowedFactionIds.includes(npc.factionId)) continue;
+                }
+                let isMatch = false;
+                switch (selectedAction) {
+                    case 'MEDITATE': isMatch = poi.type === 'sect' || poi.type === 'landmark'; break;
+                    case 'HUNT': isMatch = poi.type === 'dungeon'; break;
+                    case 'TRADE': isMatch = poi.type === 'city' || poi.type === 'village'; break;
+                }
+                if (isMatch) {
+                    candidateDestinations.push({ id: poi.id, name: poi.name, mapId, position: poi.position, size: poi.size, isArea: false, dangerLevel: poi.dangerLevel ?? null });
+                }
             }
-            if (isMatch) {
-                candidatePois.push({ poi, mapId });
+        }
+
+        // HUNT can also target dangerous areas, not just dungeon POIs.
+        if (selectedAction === 'HUNT') {
+             for (const mapIdStr in MAP_AREAS_BY_MAP) {
+                const mapId = mapIdStr as MapID;
+                for (const area of MAP_AREAS_BY_MAP[mapId]) {
+                    if (area.dangerLevel !== undefined && npc.cultivation.realmIndex >= area.dangerLevel) {
+                        candidateDestinations.push({ id: area.id, name: area.name, mapId, position: area.position, size: area.size, isArea: true, dangerLevel: area.dangerLevel ?? null });
+                    }
+                }
             }
         }
     }
 
-    if (candidatePois.length === 0) return null; // Không tìm thấy điểm đến phù hợp
+
+    if (candidateDestinations.length === 0) return null;
 
     // --- Tính điểm và chọn điểm đến tốt nhất ---
-    const scoredPois = candidatePois.map(({ poi, mapId }) => {
-        // Ưu tiên khoảng cách gần (đơn giản hóa bằng cách tính khoảng cách từ bản đồ nhà)
-        const isSameMap = mapId === npc.homeMapId;
+    const scoredDestinations = candidateDestinations.map(dest => {
+        const isSameMap = dest.mapId === npc.homeMapId;
         const distanceScore = isSameMap ? 100 : 10;
 
-        // Ưu tiên sự phù hợp
         let relevanceScore = 10;
-        if (selectedAction === 'TRADE' && poi.type === 'city') relevanceScore += 20;
-        if (selectedAction === 'MEDITATE' && poi.type === 'sect') relevanceScore += 30;
+        if (selectedAction === 'TRADE' && dest.isArea === false && (allPoisByMap[dest.mapId].find(p => p.id === dest.id)?.type === 'city')) relevanceScore += 20;
+        if (selectedAction === 'MEDITATE' && dest.isArea === false && (allPoisByMap[dest.mapId].find(p => p.id === dest.id)?.type === 'sect')) relevanceScore += 30;
+        if ((selectedAction === 'GATHER' || selectedAction === 'HUNT') && dest.dangerLevel !== null && dest.dangerLevel > 0) relevanceScore += 25;
 
         const randomFactor = Math.random() * 20;
         const totalScore = distanceScore + relevanceScore + randomFactor;
-        return { poi, mapId, score: totalScore };
+        return { dest, score: totalScore };
     });
 
-    scoredPois.sort((a, b) => b.score - a.score);
-    const { poi: destination, mapId: destinationMapId } = scoredPois[0];
+    scoredDestinations.sort((a, b) => b.score - a.score);
+    const { dest: destination } = scoredDestinations[0];
 
     // --- Tạo Lộ Trình (Path) ---
-    const mapPath = getMapPath(npc.currentMap, destinationMapId);
+    const mapPath = getMapPath(npc.currentMap, destination.mapId);
     if (!mapPath) return null;
 
     const pathSteps: PathStep[] = [];
@@ -195,22 +251,18 @@ export const generateGlobalNpcIntent = (
         const currentMapId = mapPath[i];
         
         if (i < mapPath.length - 1) {
-            // This is not the last map, so the target is the entry point to the *next* map
             const nextMapId = mapPath[i + 1];
-            // Find the POI or gate on the current map that leads to the next map
             const entryPoi = allPoisByMap[currentMapId]?.find(p => p.targetMap === nextMapId);
             const entryGate = allTeleportGatesByMap[currentMapId]?.find(g => g.targetMap === nextMapId);
-            
-            const exitPoint = entryPoi || entryGate; // Use whichever is found
+            const exitPoint = entryPoi || entryGate;
 
             if (exitPoint) {
                 pathSteps.push({ mapId: currentMapId, targetPosition: exitPoint.position });
             } else {
                  console.warn(`No path from ${currentMapId} to ${nextMapId}`);
-                 return null; // Cannot find path
+                 return null;
             }
         } else {
-            // This is the final destination map
             const randomX = destination.position.x - destination.size.width / 2 + Math.random() * destination.size.width;
             const randomY = destination.position.y - destination.size.height / 2 + Math.random() * destination.size.height;
             pathSteps.push({ mapId: currentMapId, targetPosition: { x: randomX, y: randomY } });
@@ -221,7 +273,7 @@ export const generateGlobalNpcIntent = (
 
     // --- Tạo mô tả ---
     let description = '';
-    const destinationName = `${destination.name} (${MAPS[destinationMapId].name})`;
+    const destinationName = `${destination.name} (${MAPS[destination.mapId].name})`;
     switch(selectedAction) {
         case 'MEDITATE': description = `Ta cảm thấy tu vi có chút đình trệ, quyết định đến ${destinationName} bế quan một thời gian.`; break;
         case 'GATHER': description = `Ta cần một ít ${gatherType === 'herb' ? 'linh thảo' : 'khoáng thạch'}, quyết định đến ${destinationName} tìm kiếm.`; break;
@@ -232,7 +284,7 @@ export const generateGlobalNpcIntent = (
     return {
         type: selectedAction,
         destinationPoiId: destination.id,
-        destinationMapId: destinationMapId,
+        destinationMapId: destination.mapId,
         destinationPosition: pathSteps[pathSteps.length - 1].targetPosition,
         path: pathSteps,
         durationMonths: Math.floor(Math.random() * 3) + 1,

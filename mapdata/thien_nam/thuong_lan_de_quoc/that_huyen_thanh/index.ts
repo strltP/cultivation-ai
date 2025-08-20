@@ -5,7 +5,7 @@ export const mapDefinition: GameMap = {
     name: 'Thất Huyền Thành',
     type: 'city_map',
     size: { width: 3000, height: 3000 },
-    backgroundStyle: { 
+    backgroundStyle: {
         backgroundColor: '#4a5568',
         backgroundImage: `
             linear-gradient(rgba(255,255,255,.07) 2px, transparent 2px),
@@ -18,16 +18,18 @@ export const mapDefinition: GameMap = {
     }
 };
 
-export const mapAreas: MapArea[] = [];
+export const mapAreas: MapArea[] = [
+    { id: 'tht-area-1', name: 'Khu Giao Dịch', type: 'zone', position: { x: 2250, y: 1500 }, size: { width: 1500, height: 3000 }, style: { borderColor: 'rgba(234, 179, 8, 0.2)', backgroundColor: 'rgba(234, 179, 8, 0.03)' } },
+    { id: 'tht-area-2', name: 'Khu Dân Cư', type: 'zone', position: { x: 750, y: 1500 }, size: { width: 1500, height: 3000 }, style: { borderColor: 'rgba(59, 130, 246, 0.2)', backgroundColor: 'rgba(59, 130, 246, 0.03)' } },
+];
 
 export const pois: PointOfInterest[] = [
-    { id: 'tht-poi-1', name: 'Luyện Đan Các', type: 'building', position: { x: 900, y: 900 }, size: { width: 600, height: 540 } },
-    { id: 'tht-poi-2', name: 'Tàng Kinh Các', type: 'building', position: { x: 2100, y: 900 }, size: { width: 600, height: 540 } },
-    { id: 'tht-poi-3', name: 'Lưu Ly Tông', type: 'sect', position: { x: 750, y: 1950 }, size: { width: 900, height: 750 }, targetMap: 'LUU_LY_TONG', targetPosition: { x: 1600, y: 2000 } },
-    { id: 'tht-poi-4', name: 'Vạn Bảo Lâu', type: 'building', position: { x: 2250, y: 1800 }, size: { width: 750, height: 600 }, targetMap: 'VAN_BAO_LAU', targetPosition: { x: 1200, y: 1600 } },
-    { id: 'tht-poi-5', name: 'Thiên Mã Tửu Lâu', type: 'building', position: { x: 1500, y: 450 }, size: { width: 660, height: 540 }, targetMap: 'THIEN_MA_TUU_LAU', targetPosition: { x: 1400, y: 1600 } },
+    { id: 'tht-poi-1', name: 'Thiên Mã Tửu Lâu', type: 'building', position: { x: 1500, y: 500 }, size: { width: 600, height: 500 }, targetMap: 'THIEN_MA_TUU_LAU', targetPosition: { x: 1400, y: 1600 } },
+    { id: 'tht-poi-2', name: 'Vạn Bảo Lâu', type: 'building', position: { x: 2250, y: 1800 }, size: { width: 800, height: 700 }, targetMap: 'VAN_BAO_LAU', targetPosition: { x: 1200, y: 1600 } },
+    { id: 'tht-poi-3', name: 'Lưu Ly Tông', type: 'sect', position: { x: 750, y: 2000 }, size: { width: 900, height: 800 }, targetMap: 'LUU_LY_TONG', targetPosition: { x: 1600, y: 2000 } },
+    { id: 'tht-poi-moc-gia', name: 'Mộc Gia', type: 'clan', position: { x: 1500, y: 2500 }, size: { width: 1000, height: 800 }, targetMap: 'MOC_GIA', targetPosition: { x: 1250, y: 1700 } },
 ];
 
 export const teleportGates: TeleportLocation[] = [
-    { id: 'gate-tht-tn', name: 'Rời khỏi Thành', position: { x: 1500, y: 2850 }, targetMap: 'THIEN_NAM', targetPosition: { x: 5000, y: 1950 } },
+    { id: 'gate-tht-tn', name: 'Rời khỏi Thành', position: { x: 1500, y: 2900 }, targetMap: 'THIEN_NAM', targetPosition: { x: 5000, y: 1800 } },
 ];

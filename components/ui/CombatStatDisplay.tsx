@@ -1,6 +1,4 @@
 
-
-
 import React from 'react';
 import type { CombatStats } from '../../types/stats';
 import { GiCrossedSwords, GiShield, GiRunningShoe, GiTargetShot, GiBullseye, GiCrosshair } from 'react-icons/gi';

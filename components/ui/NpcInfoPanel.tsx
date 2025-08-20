@@ -1,16 +1,50 @@
-import React, { useState } from 'react';
-import type { NPC, PlayerState } from '../../types/character';
+import React, { useState, useMemo } from 'react';
+import type { NPC, PlayerState, RelationshipType } from '../../types/character';
 import { getCultivationInfo, getLinhCanTierInfo } from '../../services/cultivationService';
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
 import { ALL_SKILLS, SKILL_TIER_INFO } from '../../data/skills/skills';
-import { FaBookDead, FaBook, FaGem, FaHourglassHalf, FaLock, FaShoePrints, FaInfoCircle, FaFistRaised } from 'react-icons/fa';
+import { FaBookDead, FaBook, FaGem, FaHourglassHalf, FaLock, FaShoePrints, FaInfoCircle, FaFistRaised, FaUsers } from 'react-icons/fa';
 import { ALL_ITEMS } from '../../data/items/index';
 import type { EquipmentSlot } from '../../types/equipment';
 import { EQUIPMENT_SLOT_NAMES } from '../../types/equipment';
-import { GiDiamondHard, GiBackpack, GiGalaxy, GiTwoCoins, GiBrain } from 'react-icons/gi';
+import { GiDiamondHard, GiBackpack, GiGalaxy, GiTwoCoins, GiBrain, GiPaintBrush } from 'react-icons/gi';
 import { LINH_CAN_DATA } from '../../data/linhcan';
 import { formatCurrentIntentStatus } from '../../services/npcActionService';
+
+// --- Relationship Logic ---
+
+interface ProcessedRelationship {
+    targetNpc: NPC;
+    type: RelationshipType;
+}
+
+const RELATIONSHIP_MAP: Partial<Record<RelationshipType, RelationshipType>> = {
+    father: 'son', // This will be adjusted for gender
+    mother: 'son', // This will be adjusted for gender
+    master: 'disciple',
+    disciple: 'master',
+    husband: 'wife',
+    wife: 'husband',
+};
+
+const RELATIONSHIP_DISPLAY_MAP: Record<RelationshipType, (gender: 'Nam' | 'Nữ') => string> = {
+    father: () => 'Cha của',
+    mother: () => 'Mẹ của',
+    son: () => 'Con trai của',
+    daughter: () => 'Con gái của',
+    older_brother: () => 'Anh trai của',
+    younger_brother: () => 'Em trai của',
+    older_sister: () => 'Chị gái của',
+    younger_sister: () => 'Em gái của',
+    sibling: () => 'Anh chị em của',
+    master: () => 'Sư phụ của',
+    disciple: () => 'Đệ tử của',
+    husband: () => 'Chồng của',
+    wife: () => 'Vợ của',
+};
+
+// --- Main Component ---
 
 interface NpcInfoPanelProps {
   npc: NPC;
@@ -19,7 +53,7 @@ interface NpcInfoPanelProps {
 }
 
 const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }) => {
-  const [activeTab, setActiveTab] = useState<'info' | 'history'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'history' | 'relationships'>('info');
   const isMonster = npc.npcType === 'monster';
   const cultivationInfo = !isMonster ? getCultivationInfo(npc.cultivation!) : null;
   const age = playerState.time.year - npc.birthTime.year;
@@ -79,6 +113,77 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
     }, [npc.inventory, npc.forSale, isMonster]);
     
     const linhCanTierInfo = !isMonster ? getLinhCanTierInfo(npc.linhCan) : null;
+    
+     const processedRelationships = useMemo((): ProcessedRelationship[] => {
+        if (npc.npcType === 'monster') return [];
+
+        const allRelationships: ProcessedRelationship[] = [];
+        const allNpcs = Object.values(playerState.generatedNpcs).flat();
+        const npcMap = new Map(allNpcs.map(n => [n.id, n]));
+
+        // 1. Direct relationships from the current NPC
+        npc.relationships?.forEach(rel => {
+            const targetNpc = npcMap.get(rel.targetNpcId);
+            if (targetNpc) {
+                allRelationships.push({ targetNpc, type: rel.type });
+            }
+        });
+
+        // 2. Reciprocal relationships (others pointing to this NPC)
+        allNpcs.forEach(otherNpc => {
+            otherNpc.relationships?.forEach(rel => {
+                if (rel.targetNpcId === npc.id) {
+                    let reciprocalType = RELATIONSHIP_MAP[rel.type];
+                    if (reciprocalType) {
+                        if ((rel.type === 'father' || rel.type === 'mother') && npc.gender === 'Nữ') {
+                            reciprocalType = 'daughter';
+                        }
+                        allRelationships.push({ targetNpc: otherNpc, type: reciprocalType });
+                    }
+                }
+            });
+        });
+
+        // 3. Derived relationships (Siblings)
+        const parents = allNpcs.filter(p => p.relationships?.some(rel => rel.targetNpcId === npc.id && (rel.type === 'father' || rel.type === 'mother')));
+        
+        if (parents.length > 0) {
+            const siblingIds = new Set<string>();
+            parents.forEach(parent => {
+                parent.relationships?.forEach(rel => {
+                    if ((rel.type === 'father' || rel.type === 'mother') && rel.targetNpcId !== npc.id) {
+                        siblingIds.add(rel.targetNpcId);
+                    }
+                });
+            });
+
+            siblingIds.forEach(siblingId => {
+                const siblingNpc = npcMap.get(siblingId);
+                if (siblingNpc) {
+                    const thisAge = playerState.time.year - npc.birthTime.year;
+                    const otherAge = playerState.time.year - siblingNpc.birthTime.year;
+                    
+                    let siblingType: RelationshipType;
+                    if (thisAge > otherAge) { // Current NPC is older
+                        siblingType = siblingNpc.gender === 'Nam' ? 'younger_brother' : 'younger_sister';
+                    } else { // Current NPC is younger or same age
+                        siblingType = siblingNpc.gender === 'Nam' ? 'older_brother' : 'older_sister';
+                    }
+                    allRelationships.push({ targetNpc: siblingNpc, type: siblingType });
+                }
+            });
+        }
+        
+        // Deduplicate
+        const uniqueRelationships = new Map<string, ProcessedRelationship>();
+        allRelationships.forEach(r => {
+            const key = `${r.targetNpc.id}-${r.type}`;
+            uniqueRelationships.set(key, r);
+        });
+
+        return Array.from(uniqueRelationships.values());
+    }, [npc, playerState.generatedNpcs, playerState.time.year]);
+
 
   return (
     <div
@@ -111,6 +216,16 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
                             <div className={`flex items-center gap-x-2 text-sm mt-1 ${ageColorClass}`} title="Tuổi / Thọ Nguyên Tối Đa">
                                 <FaHourglassHalf className={agePercentage > 90 ? 'text-red-400' : agePercentage > 75 ? 'text-yellow-400' : 'text-purple-300'} />
                                 <span>Tuổi: {age} / {npc.stats.maxThoNguyen}</span>
+                            </div>
+                        )}
+                        {npc.personalityTags && npc.personalityTags.length > 0 && (
+                            <div className="flex items-start gap-2 mt-2" title="Tính cách">
+                                <GiPaintBrush className="text-blue-300 mt-1" />
+                                <div className="flex flex-wrap gap-1.5">
+                                    {npc.personalityTags.map(tag => (
+                                        <span key={tag} className="bg-blue-900/50 text-blue-300 text-xs font-semibold px-2 py-1 rounded-full">{tag}</span>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </>
@@ -180,6 +295,15 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
                 >
                     <FaShoePrints />
                     <span>Hành Tung</span>
+                </button>
+                 <button
+                    onClick={() => setActiveTab('relationships')}
+                    className={`flex items-center gap-2 px-4 py-2 text-lg font-semibold transition-colors duration-200 border-b-4 ${
+                        activeTab === 'relationships' ? 'text-yellow-300 border-yellow-400' : 'text-gray-400 border-transparent hover:text-white'
+                    }`}
+                >
+                    <FaUsers />
+                    <span>Quan Hệ</span>
                 </button>
             </div>
         )}
@@ -380,6 +504,23 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
                         ))
                     ) : (
                         !npc.currentIntent && <p className="text-gray-500 italic text-center pt-8">Chưa có hành động nào được ghi lại.</p>
+                    )}
+                </div>
+            )}
+             {activeTab === 'relationships' && (
+                <div className="space-y-3 pt-2">
+                    {processedRelationships.length > 0 ? (
+                        processedRelationships.map((rel, index) => (
+                            <div key={index} className="bg-gray-800/50 p-3 rounded-md flex items-center justify-center text-center text-lg">
+                                <span className="font-bold text-blue-300">{npc.name}</span>
+                                <span className="text-gray-400 mx-4">--</span>
+                                <span className="font-semibold text-yellow-300">{RELATIONSHIP_DISPLAY_MAP[rel.type](rel.targetNpc.gender)}</span>
+                                <span className="text-gray-400 mx-4">--</span>
+                                <span className="font-bold text-green-300">{rel.targetNpc.name}</span>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-gray-500 italic text-center pt-8">Người này không có mối quan hệ nào đáng chú ý.</p>
                     )}
                 </div>
             )}

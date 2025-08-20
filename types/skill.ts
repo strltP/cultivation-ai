@@ -4,13 +4,6 @@ import type { WeaponType } from './equipment';
 export type SkillTier = 'HOANG' | 'HUYEN' | 'DIA' | 'THIEN';
 export type SkillType = 'CONG_PHAP' | 'TAM_PHAP';
 
-export interface SkillBonus {
-    targetStat?: keyof CombatStats;
-    targetAttribute?: keyof CharacterAttributes;
-    modifier: 'ADDITIVE' | 'MULTIPLIER';
-    valuePerLevel: number;
-}
-
 export type EffectType = 'STUN' | 'POISON' | 'BURN' | 'SLOW' | 'HEAL' | 'BUFF' | 'DEBUFF' | 'ENVIRONMENTAL_DEBUFF';
 
 export const EFFECT_TYPE_NAMES: Record<EffectType, string> = {
@@ -29,7 +22,6 @@ export interface SkillEffect {
     chance: number; // 0 to 1
     duration?: number; // In turns
     value?: number; // Base value (e.g., damage for POISON, heal amount for HEAL)
-    valuePerLevel?: number; // Extra value per skill level
     valueIsPercent?: boolean; // If true, value is treated as a percentage (e.g., 0.1 for 10%)
     scalingAttribute?: keyof CharacterAttributes; // Attribute to scale with
     scalingFactor?: number; // How much it scales (e.g., 0.5 * attribute value)
@@ -39,10 +31,44 @@ export interface SkillEffect {
 
 export interface SkillDamage {
     baseValue: number;
-    valuePerLevel: number;
     attackPowerFactor?: number; // Hệ số ảnh hưởng từ Lực Công. Ví dụ: 0.5 nghĩa là 50% Lực Công được cộng vào sát thương.
     scalingAttribute?: keyof CharacterAttributes; // e.g., 'linhLuc'
     scalingFactor?: number; // e.g., 0.5 * linhLuc
+}
+
+export interface SkillBonus {
+    targetStat?: keyof CombatStats;
+    targetAttribute?: keyof CharacterAttributes;
+    modifier: 'ADDITIVE' | 'MULTIPLIER';
+    value: number; // Base value, not per level
+}
+
+// This is the core of the new system
+export interface SkillUpgrade {
+    // Damage modifications
+    damageIncrease?: number;
+    
+    // Mana cost modifications
+    manaCostIncrease?: number;
+    manaCostPercentIncrease?: number; // As a fraction, e.g., 0.02 for 2%
+
+    // Effect modifications
+    addEffect?: SkillEffect; // Add a completely new effect
+    modifyEffect?: { // Modify an existing effect
+        type: EffectType;
+        chanceIncrease?: number;
+        durationIncrease?: number;
+        valueIncrease?: number;
+    };
+    
+    // Tam Phap modifications
+    addBonus?: SkillBonus;
+}
+
+export interface SkillLevelDefinition {
+    level: number;
+    description?: string; // Optional flavor text for this level
+    upgrade: SkillUpgrade;
 }
 
 export interface Skill {
@@ -53,17 +79,18 @@ export interface Skill {
     tier: SkillTier;
     weaponType?: WeaponType;
     maxLevel: number;
-    manaCost?: number;
-    manaCostPerLevel?: number;
     enlightenmentBaseCost: number;
     enlightenmentCostPerLevel: number;
+    enlightenmentCostExponent: number; // Số mũ cho công thức tính chi phí đa thức
 
-    // For CONG_PHAP
+    // Base values at Level 1
+    manaCost?: number;
     damage?: SkillDamage;
-    effects?: SkillEffect[];
+    effects?: SkillEffect[]; // Base effects at Lvl 1
+    bonuses?: SkillBonus[]; // Base bonuses for Tam Phap at Lvl 1
 
-    // For TAM_PHAP
-    bonuses: SkillBonus[];
+    // New non-linear progression
+    levelBonuses: SkillLevelDefinition[];
 }
 
 

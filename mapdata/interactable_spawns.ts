@@ -9,7 +9,7 @@ interface InteractableSpawn {
 }
 
 // Định nghĩa quy tắc để sinh thành ngẫu nhiên các vật phẩm trong một khu vực trên bản đồ
-interface ProceduralSpawnRule {
+export interface ProceduralSpawnRule {
     type: 'procedural';
     areaId: string; // Tương ứng với 'id' của một MapArea trong file bản đồ
     itemWeights: Record<string, number>; // Ánh xạ từ baseId của vật phẩm đến "trọng số" hiếm của nó
@@ -172,6 +172,8 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
         { id: 'plot-dv-8', baseId: 'spirit_field_plot', position: { x: 1000, y: 1000 } },
         { id: 'plot-dv-9', baseId: 'spirit_field_plot', position: { x: 1200, y: 1000 } },
     ],
+    MOC_GIA: [],
+    TIEU_GIA: [],
 
     // ---- BAC VUC & SUBMAPS ----
     BAC_VUC: [

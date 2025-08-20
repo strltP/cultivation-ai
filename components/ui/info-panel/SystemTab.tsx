@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { PlayerState } from '../../../types/character';
 import { exportPlayerState, importPlayerState, INITIAL_PLAYER_STATE } from '../../../hooks/usePlayerPersistence';
 import { FaDownload, FaUpload, FaExclamationTriangle, FaPlus } from 'react-icons/fa';
-import { GiScrollQuill, GiBrain, GiHeartPlus, GiGalaxy } from 'react-icons/gi';
+import { GiScrollQuill, GiBrain, GiHeartPlus, GiGalaxy, GiArtificialIntelligence } from 'react-icons/gi';
 import { getNextCultivationLevel, getRealmLevelInfo, calculateAllStats } from '../../../services/cultivationService';
 import { ALL_SKILLS } from '../../../data/skills/skills';
 import { ALL_ITEMS } from '../../../data/items';
@@ -41,6 +41,14 @@ const ConfirmationModal: React.FC<{ onConfirm: () => void; onCancel: () => void;
         </div>
     </div>
 );
+
+const functionNameMap: Record<string, string> = {
+    getInteractionResponse: 'Tương tác Vật phẩm (Rương)',
+    getNpcDefeatDecision: 'Quyết định NPC (Thất bại)',
+    generateNpcs: 'Tạo NPC',
+    generatePlaceNames: 'Tạo Tên Địa Danh',
+    sendMessage: 'Trò chuyện NPC',
+};
 
 const SystemTab: React.FC<SystemTabProps> = ({ playerState, setPlayerState }) => {
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -254,6 +262,32 @@ const SystemTab: React.FC<SystemTabProps> = ({ playerState, setPlayerState }) =>
                             {message.text}
                         </div>
                     )}
+                </div>
+                
+                {/* API Stats Section */}
+                <div className="flex flex-col items-center justify-center text-center gap-4 p-4 bg-black/20 rounded-lg">
+                    <GiArtificialIntelligence className="text-7xl text-cyan-300" />
+                    <h2 className="text-3xl font-bold text-gray-200">Thống Kê API</h2>
+                    <p className="text-gray-400 max-w-2xl text-lg">
+                        Theo dõi việc sử dụng API Gemini để tạo ra thế giới tu tiên này.
+                    </p>
+                    <div className="w-full max-w-md bg-gray-800/50 rounded-lg p-4 space-y-2 mt-4 border border-cyan-400/30">
+                        <div className="flex justify-between text-lg">
+                            <span className="text-gray-300">Tổng Tokens đã sử dụng:</span>
+                            <span className="font-bold text-yellow-300">{playerState.apiUsageStats?.totalTokens.toLocaleString() || 0}</span>
+                        </div>
+                        <div className="pt-2 border-t border-gray-600">
+                            <h4 className="text-md font-semibold text-gray-400 mb-2">Số Lần Gọi Hàm:</h4>
+                            <div className="space-y-1 text-left text-sm">
+                                {Object.entries(playerState.apiUsageStats?.calls || {}).map(([key, value]) => (
+                                    <div key={key} className="flex justify-between">
+                                        <span className="text-gray-300">{functionNameMap[key] || key}:</span>
+                                        <span className="font-semibold text-white">{value.toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Cheat Menu Section */}

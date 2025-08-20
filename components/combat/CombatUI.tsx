@@ -7,6 +7,7 @@ import CombatLog from './CombatLog';
 import EndScreen from './EndScreen';
 import { FaBook, FaRunning, FaTimes, FaHourglassHalf } from 'react-icons/fa';
 import { GiBroadsword } from 'react-icons/gi';
+import { calculateSkillAttributesForLevel } from '../../services/cultivationService';
 
 interface CombatUIProps {
   combatState: CombatState;
@@ -69,8 +70,10 @@ const CombatUI: React.FC<CombatUIProps> = ({ combatState, onAction, onClose, onK
                             </div>
                             <div className="overflow-y-auto flex-grow pr-2">
                                 {playerSkills.map(skill => {
-                                    const manaCost = skill.manaCost || 0;
-                                    const canCast = player.mana >= manaCost;
+                                    const learnedSkill = player.learnedSkills.find(ls => ls.skillId === skill.id)!;
+                                    const calculatedAttrs = calculateSkillAttributesForLevel(skill, learnedSkill.currentLevel);
+                                    const totalManaCost = calculatedAttrs.manaCost + Math.floor(player.stats.maxMana * calculatedAttrs.manaCostPercent);
+                                    const canCast = player.mana >= totalManaCost;
                                     return (
                                     <button
                                         key={skill.id}
@@ -79,7 +82,7 @@ const CombatUI: React.FC<CombatUIProps> = ({ combatState, onAction, onClose, onK
                                         className="w-full text-left p-2 rounded-md mb-1 flex justify-between items-center transition-colors bg-gray-800/50 hover:bg-yellow-600/50 disabled:bg-gray-700/50 disabled:text-gray-500 disabled:cursor-not-allowed"
                                     >
                                         <span>{skill.name}</span>
-                                        <span className={`font-semibold ${canCast ? 'text-indigo-300' : 'text-red-400'}`}>{manaCost} Linh Lực</span>
+                                        <span className={`font-semibold ${canCast ? 'text-indigo-300' : 'text-red-400'}`}>{totalManaCost} Linh Lực</span>
                                     </button>
                                 )})}
                             </div>

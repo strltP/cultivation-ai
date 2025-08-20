@@ -19,7 +19,6 @@ const ATTRIBUTE_NAMES: Record<string, string> = {
     speed: 'Tốc Độ',
     critRate: 'Tỉ lệ Bạo kích',
     critDamage: 'ST Bạo kích',
-    evasionRate: 'Tỉ lệ Né tránh',
 };
 
 const BonusDisplay: React.FC<{ bonus: SkillBonus }> = ({ bonus }) => {
@@ -28,12 +27,12 @@ const BonusDisplay: React.FC<{ bonus: SkillBonus }> = ({ bonus }) => {
 
     const name = ATTRIBUTE_NAMES[targetKey] || targetKey;
     const isMultiplier = bonus.modifier === 'MULTIPLIER';
-    const value = isMultiplier ? `${bonus.valuePerLevel * 100}%` : `+${bonus.valuePerLevel}`;
+    const value = isMultiplier ? `${bonus.value * 100}%` : `+${bonus.value}`;
     
     return (
         <div className="flex items-center gap-2 text-sm text-gray-300">
             {isMultiplier ? <FaArrowUp className="text-green-400" /> : <FaPlus className="text-green-400" />}
-            <span>Tăng {name}: <span className="font-bold text-white">{value}</span> mỗi tầng</span>
+            <span>Tăng {name}: <span className="font-bold text-white">{value}</span></span>
         </div>
     );
 };
@@ -52,7 +51,7 @@ const SkillInfoCard: React.FC<{ skillDef: Skill }> = ({ skillDef }) => {
             <div className="mt-4 pt-3 border-t border-gray-700/50 space-y-2">
                 {skillDef.bonuses && skillDef.bonuses.length > 0 && (
                     <div className="space-y-1">
-                        <h4 className="text-gray-300 font-semibold text-sm">Thuộc tính gia tăng:</h4>
+                        <h4 className="text-gray-300 font-semibold text-sm">Thuộc tính gia tăng (tầng 1):</h4>
                         {skillDef.bonuses.map((bonus, index) => <BonusDisplay key={index} bonus={bonus} />)}
                     </div>
                 )}
