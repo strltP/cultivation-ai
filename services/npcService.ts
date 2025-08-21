@@ -5,7 +5,7 @@ import type { InventorySlot } from '../types/item';
 import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
 import { ALL_STATIC_NPCS } from '../data/npcs/static_npcs';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
-import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, ProceduralMonsterRule, MonsterDefinition, RoleSpawnDefinition } from '../data/npcs/npc_types';
+import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, ProceduralMonsterRule, MonsterDefinition, RoleSpawnDefinition, AgeCategory } from '../data/npcs/npc_types';
 import { generateNpcs, GeneratedNpcData } from './geminiService';
 import { REALM_PROGRESSION } from '../constants';
 import { MAPS, MAP_AREAS_BY_MAP, POIS_BY_MAP } from '../mapdata';
@@ -15,7 +15,7 @@ import { ALL_ITEMS } from '../data/items/index';
 import { ALL_EQUIPMENT } from '../data/equipment';
 import { EquipmentSlot, ITEM_TIER_NAMES } from '../types/equipment';
 import type { LinhCan, LinhCanType, NpcBehavior } from '../types/linhcan';
-import { LINH_CAN_TYPES } from '../types/linhcan';
+import { LINH_CAN_TYPES, NPC_BEHAVIOR_TAGS } from '../types/linhcan';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
 import { FACTIONS, type FactionRole } from '../data/factions';
 import { generateRandomLinhCan } from '../hooks/usePlayerPersistence';
@@ -52,10 +52,83 @@ const getEstimatedLifespan = (realmIndex: number, level: number): number => {
     return totalLifespan;
 };
 
-function createNpcFromData(data: (GeneratedNpcData | StaticNpcDefinition) & { power?: number }, id: string, position: {x:number, y:number}, gameTime: GameTime, homeMapId: MapID, factionId?: string, homePoiId?: string): NPC {
+function createNpcFromData(
+    data: (GeneratedNpcData | StaticNpcDefinition) & { 
+        name?: string;
+        power?: number; 
+        gender?: 'Nam' | 'Nữ';
+        behaviors?: string[]; 
+        realmName?: string; 
+        levelDescription?: string;
+        skillTiers?: { tamPhapTier: SkillTier; congPhapTiers: SkillTier[]; };
+        equipmentTier?: SkillTier;
+        linhThach?: number;
+        camNgo?: number;
+    }, 
+    id: string, 
+    position: {x:number, y:number}, 
+    gameTime: GameTime, 
+    homeMapId: MapID, 
+    factionId?: string, 
+    homePoiId?: string, 
+    ageCategory?: AgeCategory,
+    roleDef?: FactionRole
+): NPC {
+    // --- NEW LOGIC FOR PROCEDURAL NPCS ---
+    if (roleDef && !('realmName' in data)) {
+        // 1. Generate Gender
+        data.gender = Math.random() < 0.5 ? 'Nam' : 'Nữ';
+
+        // 2. Generate Behaviors
+        const numBehaviors = Math.floor(Math.random() * 2) + 1; // 1 to 2
+        const shuffledBehaviors = [...NPC_BEHAVIOR_TAGS].sort(() => 0.5 - Math.random());
+        data.behaviors = shuffledBehaviors.slice(0, numBehaviors);
+
+        // 3. Generate Realm & Level
+        const { min, max } = roleDef.rangeRealm;
+        const realmChoices = [];
+        for (let i = min.realmIndex; i <= max.realmIndex; i++) {
+            const realm = REALM_PROGRESSION[i];
+            if (!realm) continue;
+            const startLevel = (i === min.realmIndex) ? min.level : 0;
+            const endLevel = (i === max.realmIndex) ? max.level : realm.levels.length - 1;
+            for (let j = startLevel; j <= endLevel; j++) {
+                if (realm.levels[j]) {
+                    realmChoices.push({ realmIndex: i, level: j });
+                }
+            }
+        }
+        const chosenCultivation = realmChoices.length > 0 ? realmChoices[Math.floor(Math.random() * realmChoices.length)] : { realmIndex: min.realmIndex, level: min.level };
+        data.realmName = REALM_PROGRESSION[chosenCultivation.realmIndex].name;
+        data.levelDescription = REALM_PROGRESSION[chosenCultivation.realmIndex].levels[chosenCultivation.level].levelName;
+
+        // 4. Generate Tiers
+        const tierMap: Record<SkillTier, number> = { HOANG: 0, HUYEN: 1, DIA: 2, THIEN: 3 };
+        const tierIndexes = Object.keys(tierMap) as SkillTier[];
+        const minTierIndex = tierMap[roleDef.equipmentTierRange[0]];
+        const maxTierIndex = tierMap[roleDef.equipmentTierRange[1]];
+        const chosenTierIndex = Math.floor(Math.random() * (maxTierIndex - minTierIndex + 1)) + minTierIndex;
+        
+        data.equipmentTier = tierIndexes[chosenTierIndex];
+        
+        const tamPhapTier = tierIndexes[Math.floor(Math.random() * (chosenTierIndex + 1))];
+        const congPhapTiers: SkillTier[] = [];
+        const numCongPhap = Math.random() > 0.3 ? 2 : 1;
+        for(let i = 0; i < numCongPhap; i++) {
+            congPhapTiers.push(tierIndexes[Math.floor(Math.random() * (chosenTierIndex + 1))]);
+        }
+        data.skillTiers = { tamPhapTier, congPhapTiers };
+
+        // 5. Generate Assets
+        const { realmIndex, level } = chosenCultivation;
+        data.linhThach = Math.floor((Math.random() * 50 + 20) * Math.pow(realmIndex + 1, 2) * (level + 1));
+        data.camNgo = Math.floor((Math.random() * 200 + 100) * Math.pow(realmIndex + 1, 1.5) * (level + 1));
+    }
+
     // --- Name Generation ---
+    const gender = data.gender || 'Nam';
     const familyName = FAMILY_NAMES[Math.floor(Math.random() * FAMILY_NAMES.length)];
-    const givenName = data.gender === 'Nam' 
+    const givenName = gender === 'Nam' 
         ? MALE_GIVEN_NAMES[Math.floor(Math.random() * MALE_GIVEN_NAMES.length)]
         : FEMALE_GIVEN_NAMES[Math.floor(Math.random() * FEMALE_GIVEN_NAMES.length)];
     const npcName = data.name || `${familyName} ${givenName}`;
@@ -69,7 +142,7 @@ function createNpcFromData(data: (GeneratedNpcData | StaticNpcDefinition) & { po
     if (levelIndex !== -1) {
         level = levelIndex;
     } else {
-        const parsedLevel = parseInt(data.levelDescription.replace(/\D/g, ''));
+        const parsedLevel = parseInt(data.levelDescription!.replace(/\D/g, ''));
         if (!isNaN(parsedLevel)) {
             level = parsedLevel - 1; // "Tầng 1" -> index 0
         }
@@ -117,7 +190,7 @@ function createNpcFromData(data: (GeneratedNpcData | StaticNpcDefinition) & { po
     const forSale: { itemId: string, stock: number, priceModifier?: number }[] = [];
 
     // --- NEW: Generate Skills, Equipment, and Inventory from Tiers ---
-    if ('skillTiers' in data && 'equipmentTier' in data) {
+    if ('skillTiers' in data && data.skillTiers && 'equipmentTier' in data && data.equipmentTier) {
         // Generate Skills
         const { tamPhapTier, congPhapTiers } = data.skillTiers;
         const possibleTamPhap = ALL_SKILLS.filter(s => s.type === 'TAM_PHAP' && s.tier === tamPhapTier);
@@ -189,7 +262,7 @@ function createNpcFromData(data: (GeneratedNpcData | StaticNpcDefinition) & { po
     let linhCan: LinhCan[];
 
     // If linhCan is provided (static NPC), use it. Otherwise, generate it for procedural NPCs.
-    if ('linHCan' in data && Array.isArray(data.linhCan) && data.linhCan.length > 0) {
+    if ('linhCan' in data && Array.isArray(data.linhCan) && data.linhCan.length > 0) {
         linhCan = (data.linhCan || [])
             .map(lc => ({
                 type: lc.type.toUpperCase() as LinhCanType,
@@ -241,13 +314,27 @@ function createNpcFromData(data: (GeneratedNpcData | StaticNpcDefinition) & { po
         
         // Normalize talent score to a 0-1 range. Low talent -> 1, High talent -> 0
         const talentModifier = 1 - ((Math.min(maxTalent, Math.max(minTalent, talentScore)) - minTalent) / (maxTalent - minTalent));
-        
-        // Clamp the modifier to prevent extreme ages
         const clampedModifier = Math.max(0.05, Math.min(0.95, talentModifier));
 
-        // 4. Interpolate age based on talent
+        // 4. Override talent modifier if an age category is specified
+        let finalTalentModifier = clampedModifier;
+        if (ageCategory) {
+            switch (ageCategory) {
+                case 'Young':
+                    finalTalentModifier = Math.random() * 0.3; // 0% - 30% of age range
+                    break;
+                case 'Middle':
+                    finalTalentModifier = 0.35 + Math.random() * 0.3; // 35% - 65% of age range
+                    break;
+                case 'Old':
+                    finalTalentModifier = 0.7 + Math.random() * 0.3; // 70% - 100% of age range
+                    break;
+            }
+        }
+        
+        // 5. Interpolate age based on the final modifier
         const ageRange = (maxAge * 0.98) - minAge; // Use 98% of max age as a buffer
-        let calculatedAge = minAge + (ageRange * clampedModifier);
+        let calculatedAge = minAge + (ageRange * finalTalentModifier);
         
         // Add some slight randomness
         calculatedAge *= (1 + (Math.random() * 0.1 - 0.05)); // +/- 5%
@@ -271,7 +358,7 @@ function createNpcFromData(data: (GeneratedNpcData | StaticNpcDefinition) & { po
 
     return {
         name: npcName,
-        gender: data.gender,
+        gender: gender,
         npcType: 'cultivator',
         title: data.title,
         role: data.role,
@@ -459,6 +546,24 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
                 const count = distribution.count;
                 if (count <= 0) continue;
 
+                const ageCategories: (AgeCategory | undefined)[] = [];
+                const { ageDistribution } = roleDef;
+                if (ageDistribution) {
+                    const numYoung = Math.floor(count * ageDistribution.young);
+                    const numMiddle = Math.floor(count * ageDistribution.middle);
+                    const numOld = Math.floor(count * ageDistribution.old);
+
+                    for (let i = 0; i < numYoung; i++) ageCategories.push('Young');
+                    for (let i = 0; i < numMiddle; i++) ageCategories.push('Middle');
+                    for (let i = 0; i < numOld; i++) ageCategories.push('Old');
+                    
+                    while (ageCategories.length < count) ageCategories.push('Middle');
+
+                    ageCategories.sort(() => 0.5 - Math.random());
+                } else {
+                    for (let i = 0; i < count; i++) ageCategories.push(undefined);
+                }
+
                 const minRealm = REALM_PROGRESSION[role.rangeRealm.min.realmIndex];
                 const minLevel = minRealm.levels[role.rangeRealm.min.level];
                 const maxRealm = REALM_PROGRESSION[role.rangeRealm.max.realmIndex];
@@ -471,14 +576,23 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
                     `Bối cảnh: ${faction.name}.`,
                     `Hãy tạo ra ${count} NPC với vai trò là "${role.name}" ${powerInstruction}.`,
                     `**Yêu cầu nghiêm ngặt:**`,
-                    `- Cảnh giới tu luyện: từ ${minRealm.name} ${minLevel.levelName} đến ${maxRealm.name} ${maxLevel.levelName}.`,
                     `- Danh hiệu: Có ${Math.round((role.titleChance || 0) * 100)}% khả năng có danh hiệu. Nếu có, chủ đề nên là: ${role.titleThemes.join(', ')}.`,
-                    `- Phẩm chất trang bị: Phẩm chất trang bị nên từ ${ITEM_TIER_NAMES[role.equipmentTierRange[0]]} đến ${ITEM_TIER_NAMES[role.equipmentTierRange[1]]}.`
                 ];
                 
                 const generationPrompt = promptParts.join('\n');
                 
-                const promise = generateNpcs(generationPrompt, count, faction.familyName)
+                const minRealmIndex = role.rangeRealm.min.realmIndex;
+                const maxRealmIndex = role.rangeRealm.max.realmIndex;
+
+                const allowedRealmNames: string[] = [];
+                for (let i = minRealmIndex; i <= maxRealmIndex; i++) {
+                    const realm = REALM_PROGRESSION[i];
+                    if (realm) {
+                        allowedRealmNames.push(realm.name);
+                    }
+                }
+
+                const promise = generateNpcs(generationPrompt, count, allowedRealmNames, faction.familyName)
                     .then(({ data: generatedData, tokenCount }) => {
                         totalTokenCount += tokenCount;
                         return generatedData.map((npcData, index) => {
@@ -489,7 +603,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
                             const initialPosition = getInitialPosition(mapId, homePoiId);
 
                             const id = `proc-npc-${mapId}-${role.name.replace(/\s/g, '')}-${Date.now()}-${index}`;
-                            return createNpcFromData(npcData, id, initialPosition, gameTime, mapId, roleDef.factionId, homePoiId);
+                            return createNpcFromData(npcData, id, initialPosition, gameTime, mapId, roleDef.factionId, homePoiId, ageCategories[index], role);
                         });
                     });
                 generationPromises.push(promise);

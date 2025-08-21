@@ -4,13 +4,14 @@ import { getCultivationInfo, getLinhCanTierInfo } from '../../services/cultivati
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
 import { ALL_SKILLS, SKILL_TIER_INFO } from '../../data/skills/skills';
-import { FaBookDead, FaBook, FaGem, FaHourglassHalf, FaLock, FaShoePrints, FaInfoCircle, FaFistRaised, FaUsers } from 'react-icons/fa';
+import { FaBookDead, FaBook, FaGem, FaHourglassHalf, FaLock, FaShoePrints, FaInfoCircle, FaFistRaised, FaUsers, FaHeart } from 'react-icons/fa';
 import { ALL_ITEMS } from '../../data/items/index';
 import type { EquipmentSlot } from '../../types/equipment';
 import { EQUIPMENT_SLOT_NAMES } from '../../types/equipment';
 import { GiDiamondHard, GiBackpack, GiGalaxy, GiTwoCoins, GiBrain, GiPaintBrush } from 'react-icons/gi';
 import { LINH_CAN_DATA } from '../../data/linhcan';
 import { formatCurrentIntentStatus } from '../../services/npcActionService';
+import { getAffinityLevel } from '../../services/affinityService';
 
 // --- Relationship Logic ---
 
@@ -63,6 +64,9 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
   const hpPercentage = (npc.hp / npc.stats.maxHp) * 100;
   const manaPercentage = (npc.mana / npc.stats.maxMana) * 100;
   const qiPercentage = (npc.qi / npc.stats.maxQi) * 100;
+
+  const affinityScore = playerState.affinity?.[npc.id] || 0;
+  const affinityInfo = getAffinityLevel(affinityScore);
 
   const tamPhapList = npc.learnedSkills
     .map(ls => ({ learned: ls, def: ALL_SKILLS.find(s => s.id === ls.skillId) }))
@@ -218,6 +222,10 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
                                 <span>Tuổi: {age} / {npc.stats.maxThoNguyen}</span>
                             </div>
                         )}
+                        <div className="flex items-center gap-x-2 text-sm mt-2" title="Thiện cảm">
+                            <FaHeart className={affinityInfo.color} />
+                            <span className={`font-semibold ${affinityInfo.color}`}>{affinityInfo.level} ({affinityScore})</span>
+                        </div>
                         {npc.personalityTags && npc.personalityTags.length > 0 && (
                             <div className="flex items-start gap-2 mt-2" title="Tính cách">
                                 <GiPaintBrush className="text-blue-300 mt-1" />

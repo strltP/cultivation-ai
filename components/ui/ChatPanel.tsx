@@ -7,6 +7,7 @@ import { getCultivationInfo } from '../../services/cultivationService';
 import { useInteraction } from '../../hooks/useGameContext';
 import { ALL_ITEMS } from '../../data/items/index';
 import type { Item, InventorySlot } from '../../types/item';
+import AffinityChangeIndicator from './AffinityChangeIndicator';
 
 interface GiftingUIProps {
     playerState: PlayerState;
@@ -125,6 +126,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ npc, history, onSendMessage, onCl
     const [isGifting, setIsGifting] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    const [initialAffinity, setInitialAffinity] = useState<number | null>(null);
+    const [affinityChange, setAffinityChange] = useState<{ from: number, to: number } | null>(null);
+    const currentAffinity = playerState.affinity?.[npc.id] || 0;
+
     const cultivationInfo = getCultivationInfo(npc.cultivation!);
     const age = playerState.time.year - npc.birthTime.year;
 
@@ -133,6 +138,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ npc, history, onSendMessage, onCl
     };
 
     useEffect(scrollToBottom, [history, isLoading]);
+
+    // Set initial affinity when the component mounts or the NPC changes
+    useEffect(() => {
+        setInitialAffinity(currentAffinity);
+        setAffinityChange(null);
+    }, [npc.id]);
+
+    // Detect changes in affinity
+    useEffect(() => {
+        if (initialAffinity !== null && currentAffinity !== initialAffinity) {
+            setAffinityChange({ from: initialAffinity, to: currentAffinity });
+            setInitialAffinity(currentAffinity);
+
+            const timer = setTimeout(() => {
+                setAffinityChange(null);
+            }, 5000); // Hide after 5 seconds
+
+            return () => clearTimeout(timer);
+        }
+    }, [currentAffinity, initialAffinity]);
+
 
     const handleSend = () => {
         if (input.trim() && !isLoading) {
@@ -152,9 +178,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ npc, history, onSendMessage, onCl
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-40 animate-fade-in p-4" onClick={onClose}>
             {isGifting && <GiftingUI playerState={playerState} npc={npc} onClose={() => setIsGifting(false)} />}
             <div 
-                className="bg-gradient-to-b from-[#4a3f35] to-[#3a3028] border-4 border-amber-700/60 rounded-lg shadow-2xl shadow-black/50 w-full max-w-4xl h-[95vh] flex flex-col" 
+                className="bg-gradient-to-b from-[#4a3f35] to-[#3a3028] border-4 border-amber-700/60 rounded-lg shadow-2xl shadow-black/50 w-full max-w-4xl h-[95vh] flex flex-col relative" 
                 onClick={(e) => e.stopPropagation()}
             >
+                {affinityChange && (
+                    <AffinityChangeIndicator from={affinityChange.from} to={affinityChange.to} />
+                )}
                 <header className="relative p-4 text-center flex-shrink-0">
                     <button onClick={onClose} className="absolute top-4 right-4 text-amber-300/70 hover:text-white transition-colors z-10" aria-label="Đóng">
                         <FaTimes className="h-7 w-7" />

@@ -111,6 +111,7 @@ export const INITIAL_PLAYER_STATE: Omit<PlayerState, 'saveVersion'> = {
   cultivationStats: {}, // Chỉ số gốc từ tu luyện sẽ được lưu ở đây
   linhCan: [],
   activeEffects: [],
+  affinity: {},
   
   learnedSkills: [
     // Bỏ kỹ năng mặc định, người chơi sẽ tự học

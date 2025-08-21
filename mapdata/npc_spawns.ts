@@ -46,8 +46,9 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             roles: [
                 {
                     factionId: 'THAT_HUYEN_THANH',
+                    ageDistribution: { young: 0.3, middle: 0.5, old: 0.2 },
                     roleDistribution: [
-                        { roleName: 'Tán tu', count: 5 },
+                        { roleName: 'Tán tu', count: 10 },
                         { roleName: 'Vệ binh', count: 5 },
                         { roleName: 'Thường dân', count: 5 }
                     ],
@@ -55,6 +56,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 },
                  {
                     factionId: 'THAT_HUYEN_THANH',
+                    ageDistribution: { young: 0.1, middle: 0.5, old: 0.4 },
                     roleDistribution: [{ roleName: 'Chủ tiệm lớn', count: 2 }],
                     poiIds: ['tht-poi-1', 'tht-poi-2'],
                 }
@@ -131,26 +133,23 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             roles: [
                 {
                     factionId: 'LUC_YEN_THON',
+                    ageDistribution: { young: 0.1, middle: 0.4, old: 0.5 },
                     roleDistribution: [{ roleName: 'Lão bản', count: 1 }],
                     poiIds: ['lyt-poi-2']
                 },
                 {
                     factionId: 'LUC_YEN_THON',
-                    roleDistribution: [{ roleName: 'Thợ săn', count: 2 }],
-                    poiIds: []
+                    ageDistribution: { young: 0.4, middle: 0.5, old: 0.1 },
+                    roleDistribution: [
+                        { roleName: 'Thợ săn', count: 2 },
+                        { roleName: 'Nông dân', count: 3 },
+                        { roleName: 'Thường dân', count: 4 }
+                    ],
+                    poiIds: ['lyt-poi-9', 'lyt-poi-3', 'lyt-poi-5', 'lyt-poi-6', 'lyt-poi-7']
                 },
                 {
                     factionId: 'LUC_YEN_THON',
-                    roleDistribution: [{ roleName: 'Nông dân', count: 3 }],
-                    poiIds: ['lyt-poi-9']
-                },
-                {
-                    factionId: 'LUC_YEN_THON',
-                    roleDistribution: [{ roleName: 'Thường dân', count: 4 }],
-                    poiIds: ['lyt-poi-3', 'lyt-poi-5', 'lyt-poi-6', 'lyt-poi-7']
-                },
-                {
-                    factionId: 'LUC_YEN_THON',
+                    ageDistribution: { young: 0.0, middle: 0.2, old: 0.8 },
                     roleDistribution: [{ roleName: 'Ẩn thế tu sĩ', count: 1 }],
                     poiIds: []
                 }

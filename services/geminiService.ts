@@ -14,6 +14,7 @@ import { MAPS, POIS_BY_MAP, MAP_AREAS_BY_MAP } from "../mapdata";
 import type { PointOfInterest } from '../types/map';
 import { gameTimeToMinutes } from "./timeService";
 import { CHINH_TAGS, TRUNG_LAP_TAGS, TA_TAGS } from '../data/personality_tags';
+import { getAffinityLevel } from './affinityService';
 
 
 let ai: GoogleGenAI | null = null;
@@ -64,6 +65,10 @@ export const createChatSession = (playerState: PlayerState, npc: NPC, history?: 
     const timeOfDay = getHourPeriod(playerState.time.hour);
     const season = playerState.time.season;
     const age = playerState.time.year - npc.birthTime.year;
+    
+    // Affinity
+    const affinityScore = playerState.affinity?.[npc.id] || 0;
+    const affinityInfo = getAffinityLevel(affinityScore);
 
     // 1. Geography - NPC's CURRENT location
     const currentMap = MAPS[playerState.currentMap];
@@ -226,8 +231,9 @@ THÔNG TIN VỀ BẢN THÂN BẠN (${npc.name})
 ${currentStateString ? `\n${currentStateString}\n` : ''}
 BỐI CẢNH TRÒ CHUYỆN
 - Bạn đang nói chuyện với một tu sĩ (${playerState.gender}) tên là '${playerState.name}', hiện đang ở cảnh giới ${playerCultivationInfo.name}.
+- Mối quan hệ của bạn với người này: Mức độ thiện cảm hiện tại là ${affinityScore} (trên thang điểm từ -100 đến 100), được đánh giá là '${affinityInfo.level}'. **QUAN TRỌNG:** Hãy điều chỉnh thái độ và lời nói của bạn cho phù hợp với mức độ thiện cảm này. Ví dụ: nếu là 'Thù Địch', hãy nói chuyện cộc lốc, khinh miệt. Nếu là 'Tri Kỷ', hãy nói chuyện thân mật, cởi mở.
 - Bây giờ là ${timeOfDay} vào mùa ${season}.
-- HỆ THỐNG TẶNG QUÀ: Người chơi có thể tặng bạn vật phẩm hoặc linh thạch. Khi bạn nhận được một tin nhắn hệ thống bắt đầu bằng "(Hệ thống: ...)", đó là một hành động tặng quà. Hãy phản hồi lại món quà dựa trên tính cách của bạn, giá trị của món quà, và mối quan hệ của bạn với người chơi.`;
+- HỆ THỐNG TẶNG QUÀ: Người chơi có thể tặng bạn vật phẩm hoặc linh thạch. Khi bạn nhận được một tin nhắn hệ thống bắt đầu bằng "(Hệ thống: ...)", đó là một hành động tặng quà. Hãy phản hồi lại món quà dựa trên tính cách của bạn, giá trị của món quà, và mối quan hệ của bạn với người chơi. Nếu thiện cảm tăng, hãy tỏ ra vui vẻ. Nếu giảm, hãy tỏ ra thất vọng hoặc không quan tâm.`;
 
     const geminiHistory = history?.map(msg => ({
         role: msg.role,
@@ -373,16 +379,11 @@ Sau đó, đưa ra một lời thoại ngắn gọn (1-2 câu) để NPC nói v�
 };
 
 export interface GeneratedNpcData {
-    name?: string;
-    gender: 'Nam' | 'Nữ';
     role: string;
     power: number;
-    behaviors: string[];
     personalityTags: string[];
     title?: string;
     prompt: string;
-    realmName: string; // e.g., "Kim Đan"
-    levelDescription: string; // e.g., "Sơ Kì", "Tầng 5"
     attributes: {
         canCot: number;
         thanPhap: number;
@@ -391,17 +392,7 @@ export interface GeneratedNpcData {
         coDuyen: number;
         tamCanh: number;
     };
-    linhCan?: { type: string, purity: number }[]; // Made optional
-    linhThach: number;
-    camNgo: number;
-    skillTiers: { // Replaced learnedSkillIds
-        tamPhapTier: 'HOANG' | 'HUYEN' | 'DIA' | 'THIEN';
-        congPhapTiers: ('HOANG' | 'HUYEN' | 'DIA' | 'THIEN')[];
-    };
-    equipmentTier: 'HOANG' | 'HUYEN' | 'DIA' | 'THIEN'; // Replaced equipment
 }
-
-const BEHAVIOR_TAGS_STRING = "'FIGHTER', 'HUNTER', 'GATHERER_HERB', 'GATHERER_ORE', 'TRADER', 'MEDITATOR', 'SCHOLAR', 'WANDERER'";
 
 // Helper function to pick random unique elements from an array
 const pickRandom = (arr: string[], num: number): string[] => {
@@ -445,7 +436,7 @@ const generatePersonalityTags = (): string[] => {
     return tags;
 };
 
-export const generateNpcs = async (generationPrompt: string, count: number, familyName?: string): Promise<GeminiServiceResponse<GeneratedNpcData[]>> => {
+export const generateNpcs = async (generationPrompt: string, count: number, allowedRealmNames: string[], familyName?: string): Promise<GeminiServiceResponse<GeneratedNpcData[]>> => {
     try {
         const client = getAIClient();
         
@@ -457,23 +448,16 @@ export const generateNpcs = async (generationPrompt: string, count: number, fami
 
         const prompt = `${generationPrompt}
 Hãy tạo ra ${count} NPC độc đáo. Đối với mỗi NPC, hãy cung cấp:
-1.  Giới tính ('Nam' hoặc 'Nữ').
-2.  Sử dụng lại chính xác chức vụ (role) được cung cấp trong prompt.
-3.  Sử dụng lại chính xác cấp độ quyền lực (power) được cung cấp trong prompt.
-4.  Một danh sách từ 1 đến 3 thẻ hành vi (behaviors) từ danh sách sau để xác định AI của họ: [${BEHAVIOR_TAGS_STRING}].
-5.  Một danh hiệu (title) tu tiên tùy chọn, dựa trên tỉ lệ và chủ đề đã cho. Nếu không có, để trống hoặc null.
-6.  Một lời nhắc đối thoại ngắn gọn (1-2 câu) để mời tương tác. Lời nhắc này phải phản ánh các thẻ tính cách được cung cấp.
-7.  Cảnh giới tu luyện (ví dụ: 'Trúc Cơ', 'Kim Đan'). Phải nằm trong khoảng đã cho.
-8.  Tiểu cảnh giới (ví dụ: 'Hậu Kì', 'Tầng 5').
-9.  Các thuộc tính cơ bản (Căn Cốt, Thân Pháp, Thần Thức, Ngộ Tính, Cơ Duyên, Tâm Cảnh) từ 5 đến 15. Phân bổ điểm để phản ánh vai trò.
-10. Lượng Linh Thạch và Cảm Ngộ phù hợp với vai trò và cảnh giới.
-11. **Phẩm chất (tier)** của 1 Tâm Pháp và 1-2 Công Pháp. Ví dụ: Tâm Pháp 'HUYEN', Công Pháp ['HOANG', 'HOANG'].
-12. **Phẩm chất (tier)** chung cho bộ trang bị của họ. Ví dụ: 'HUYEN'.
+1.  Sử dụng lại chính xác chức vụ (role) được cung cấp trong prompt.
+2.  Sử dụng lại chính xác cấp độ quyền lực (power) được cung cấp trong prompt.
+3.  Một danh hiệu (title) tu tiên tùy chọn, dựa trên tỉ lệ và chủ đề đã cho. Nếu không có, để trống hoặc null.
+4.  Một lời nhắc đối thoại ngắn gọn (1-2 câu) để mời tương tác. Lời nhắc này phải phản ánh các thẻ tính cách được cung cấp.
+5.  Các thuộc tính cơ bản (Căn Cốt, Thân Pháp, Thần Thức, Ngộ Tính, Cơ Duyên, Tâm Cảnh) từ 5 đến 15. Phân bổ điểm để phản ánh vai trò.
 
 **QUAN TRỌNG:** Dưới đây là danh sách các thẻ tính cách (personalityTags) đã được xác định trước cho mỗi NPC. Bạn PHẢI sử dụng chính xác các thẻ này khi tạo lời nhắc đối thoại (prompt) cho họ.
 ${allPersonalityTags.map((tags, index) => `NPC ${index + 1} có các tính cách: [${tags.join(', ')}]`).join('\n')}
 `;
-
+        
         const response = await client.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
@@ -487,18 +471,10 @@ ${allPersonalityTags.map((tags, index) => `NPC ${index + 1} có các tính cách
                     items: {
                         type: Type.OBJECT,
                         properties: {
-                            gender: { type: Type.STRING, description: "Giới tính của NPC ('Nam' hoặc 'Nữ').", enum: ['Nam', 'Nữ'] },
                             role: { type: Type.STRING, description: "Chức vụ hoặc vai trò của NPC." },
                             power: { type: Type.INTEGER, description: "Cấp độ quyền lực của NPC, từ 1-100.", nullable: true },
-                            behaviors: {
-                                type: Type.ARRAY,
-                                description: `Một danh sách các thẻ hành vi từ: [${BEHAVIOR_TAGS_STRING}]`,
-                                items: { type: Type.STRING }
-                            },
                             title: { type: Type.STRING, description: "Danh hiệu tu tiên của NPC. Có thể là chuỗi rỗng hoặc null.", nullable: true },
                             prompt: { type: Type.STRING, description: "Một lời thoại ngắn gọn, trong vai nhân vật, phản ánh tính cách đã cho." },
-                            realmName: { type: Type.STRING, description: "Tên cảnh giới tu luyện của NPC." },
-                            levelDescription: { type: Type.STRING, description: "Tiểu cảnh giới của NPC." },
                             attributes: {
                                 type: Type.OBJECT,
                                 properties: {
@@ -511,28 +487,8 @@ ${allPersonalityTags.map((tags, index) => `NPC ${index + 1} có các tính cách
                                 },
                                 required: ["canCot", "thanPhap", "thanThuc", "ngoTinh", "coDuyen", "tamCanh"],
                             },
-                            linhThach: { type: Type.INTEGER, description: "Lượng Linh Thạch NPC có." },
-                            camNgo: { type: Type.INTEGER, description: "Lượng Cảm Ngộ NPC sở hữu." },
-                            skillTiers: {
-                                type: Type.OBJECT,
-                                description: "Phẩm chất của các loại kỹ năng.",
-                                properties: {
-                                    tamPhapTier: { type: Type.STRING, description: "Phẩm chất Tâm Pháp.", enum: ['HOANG', 'HUYEN', 'DIA', 'THIEN']},
-                                    congPhapTiers: {
-                                        type: Type.ARRAY,
-                                        description: "Danh sách phẩm chất của 1-2 Công Pháp.",
-                                        items: { type: Type.STRING, enum: ['HOANG', 'HUYEN', 'DIA', 'THIEN'] }
-                                    }
-                                },
-                                required: ["tamPhapTier", "congPhapTiers"]
-                            },
-                            equipmentTier: {
-                                type: Type.STRING,
-                                description: "Phẩm chất chung của bộ trang bị.",
-                                enum: ['HOANG', 'HUYEN', 'DIA', 'THIEN']
-                            }
                         },
-                        required: ["gender", "role", "behaviors", "prompt", "realmName", "levelDescription", "attributes", "linhThach", "camNgo", "skillTiers", "equipmentTier"]
+                        required: ["role", "prompt", "attributes"]
                     }
                 }
             },

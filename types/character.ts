@@ -128,6 +128,8 @@ export interface ApiUsageStats {
     };
 }
 
+export type AffinityLevel = 'Thù Địch' | 'Ghét Bỏ' | 'Xa Lạ' | 'Thân Thiện' | 'Tin Tưởng' | 'Tri Kỷ';
+
 export interface PlayerState {
   saveVersion: string;
   name: string;
@@ -182,6 +184,7 @@ export interface PlayerState {
   nextInteractableSpawnCheck?: Record<string, GameTime>; // Key: mapId-areaId for interactable population
   lastNpcProgressionCheck?: GameTime; // The last time NPC cultivation was processed
   journal: JournalEntry[];
+  affinity: { [npcId: string]: number };
   
   // Game Time
   time: GameTime;

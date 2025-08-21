@@ -32,6 +32,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
             sendMessage: 0,
         }
     },
+    affinity: {},
 };
 export { DAYS_PER_MONTH };
 
@@ -166,6 +167,7 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         }
         if (!parsed.nextMonsterSpawnCheck) parsed.nextMonsterSpawnCheck = {};
         if (!parsed.nextInteractableSpawnCheck) parsed.nextInteractableSpawnCheck = {};
+        if (!parsed.affinity) parsed.affinity = {};
         if (!parsed.apiUsageStats) {
             parsed.apiUsageStats = {
                 totalTokens: 0,

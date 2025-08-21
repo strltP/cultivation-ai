@@ -36,6 +36,8 @@ export interface StaticNpcSpawn {
     position: Position;
 }
 
+export type AgeCategory = 'Young' | 'Middle' | 'Old';
+
 // Role definition used within a procedural spawn rule.
 export interface RoleSpawnDefinition {
     factionId: string;
@@ -43,6 +45,7 @@ export interface RoleSpawnDefinition {
         roleName: string;
         count: number;
     }[];
+    ageDistribution?: { young: number; middle: number; old: number }; // e.g. { young: 0.3, middle: 0.4, old: 0.3 }
     poiIds: string[]; // Spawns NPCs for this role within the bounds of these POIs. Can be an empty array to spawn anywhere on the map.
 }
 

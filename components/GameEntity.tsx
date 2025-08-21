@@ -1,10 +1,10 @@
-
 import React from 'react';
 import type { NPC, PlayerState } from '../types/character';
 import type { Interactable } from '../types/interaction';
 import { FaUserSecret, FaLeaf, FaCube, FaBoxOpen, FaMale, FaFemale } from 'react-icons/fa';
 import { GiSprout, GiPlantSeed, GiHerbsBundle, GiFireBowl, GiWyvern } from 'react-icons/gi';
 import { getCultivationInfo } from '../services/cultivationService';
+import { getAffinityLevel } from '../services/affinityService';
 
 interface GameEntityProps {
   entity: NPC | Interactable;
@@ -22,19 +22,22 @@ const GameEntity: React.FC<GameEntityProps> = ({ entity, onClick, playerState })
   let title = entity.name;
 
   if (isNpc(entity)) {
+    const affinityScore = playerState.affinity?.[entity.id] || 0;
+    const affinityInfo = getAffinityLevel(affinityScore);
+
     if (entity.npcType === 'monster') {
         entityStyle = "bg-red-700 border-2 border-red-400 npc-shadow";
         icon = <GiWyvern className="text-red-100" size={24} />;
         title = `${entity.name}\nLoại: ${entity.role}\nCấp: ${entity.level}\nHP: ${entity.hp}/${entity.stats.maxHp}`;
     } else {
-        entityStyle = "bg-yellow-500 border-2 border-yellow-200 npc-shadow";
+        entityStyle = `bg-yellow-500 border-2 ${affinityInfo.borderColorClass} npc-shadow`;
         icon = entity.gender === 'Nữ' 
             ? <FaFemale className="text-yellow-900" size={20} /> 
             : <FaMale className="text-yellow-900" size={20} />;
         const cultivationInfo = getCultivationInfo(entity.cultivation!);
         const age = playerState.time.year - entity.birthTime.year;
         const powerString = entity.power ? `\nQuyền Lực: ${entity.power}` : '';
-        title = `${entity.name}${entity.title ? ` «${entity.title}»` : ''}\nGiới tính: ${entity.gender}\nChức vụ: ${entity.role}${powerString}\nCảnh giới: ${cultivationInfo.name}\nTuổi: ${age}\nHP: ${entity.hp}/${entity.stats.maxHp}`;
+        title = `${entity.name}${entity.title ? ` «${entity.title}»` : ''}\nGiới tính: ${entity.gender}\nChức vụ: ${entity.role}${powerString}\nCảnh giới: ${cultivationInfo.name}\nTuổi: ${age}\nThiện Cảm: ${affinityInfo.level} (${affinityScore})\nHP: ${entity.hp}/${entity.stats.maxHp}`;
     }
   } else {
     const interactable = entity as Interactable;
