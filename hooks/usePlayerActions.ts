@@ -8,6 +8,7 @@ import type { CharacterAttributes, CombatStats } from '../types/stats';
 import { INITIAL_PLAYER_STATE, DAYS_PER_MONTH } from '../hooks/usePlayerPersistence';
 import { processNpcTimeSkip } from '../services/npcProgressionService';
 import { processNpcActionsForTimeSkip } from '../services/npcActionService';
+import { processNpcPopulationChanges } from '../services/npcPopulationService';
 
 const STAT_ATTRIBUTE_NAMES: Record<string, string> = {
     // Attributes
@@ -37,7 +38,8 @@ export const usePlayerActions = (
     stopAllActions: React.MutableRefObject<() => void>,
     // Add setters for new simulation UI state
     setIsSimulating: (isSimulating: boolean) => void,
-    setSimulationProgress: (progress: { current: number, total: number } | null) => void
+    setSimulationProgress: (progress: { current: number, total: number } | null) => void,
+    setSeclusionReport: (report: JournalEntry[] | null) => void,
 ) => {
     const [isMeditating, setIsMeditating] = useState<boolean>(false);
 
@@ -187,6 +189,8 @@ export const usePlayerActions = (
         setIsSimulating(true);
 
         const monthsToSkip = Math.floor(days / DAYS_PER_MONTH);
+        const remainingDays = days % DAYS_PER_MONTH;
+
         let tempState = { ...playerState };
         const collectedReportEntries: JournalEntry[] = [];
 
@@ -194,15 +198,24 @@ export const usePlayerActions = (
             for (let i = 0; i < monthsToSkip; i++) {
                 setSimulationProgress({ current: i + 1, total: monthsToSkip });
                 
-                const { updatedNpcs: npcsAfterActions, newJournalEntries: actionJournalEntries } = processNpcActionsForTimeSkip(tempState, 1);
-                let stateAfterActions = { ...tempState, generatedNpcs: npcsAfterActions };
-    
-                const { updatedNpcs: finalNpcs, newJournalEntries: progressionJournalEntries } = processNpcTimeSkip(stateAfterActions, 1);
-                
-                collectedReportEntries.push(...actionJournalEntries, ...progressionJournalEntries);
-    
                 const timeAfterMonth = advanceTime(tempState.time, DAYS_PER_MONTH * 24 * 60);
-                tempState = { ...tempState, time: timeAfterMonth, generatedNpcs: finalNpcs };
+                tempState.time = timeAfterMonth;
+                
+                const populationResult = processNpcPopulationChanges(tempState);
+                tempState.generatedNpcs = populationResult.updatedNpcs;
+                tempState.nextNpcSpawnCheck = populationResult.updatedNextNpcSpawnCheck;
+                
+                const actionsResult = processNpcActionsForTimeSkip(tempState, 1);
+                tempState.generatedNpcs = actionsResult.updatedNpcs;
+
+                const progressionResult = processNpcTimeSkip(tempState, 1);
+                tempState.generatedNpcs = progressionResult.updatedNpcs;
+                
+                collectedReportEntries.push(
+                    ...populationResult.newJournalEntries,
+                    ...actionsResult.newJournalEntries,
+                    ...progressionResult.newJournalEntries
+                );
     
                 await new Promise(resolve => setTimeout(resolve, 0));
             }
@@ -245,12 +258,16 @@ export const usePlayerActions = (
             mana: prev.stats.maxMana,
             generatedNpcs: tempState.generatedNpcs, // Use the NPC state from after the monthly simulation
             journal: [...(prev.journal || []), ...collectedReportEntries, playerJournalEntry],
+            nextNpcSpawnCheck: tempState.nextNpcSpawnCheck,
         }));
 
         setIsSimulating(false);
         setSimulationProgress(null);
+        if (collectedReportEntries.length > 0) {
+            setSeclusionReport(collectedReportEntries);
+        }
 
-    }, [updateAndPersistPlayerState, setGameMessage, stopAllActions, playerState, setIsSimulating, setSimulationProgress]);
+    }, [updateAndPersistPlayerState, setGameMessage, stopAllActions, playerState, setIsSimulating, setSimulationProgress, setSeclusionReport]);
 
     const handleToggleMeditation = useCallback(() => {
         if (isMeditating) {

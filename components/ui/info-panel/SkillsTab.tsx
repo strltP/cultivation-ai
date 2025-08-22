@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import type { PlayerState } from '../../../types/character';
 import type { Skill as SkillDef, SkillUpgrade } from '../../../types/skill';
@@ -6,7 +8,8 @@ import { FaBookDead, FaBook, FaPlus, FaBolt, FaExclamationCircle, FaArrowUp, FaA
 import { GiBrain, GiMuscleUp, GiCrossedSwords, GiBroadsword } from 'react-icons/gi';
 import { WEAPON_TYPE_NAMES } from '../../../types/equipment';
 import { EFFECT_TYPE_NAMES } from '../../../types/skill';
-import { calculateSkillAttributesForLevel } from '../../../services/cultivationService';
+import { calculateSkillAttributesForLevel, calculateSkillEffectiveness } from '../../../services/cultivationService';
+import { LINH_CAN_ICONS } from '../../../data/linhcan';
 
 
 const ATTRIBUTE_NAMES: Record<string, string> = {
@@ -25,6 +28,16 @@ const ATTRIBUTE_NAMES: Record<string, string> = {
     critRate: 'Tỉ lệ Bạo kích',
     critDamage: 'ST Bạo kích',
     armorPenetration: 'Xuyên Giáp',
+    kimDamageBonus: 'Sát thương hệ Kim',
+    mocDamageBonus: 'Sát thương hệ Mộc',
+    thuyDamageBonus: 'Sát thương hệ Thủy',
+    hoaDamageBonus: 'Sát thương hệ Hỏa',
+    thoDamageBonus: 'Sát thương hệ Thổ',
+    phongDamageBonus: 'Sát thương hệ Phong',
+    loiDamageBonus: 'Sát thương hệ Lôi',
+    bangDamageBonus: 'Sát thương hệ Băng',
+    quangDamageBonus: 'Sát thương hệ Quang',
+    amDamageBonus: 'Sát thương hệ Ám',
 };
 
 const getUpgradeDescription = (upgrade: SkillUpgrade): { text: string, color: string, icon: React.ReactNode }[] => {
@@ -60,6 +73,7 @@ const getUpgradeDescription = (upgrade: SkillUpgrade): { text: string, color: st
 const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; currentLevel: number; onLevelUp: () => void }> = ({ playerState, skillDef, currentLevel, onLevelUp }) => {
     const tierInfo = SKILL_TIER_INFO[skillDef.tier];
     const isMaxLevel = currentLevel >= skillDef.maxLevel;
+    const effectiveness = calculateSkillEffectiveness(playerState.linhCan, playerState.attributes, skillDef);
 
     const exponent = skillDef.enlightenmentCostExponent || 1;
     const cost = Math.round(skillDef.enlightenmentBaseCost + skillDef.enlightenmentCostPerLevel * Math.pow(currentLevel, exponent));
@@ -77,6 +91,24 @@ const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; curren
                     <span className={`text-sm font-semibold ${tierInfo.color} border px-2 py-0.5 rounded-full ${tierInfo.color.replace('text-', 'border-')}`}>{tierInfo.name}</span>
                 </div>
                 <p className="text-gray-400 mt-2 text-sm italic whitespace-pre-wrap">{skillDef.description}</p>
+
+                <div className="mt-3 pt-3 border-t border-gray-700/50 flex items-center gap-2 text-sm">
+                    <span className="text-gray-400 font-semibold">Yêu Cầu Linh Căn:</span>
+                    {skillDef.requiredLinhCan && skillDef.requiredLinhCan.length > 0 ? (
+                        <>
+                            <div className="flex gap-1.5 text-xl">
+                                {skillDef.requiredLinhCan.map(lc =>
+                                    <span key={lc} title={lc as string}>{LINH_CAN_ICONS[lc]}</span>
+                                )}
+                            </div>
+                            {effectiveness < 1 && (
+                                <span className="ml-auto font-bold text-orange-400" title="Hiệu quả bị giảm do không có linh căn phù hợp. Có thể tăng bằng Ngộ Tính.">Hiệu quả: {(effectiveness * 100).toFixed(0)}%</span>
+                            )}
+                        </>
+                    ) : (
+                        <span className="text-white font-semibold">Không</span>
+                    )}
+                </div>
                 
                  {/* Current Stats Section */}
                 <div className="mt-3 pt-3 border-t border-gray-700/50 space-y-1 text-sm">
@@ -101,6 +133,7 @@ const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; curren
                                 let totalDmg = currentStats.damage;
                                 if (skillDef.damage?.attackPowerFactor) totalDmg += playerState.stats.attackPower * skillDef.damage.attackPowerFactor;
                                 if (skillDef.damage?.scalingAttribute && skillDef.damage.scalingFactor) totalDmg += playerState.attributes[skillDef.damage.scalingAttribute] * skillDef.damage.scalingFactor;
+                                totalDmg *= effectiveness;
                                 return (
                                     <div className="flex items-center justify-between">
                                         <span className="flex items-center gap-2 text-gray-400"><GiCrossedSwords className="text-red-400" /> Sát Thương:</span>
@@ -117,34 +150,80 @@ const SkillCard: React.FC<{ playerState: PlayerState; skillDef: SkillDef; curren
                         </>
                     )}
 
-                    {skillDef.type === 'TAM_PHAP' && currentStats.bonuses.map((bonus, index) => {
-                        const targetKey = bonus.targetStat || bonus.targetAttribute;
-                        if (!targetKey) return null;
-                        const name = ATTRIBUTE_NAMES[targetKey] || targetKey;
-                        const isMultiplier = bonus.modifier === 'MULTIPLIER';
-                        const displayValue = isMultiplier ? `${(bonus.value * 100).toFixed(1)}%` : `${Math.round(bonus.value)}`;
+                    {skillDef.type === 'TAM_PHAP' && (() => {
+                        const groupedBonuses: Record<string, { value: number; isMultiplier: boolean }> = {};
+                        currentStats.bonuses.forEach(bonus => {
+                            const targetKey = bonus.targetStat || bonus.targetAttribute;
+                            if (!targetKey) return;
+                            const isMultiplier = bonus.modifier === 'MULTIPLIER';
+                            const groupKey = `${targetKey}_${isMultiplier ? 'mult' : 'add'}`;
+                            if (!groupedBonuses[groupKey]) {
+                                groupedBonuses[groupKey] = { value: 0, isMultiplier };
+                            }
+                            groupedBonuses[groupKey].value += bonus.value;
+                        });
 
-                        return (
-                             <div key={index} className="flex items-center justify-between">
-                                <span className="flex items-center gap-2 text-gray-400"><FaPlus className="text-green-400" />{name}:</span>
-                                <span className="font-semibold text-green-300">+{displayValue}</span>
-                            </div>
-                        );
-                    })}
+                        return Object.entries(groupedBonuses).map(([key, data]) => {
+                            const targetKey = key.split('_')[0];
+                            const name = ATTRIBUTE_NAMES[targetKey] || targetKey;
+                            const effectiveValue = data.value * effectiveness;
+                            const displayValue = data.isMultiplier ? `${(effectiveValue * 100).toFixed(2)}%` : `${Math.round(effectiveValue)}`;
+                            return (
+                                <div key={key} className="flex items-center justify-between">
+                                    <span className="flex items-center gap-2 text-gray-400"><FaPlus className="text-green-400" />{name}:</span>
+                                    <span className="font-semibold text-green-300">+{displayValue}</span>
+                                </div>
+                            );
+                        });
+                    })()}
                 </div>
                 
                  {/* Next Level Bonus Section */}
                 {!isMaxLevel && nextLevelUnlock && (
                     <div className="mt-3 pt-3 border-t-2 border-dashed border-yellow-700/50">
                         <h4 className="font-semibold text-yellow-200 text-center mb-2">Nâng cấp Tầng {currentLevel + 1}</h4>
-                        <div className="space-y-1 text-sm">
-                            {getUpgradeDescription(nextLevelUnlock.upgrade).map((desc, i) => (
-                                <div key={i} className={`flex items-center gap-2 ${desc.color}`}>
-                                    {desc.icon}
-                                    <span>{desc.text}</span>
-                                </div>
-                            ))}
-                        </div>
+                        {skillDef.type === 'TAM_PHAP' ? (
+                            (() => {
+                                const nextLevelStats = calculateSkillAttributesForLevel(skillDef, currentLevel + 1);
+                                const groupedBonuses: Record<string, { value: number; isMultiplier: boolean }> = {};
+                                nextLevelStats.bonuses.forEach(bonus => {
+                                    const targetKey = bonus.targetStat || bonus.targetAttribute;
+                                    if (!targetKey) return;
+                                    const isMultiplier = bonus.modifier === 'MULTIPLIER';
+                                    const groupKey = `${targetKey}_${isMultiplier ? 'mult' : 'add'}`;
+                                    if (!groupedBonuses[groupKey]) {
+                                        groupedBonuses[groupKey] = { value: 0, isMultiplier };
+                                    }
+                                    groupedBonuses[groupKey].value += bonus.value;
+                                });
+
+                                return (
+                                    <div className="space-y-1 text-sm">
+                                        {Object.entries(groupedBonuses).map(([key, data]) => {
+                                            const targetKey = key.split('_')[0];
+                                            const name = ATTRIBUTE_NAMES[targetKey] || targetKey;
+                                            const effectiveValue = data.value * effectiveness;
+                                            const displayValue = data.isMultiplier ? `${(effectiveValue * 100).toFixed(2)}%` : `${Math.round(effectiveValue)}`;
+                                            return (
+                                                <div key={key} className="flex items-center justify-between text-green-300">
+                                                    <span className="flex items-center gap-2 text-gray-400"><FaArrowUp />{name}:</span>
+                                                    <span className="font-semibold">+{displayValue}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()
+                        ) : (
+                            <div className="space-y-1 text-sm">
+                                {getUpgradeDescription(nextLevelUnlock.upgrade).map((desc, i) => (
+                                    <div key={i} className={`flex items-center gap-2 ${desc.color}`}>
+                                        {desc.icon}
+                                        <span>{desc.text}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

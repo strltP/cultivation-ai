@@ -1,14 +1,14 @@
-
 import React, { useMemo, useState, useLayoutEffect } from 'react';
 import type { PlayerState, NPC } from '../../types/character';
 import type { Interactable } from '../../types/interaction';
-import type { TeleportLocation, PointOfInterest, GameMap } from '../../types/map';
+import type { TeleportLocation, PointOfInterest, GameMap, MapArea } from '../../types/map';
 import type { Position } from '../../types/common';
 import Player from '../Player';
 import GameEntity from '../GameEntity';
 import TeleportGate from '../TeleportGate';
 import PointOfInterestComponent from '../PointOfInterest';
 import TimeOfDayOverlay from '../TimeOfDayOverlay';
+import { MAP_AREAS_BY_MAP } from '../../mapdata';
 
 interface WorldRendererProps {
     playerRef: React.RefObject<HTMLDivElement>;
@@ -20,6 +20,7 @@ interface WorldRendererProps {
     currentNpcs: NPC[];
     currentInteractables: Interactable[];
     currentTeleportGates: TeleportLocation[];
+    currentMapArea: MapArea | null;
     allMaps: Record<string, GameMap>;
     onWorldClick: (e: React.MouseEvent<HTMLDivElement>) => void;
     onGenericInteraction: (target: NPC | Interactable | TeleportLocation | PointOfInterest, interactionFn: () => void) => void;
@@ -44,6 +45,7 @@ const WorldRenderer: React.FC<WorldRendererProps> = (props) => {
         currentNpcs,
         currentInteractables,
         currentTeleportGates,
+        currentMapArea,
         allMaps,
         onWorldClick,
         onGenericInteraction,
@@ -122,6 +124,33 @@ const WorldRenderer: React.FC<WorldRendererProps> = (props) => {
             onClick={onWorldClick}
         >
             <div className="absolute inset-0" style={currentMapData.backgroundStyle}></div>
+            
+            {/* Island Safe Zone Auras */}
+            {currentMapData.id === 'DONG_HAI' && currentPois.map(area => {
+                 const mapAreaDef = MAP_AREAS_BY_MAP[currentMapData.id]?.find(ma => ma.id === `${area.id}-area`);
+                 if (!mapAreaDef || mapAreaDef.depletesMana !== false) return null;
+
+                return (
+                    <div
+                        key={`${area.id}-aura`}
+                        className="safe-zone-aura"
+                        style={{
+                            left: `${area.position.x - area.size.width / 2}px`,
+                            top: `${area.position.y - area.size.height / 2}px`,
+                            width: `${area.size.width}px`,
+                            height: `${area.size.height}px`,
+                        }}
+                    ></div>
+                );
+            })}
+
+
+            {currentMapArea?.depletesMana && (
+                <div 
+                    className="absolute inset-0 pointer-events-none animate-pulse-sea z-10"
+                    style={{ background: 'radial-gradient(ellipse at center, rgba(6, 182, 212, 0.2) 0%, transparent 70%)' }}
+                ></div>
+            )}
             <TimeOfDayOverlay gameHour={playerState.time.hour} />
             {visibleEntities.pois.map(poi => <PointOfInterestComponent key={poi.id} poi={poi} onClick={() => onPoiInteraction(poi)} />)}
             <Player ref={playerRef} position={playerState.position} isMeditating={isMeditating} />

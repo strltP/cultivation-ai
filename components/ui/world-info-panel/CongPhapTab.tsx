@@ -7,6 +7,7 @@ import { EFFECT_TYPE_NAMES } from '../../../types/skill';
 import { FaBolt, FaBurn, FaHandPaper, FaHourglassHalf, FaPlusCircle } from 'react-icons/fa';
 import { GiBroadsword } from 'react-icons/gi';
 import { WEAPON_TYPE_NAMES } from '../../../types/equipment';
+import { LINH_CAN_DATA, LINH_CAN_ICONS } from '../../../data/linhcan';
 
 const EffectDisplay: React.FC<{ effect: SkillEffect }> = ({ effect }) => {
     let icon = null;
@@ -55,6 +56,18 @@ const SkillInfoCard: React.FC<{ skillDef: Skill }> = ({ skillDef }) => {
             <p className="text-gray-400 mt-2 text-sm italic whitespace-pre-wrap flex-grow">{skillDef.description}</p>
             
             <div className="mt-4 pt-3 border-t border-gray-700/50 space-y-2">
+                <div className="flex justify-between text-sm">
+                    <span className="text-gray-300 font-semibold flex items-center gap-2">Yêu Cầu Linh Căn:</span>
+                    {skillDef.requiredLinhCan && skillDef.requiredLinhCan.length > 0 ? (
+                        <div className="flex gap-1 text-lg">
+                            {skillDef.requiredLinhCan.map(lc =>
+                                <span key={lc} title={LINH_CAN_DATA[lc].name}>{LINH_CAN_ICONS[lc]}</span>
+                            )}
+                        </div>
+                    ) : (
+                        <span className="text-white font-bold">Không</span>
+                    )}
+                </div>
                 {skillDef.weaponType && (
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-300 font-semibold flex items-center gap-2"><GiBroadsword /> Loại Vũ Khí:</span>

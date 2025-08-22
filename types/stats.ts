@@ -25,4 +25,16 @@ export interface CombatStats {
   critRate: number;
   critDamage: number; // as a multiplier, e.g., 1.5
   armorPenetration: number; // Tỉ lệ xuyên giáp, e.g., 0.1 for 10%
+
+  // Elemental Damage Bonuses (as multipliers, e.g., 0.1 for +10%)
+  kimDamageBonus: number;
+  mocDamageBonus: number;
+  thuyDamageBonus: number;
+  hoaDamageBonus: number;
+  thoDamageBonus: number;
+  phongDamageBonus: number;
+  loiDamageBonus: number;
+  bangDamageBonus: number;
+  quangDamageBonus: number;
+  amDamageBonus: number;
 }

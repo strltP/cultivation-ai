@@ -11,7 +11,7 @@ import { INTERACTION_RADIUS, INVENTORY_SIZE } from '../constants';
 import type { InventorySlot } from '../types/item';
 import type { Chat } from '@google/genai';
 import { FACTIONS } from '../data/factions';
-import { calculateGiftAffinityChange } from '../services/affinityService';
+import { applyCascadingAffinity } from '../services/factionService';
 
 type InteractionDependencies = {
     handleAddItemToInventory: (itemIdToAdd: string, quantityToAdd: number) => void;
@@ -455,44 +455,16 @@ export const useInteractionManager = (
                 newInventory.splice(itemInventoryIndex, 1);
             }
 
-            const newGeneratedNpcs = JSON.parse(JSON.stringify(p.generatedNpcs));
-            const npcsOnMap = newGeneratedNpcs[p.currentMap] || [];
-            const npcIndex = npcsOnMap.findIndex((n: NPC) => n.id === chatTargetNpc.id);
-            
-            if (npcIndex === -1) return p;
+            // Apply affinity changes and update NPC inventory
+            const { updatedNpcs, updatedAffinity } = applyCascadingAffinity(
+                p,
+                chatTargetNpc.id,
+                itemDef,
+                0,
+                quantity
+            );
 
-            const currentNpc = npcsOnMap[npcIndex];
-
-            // --- AFFINITY LOGIC ---
-            const currentAffinity = p.affinity?.[chatTargetNpc.id] || 0;
-            const affinityChange = calculateGiftAffinityChange(currentNpc, itemDef, currentAffinity, 0);
-            const newAffinityScore = Math.max(-100, Math.min(100, currentAffinity + affinityChange));
-            const newAffinity = {
-                ...p.affinity,
-                [chatTargetNpc.id]: newAffinityScore,
-            };
-
-            // --- INVENTORY LOGIC ---
-            if (!currentNpc.inventory) currentNpc.inventory = [];
-            let remainingQuantity = quantity;
-            if (itemDef.stackable > 1) {
-                for (const npcSlot of currentNpc.inventory) {
-                    if (remainingQuantity <= 0) break;
-                    if (npcSlot.itemId === itemDef.id && npcSlot.quantity < itemDef.stackable) {
-                        const canAdd = itemDef.stackable - npcSlot.quantity;
-                        const amountToAdd = Math.min(remainingQuantity, canAdd);
-                        npcSlot.quantity += amountToAdd;
-                        remainingQuantity -= amountToAdd;
-                    }
-                }
-            }
-            while(remainingQuantity > 0) {
-                const amountForNewStack = Math.min(remainingQuantity, itemDef.stackable);
-                currentNpc.inventory.push({ itemId: itemDef.id, quantity: amountForNewStack });
-                remainingQuantity -= amountForNewStack;
-            }
-
-            return { ...p, inventory: newInventory, generatedNpcs: newGeneratedNpcs, affinity: newAffinity };
+            return { ...p, inventory: newInventory, generatedNpcs: updatedNpcs, affinity: updatedAffinity };
         });
         
         handleSendMessage(`(Hệ thống: ${playerState.name} đã tặng bạn ${quantity}x ${itemDef.name}.)`);
@@ -511,28 +483,16 @@ export const useInteractionManager = (
             if (!p || p.linhThach < amount) return p;
 
             const newLinhThach = p.linhThach - amount;
-
-            const newGeneratedNpcs = JSON.parse(JSON.stringify(p.generatedNpcs));
-            const npcsOnMap = newGeneratedNpcs[p.currentMap] || [];
-            const npcIndex = npcsOnMap.findIndex((n: NPC) => n.id === chatTargetNpc.id);
-
-            if (npcIndex === -1) return p;
-
-            const currentNpc = npcsOnMap[npcIndex];
-
-            // --- AFFINITY LOGIC ---
-            const currentAffinity = p.affinity?.[chatTargetNpc.id] || 0;
-            const affinityChange = calculateGiftAffinityChange(currentNpc, null, currentAffinity, amount);
-            const newAffinityScore = Math.max(-100, Math.min(100, currentAffinity + affinityChange));
-            const newAffinity = {
-                ...p.affinity,
-                [chatTargetNpc.id]: newAffinityScore,
-            };
             
-            // --- LINHTHACH LOGIC ---
-            currentNpc.linhThach = (currentNpc.linhThach || 0) + amount;
+            // Apply affinity changes and update NPC linh thach
+            const { updatedNpcs, updatedAffinity } = applyCascadingAffinity(
+                p,
+                chatTargetNpc.id,
+                null,
+                amount
+            );
 
-            return { ...p, linhThach: newLinhThach, generatedNpcs: newGeneratedNpcs, affinity: newAffinity };
+            return { ...p, linhThach: newLinhThach, generatedNpcs: updatedNpcs, affinity: updatedAffinity };
         });
 
         handleSendMessage(`(Hệ thống: ${playerState.name} đã tặng bạn ${amount.toLocaleString()} Linh Thạch.)`);

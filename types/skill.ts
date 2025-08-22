@@ -1,5 +1,6 @@
 import type { CharacterAttributes, CombatStats } from './stats';
 import type { WeaponType } from './equipment';
+import type { LinhCanType } from './linhcan';
 
 export type SkillTier = 'HOANG' | 'HUYEN' | 'DIA' | 'THIEN';
 export type SkillType = 'CONG_PHAP' | 'TAM_PHAP';
@@ -78,6 +79,7 @@ export interface Skill {
     type: SkillType;
     tier: SkillTier;
     weaponType?: WeaponType;
+    requiredLinhCan?: LinhCanType[];
     maxLevel: number;
     enlightenmentBaseCost: number;
     enlightenmentCostPerLevel: number;

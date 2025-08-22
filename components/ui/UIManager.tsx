@@ -19,6 +19,7 @@ import PlantingMenu from './PlantingMenu';
 import AlchemyPanel from './AlchemyPanel';
 import JournalPanel from './JournalPanel';
 import SeclusionPanel from './SeclusionPanel';
+import SeclusionReportModal from './SeclusionReportModal';
 
 
 interface UIManagerProps {
@@ -55,6 +56,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
         setTeleportingWithItemIndex,
         isSimulating,
         simulationProgress,
+        seclusionReport, setSeclusionReport,
     } = useUI();
     
     const { gameMessage, isLoading, currentPois, currentMapAreas, currentTeleportGates } = useWorld();
@@ -159,6 +161,9 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                 </div>
             )}
             
+            {seclusionReport && (
+                <SeclusionReportModal report={seclusionReport} onClose={() => setSeclusionReport(null)} />
+            )}
 
             {activeDialogue && <DialogueBox dialogue={activeDialogue} onClose={() => setActiveDialogue(null)} />}
             

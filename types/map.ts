@@ -16,6 +16,7 @@ export interface MapArea {
   style: CSSProperties;
   allowedFactionIds?: string[]; // Chỉ những phe phái này được vào
   dangerLevel?: number; // Cảnh giới tối thiểu để vào an toàn (tương ứng realmIndex)
+  depletesMana?: boolean; // Nếu true, di chuyển trong khu vực này sẽ tốn linh lực
 }
 
 export interface PointOfInterest {

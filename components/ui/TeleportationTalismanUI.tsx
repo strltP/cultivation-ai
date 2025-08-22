@@ -23,12 +23,7 @@ const TeleportationTalismanUI: React.FC<TeleportationTalismanUIProps> = ({ curre
                 <div className="w-full flex flex-col gap-4">
                     {DESTINATIONS.filter(id => id !== currentMapId).map(mapId => {
                         const map = allMaps[mapId];
-                        let mapName = map.name; // Default to the name from props (can be randomized)
-
-                        // Per request, keep original names for these specific continents in this UI.
-                        if (mapId === 'BAC_VUC' || mapId === 'DAI_HOANG' || mapId === 'DONG_HAI') {
-                            mapName = MAPS[mapId].name;
-                        }
+                        const mapName = map.name;
 
                         return (
                             <button

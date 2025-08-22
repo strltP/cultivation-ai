@@ -43,5 +43,5 @@ export const teleportGates: TeleportLocation[] = [
     // Moved to new map edges
     { id: 'gate-tn-bv', name: 'Trận Pháp đến Bắc Vực', position: { x: 5000, y: 100 }, targetMap: 'BAC_VUC', targetPosition: { x: 400, y: 450 } },
     { id: 'gate-tn-dh', name: 'Trận Pháp đến Đại Hoang', position: { x: 100, y: 4000 }, targetMap: 'DAI_HOANG', targetPosition: { x: 120, y: 2000 } },
-    { id: 'gate-tn-dhg', name: 'Trận Pháp đến Đông Hải', position: { x: 9900, y: 4000 }, targetMap: 'DONG_HAI', targetPosition: { x: 100, y: 400 } },
+    { id: 'gate-tn-dhg', name: 'Trận Pháp đến Đông Phương Hải Vực', position: { x: 9900, y: 4000 }, targetMap: 'DONG_HAI', targetPosition: { x: 100, y: 400 } },
 ];

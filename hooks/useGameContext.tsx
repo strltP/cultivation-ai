@@ -14,12 +14,12 @@ import { ALL_ITEMS } from '../data/items/index';
 import { ALL_INTERACTABLES } from '../data/interactables';
 import { ALL_RECIPES } from '../../data/alchemy_recipes';
 import type { CombatState, PlayerAction } from '../types/combat';
-import { generatePlaceNames, PlaceToName } from '../services/geminiService';
 import { processNpcActionsForTimeSkip } from '../services/npcActionService';
 import { DAYS_PER_MONTH, REALM_PROGRESSION } from '../constants';
 import { getNextCultivationLevel, getRealmLevelInfo, calculateAllStats, getCultivationInfo } from '../services/cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
+import { FACTIONS } from '../data/factions';
 
 
 // --- TYPE DEFINITIONS FOR CONTEXTS ---
@@ -28,7 +28,6 @@ interface IUIContext {
     playerState: PlayerState;
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void;
     isGameReady: boolean;
-    isGeneratingNames: boolean;
     allMaps: Record<string, GameMap>;
     isMapOpen: boolean;
     setIsMapOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -54,6 +53,8 @@ interface IUIContext {
     setIsSimulating: React.Dispatch<React.SetStateAction<boolean>>;
     simulationProgress: { current: number; total: number } | null;
     setSimulationProgress: React.Dispatch<React.SetStateAction<{ current: number; total: number } | null>>;
+    seclusionReport: JournalEntry[] | null;
+    setSeclusionReport: React.Dispatch<React.SetStateAction<JournalEntry[] | null>>;
 }
 
 interface IWorldContext {
@@ -168,7 +169,6 @@ interface GameProviderProps {
 
 export const GameProvider: React.FC<GameProviderProps> = ({ children, playerState, updateAndPersistPlayerState }) => {
     const [isGameReady, setIsGameReady] = useState(false);
-    const [isGeneratingNames, setIsGeneratingNames] = useState(false);
 
     const trackApiCall = useCallback((functionName: keyof ApiUsageStats['calls'], tokenCount: number) => {
         if (tokenCount === 0) return;
@@ -196,28 +196,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
     
     useEffect(() => {
         const initializeGame = async () => {
-            if (playerState.useRandomNames && (!playerState.nameOverrides || Object.keys(playerState.nameOverrides).length === 0)) {
-                setIsGeneratingNames(true);
-                
-                const placesToName: PlaceToName[] = [];
-                Object.values(MAPS).forEach(map => placesToName.push({ id: map.id, type: 'Đại Lục', originalName: map.name }));
-                Object.values(MAP_AREAS_BY_MAP).flat().forEach(area => placesToName.push({ id: area.id, type: 'Vùng Đất', originalName: area.name }));
-                Object.values(POIS_BY_MAP).flat().forEach(poi => {
-                    let type = 'Địa Điểm';
-                    if (poi.type === 'city') type = 'Thành Thị';
-                    if (poi.type === 'village') type = 'Thôn Làng';
-                    if (poi.type === 'sect') type = 'Tông Môn';
-                    if (poi.type === 'dungeon') type = 'Bí Cảnh';
-                    placesToName.push({ id: poi.id, type, originalName: poi.name });
-                });
-                Object.values(TELEPORT_GATES_BY_MAP).flat().forEach(gate => placesToName.push({ id: gate.id, type: 'Trận Pháp', originalName: gate.name }));
-
-                const { data: overrides, tokenCount } = await generatePlaceNames(placesToName);
-                trackApiCall('generatePlaceNames', tokenCount);
-                
-                updateAndPersistPlayerState(p => ({ ...p, nameOverrides: overrides }));
-                setIsGeneratingNames(false);
-            }
             setIsGameReady(true);
         };
         initializeGame();
@@ -308,31 +286,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
     const [plantingPlot, setPlantingPlot] = useState<Interactable | null>(null);
     const [isSimulating, setIsSimulating] = useState<boolean>(false);
     const [simulationProgress, setSimulationProgress] = useState<{ current: number; total: number } | null>(null);
+    const [seclusionReport, setSeclusionReport] = useState<JournalEntry[] | null>(null);
 
 
     // --- Effective Map Data Calculation ---
     const { allMaps, effectivePois, effectiveMapAreas, effectiveTeleportGates } = useMemo(() => {
-        const overrides = playerState.nameOverrides || {};
-        const maps = JSON.parse(JSON.stringify(MAPS));
-        const pois = JSON.parse(JSON.stringify(POIS_BY_MAP));
-        const areas = JSON.parse(JSON.stringify(MAP_AREAS_BY_MAP));
-        const gates = JSON.parse(JSON.stringify(TELEPORT_GATES_BY_MAP));
-
-        Object.keys(maps).forEach(mapId => {
-            if (overrides?.[mapId]) maps[mapId].name = overrides[mapId];
-        });
-        Object.values(pois).flat().forEach((poi: PointOfInterest) => {
-            if (overrides[poi.id]) poi.name = overrides[poi.id];
-        });
-        Object.values(areas).flat().forEach((area: MapArea) => {
-            if (overrides[area.id]) area.name = overrides[area.id];
-        });
-        Object.values(gates).flat().forEach((gate: TeleportLocation) => {
-            if (overrides[gate.id]) gate.name = overrides[gate.id];
-        });
-
-        return { allMaps: maps, effectivePois: pois, effectiveMapAreas: areas, effectiveTeleportGates: gates };
-    }, [playerState.nameOverrides]);
+        return { allMaps: MAPS, effectivePois: POIS_BY_MAP, effectiveMapAreas: MAP_AREAS_BY_MAP, effectiveTeleportGates: TELEPORT_GATES_BY_MAP };
+    }, []);
 
     // --- Sub-Hook Instantiation ---
     const stopAllActions = useRef<() => void>(() => {});
@@ -350,12 +310,19 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         openTeleportUIWithItem,
         () => setIsAlchemyPanelOpen(true)
     );
+    
+    const combatManager = useCombatManager(
+        playerState, updateAndPersistPlayerState, setGameMessage, addJournalEntry, stopAllActions,
+        inventoryManager.handleAddItemToInventory,
+        inventoryManager.handleAddLinhThach,
+        trackApiCall
+    );
 
     const worldManager = useWorldManager(playerState, updateAndPersistPlayerState, setGameMessage, {
         pois: effectivePois,
         mapAreas: effectiveMapAreas,
         teleportGates: effectiveTeleportGates,
-    }, trackApiCall);
+    }, trackApiCall, combatManager.handleFactionSuccession);
 
     const playerActions = usePlayerActionsManager(
         playerState,
@@ -363,15 +330,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         setGameMessage,
         stopAllActions,
         setIsSimulating,
-        setSimulationProgress
+        setSimulationProgress,
+        setSeclusionReport,
     );
 
-    const combatManager = useCombatManager(
-        playerState, updateAndPersistPlayerState, setGameMessage, addJournalEntry, stopAllActions,
-        inventoryManager.handleAddItemToInventory,
-        inventoryManager.handleAddLinhThach,
-        trackApiCall
-    );
 
     const handleInitiateTrade = (npcToTradeWith: NPC) => {
         const freshNpc = playerState.generatedNpcs[playerState.currentMap]?.find(n => n.id === npcToTradeWith.id);
@@ -614,7 +576,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
     const uiContextValue: IUIContext = useMemo(() => ({
         playerState, 
         updateAndPersistPlayerState,
-        isGameReady, isGeneratingNames, allMaps,
+        isGameReady, allMaps,
         isMapOpen, setIsMapOpen,
         isInfoPanelOpen, setIsInfoPanelOpen,
         isJournalOpen, setIsJournalOpen,
@@ -627,7 +589,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         plantingPlot, setPlantingPlot,
         isSimulating, setIsSimulating,
         simulationProgress, setSimulationProgress,
-    }), [playerState, updateAndPersistPlayerState, isGameReady, isGeneratingNames, allMaps, isMapOpen, isInfoPanelOpen, isJournalOpen, isWorldInfoPanelOpen, isTeleportUIOpen, teleportingWithItemIndex, isAlchemyPanelOpen, isSeclusionPanelOpen, tradingNpc, plantingPlot, isSimulating, simulationProgress]);
+        seclusionReport, setSeclusionReport,
+    }), [playerState, updateAndPersistPlayerState, isGameReady, allMaps, isMapOpen, isInfoPanelOpen, isJournalOpen, isWorldInfoPanelOpen, isTeleportUIOpen, teleportingWithItemIndex, isAlchemyPanelOpen, isSeclusionPanelOpen, tradingNpc, plantingPlot, isSimulating, simulationProgress, seclusionReport]);
 
     const worldContextValue: IWorldContext = useMemo(() => ({
         gameMessage: gameMessageObject,

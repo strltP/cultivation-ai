@@ -14,7 +14,6 @@ export interface StaticNpcDefinition {
     homePoiId?: string;
     power?: number;
     behaviors?: string[]; // Thẻ hành vi AI, ví dụ: ['FIGHTER', 'TRADER']
-    prompt: string;
     realmName: string;
     levelDescription: string;
     attributes: CharacterAttributes;
@@ -56,6 +55,8 @@ export interface ProceduralNpcRule {
     // An array of role definitions. Allows spawning multiple types of NPCs
     // with different prompts and in different locations within a single rule.
     roles: RoleSpawnDefinition[];
+    stableCount?: number;
+    respawnTimeYears?: [number, number];
 }
 
 

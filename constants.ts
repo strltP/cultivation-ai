@@ -107,6 +107,8 @@ export const INITIAL_PLAYER_STATE: Omit<PlayerState, 'saveVersion'> = {
   stats: {
     maxHp: 50, maxQi: 0, maxMana: 10, maxThoNguyen: 80, attackPower: 5, defensePower: 2,
     speed: 10, critRate: 0.01, critDamage: 1.5, armorPenetration: 0.0,
+    kimDamageBonus: 0, mocDamageBonus: 0, thuyDamageBonus: 0, hoaDamageBonus: 0, thoDamageBonus: 0,
+    phongDamageBonus: 0, loiDamageBonus: 0, bangDamageBonus: 0, quangDamageBonus: 0, amDamageBonus: 0,
   },
   cultivationStats: {}, // Chỉ số gốc từ tu luyện sẽ được lưu ở đây
   linhCan: [],
@@ -143,13 +145,9 @@ export const INITIAL_PLAYER_STATE: Omit<PlayerState, 'saveVersion'> = {
   harvestedInteractableIds: [],
   journal: [],
   time: { year: 1, season: 'Xuân', month: 1, day: 1, hour: 8, minute: 0 },
-  respawningNpcs: [],
   plantedPlots: [],
   respawningInteractables: [],
   initializedMaps: [],
-
-  useRandomNames: false,
-  nameOverrides: {},
 };
 
 export const INTERACTION_RADIUS = 60; // pixels

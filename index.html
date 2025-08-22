@@ -157,7 +157,7 @@
                 transform: translateY(20px);
             }
             to {
-                opacity: 1;
+                opacity: 1,
                 transform: translateY(0);
             }
         }
@@ -225,6 +225,61 @@
         }
         .animate-slide-in-from-left {
             animation: slide-in-from-left 0.5s ease-out forwards;
+        }
+
+        /* Sea travel effect */
+        @keyframes pulse-sea {
+            0%, 100% {
+                opacity: 0.8;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        .animate-pulse-sea {
+            animation: pulse-sea 5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Island Safe Zone Aura */
+        @keyframes pulse-safe-zone {
+            0%, 100% {
+                box-shadow: inset 0 0 40px 15px rgba(252, 211, 77, 0.15);
+            }
+            50% {
+                box-shadow: inset 0 0 60px 25px rgba(252, 211, 77, 0.25);
+            }
+        }
+        .safe-zone-aura {
+            position: absolute;
+            pointer-events: none;
+            z-index: 5;
+            border: 2px solid rgba(252, 211, 77, 0.3);
+            border-radius: 1.5rem; /* rounded-3xl */
+            animation: pulse-safe-zone 4s ease-in-out infinite;
+        }
+        
+        /* Org Chart Styles */
+        .org-chart-level {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1.5rem 0;
+        }
+        .org-chart-level:not(:first-child) {
+            margin-top: 1rem;
+        }
+        .org-chart-level:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -0.5rem;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 2.5rem; /* 1rem margin + 1.5rem padding */
+            background-color: #4b5563; /* gray-600 */
         }
     </style>
 <script type="importmap">

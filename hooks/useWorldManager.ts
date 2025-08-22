@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { PlayerState, NPC, ApiUsageStats } from '../types/character';
+import type { PlayerState, NPC, ApiUsageStats, JournalEntry } from '../types/character';
 import type { Interactable } from '../types/interaction';
 import type { TeleportLocation, PointOfInterest, MapArea, MapID } from '../types/map';
 import type { Position } from '../types/common';
 import { loadNpcsForMap, createMonsterFromData } from '../services/npcService';
 import { POIS_BY_MAP } from '../mapdata'; // Only needed for NPC spawning logic
 import { gameTimeToMinutes, advanceTime } from '../services/timeService';
-import { ALL_ITEMS } from '../data/items';
+import { ALL_ITEMS } from '../data/items/index';
 import { ALL_INTERACTABLES } from '../data/interactables';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
 import { SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/interactable_spawns';
 import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
-import type { ProceduralMonsterRule } from '../data/npcs/npc_types';
+import type { ProceduralMonsterRule, ProceduralNpcRule } from '../data/npcs/npc_types';
+import { FACTIONS } from '../data/factions';
 
 interface WorldDataSource {
     pois: Record<MapID, PointOfInterest[]>;
@@ -100,7 +101,8 @@ export const useWorldManager = (
     updateAndPersistPlayerState: (updater: React.SetStateAction<PlayerState>) => void,
     setGameMessage: (message: string | null) => void,
     dataSource: WorldDataSource,
-    trackApiCall: (functionName: keyof ApiUsageStats['calls'], tokenCount: number) => void
+    trackApiCall: (functionName: keyof ApiUsageStats['calls'], tokenCount: number) => void,
+    handleFactionSuccession: (defeatedNpc: NPC, currentState: PlayerState) => PlayerState
 ) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [currentInteractables, setCurrentInteractables] = useState<Interactable[]>([]);
@@ -125,56 +127,70 @@ export const useWorldManager = (
              return; // Let the effect re-run with the updated state
         }
         
-        // --- NPC Old Age Death Check ---
-        const npcsOnCurrentMap = playerState.generatedNpcs[currentMapId] || [];
-        const deadNpcIds: string[] = [];
-        const deadNpcMessages: string[] = [];
-        
-        if (npcsOnCurrentMap.length > 0) {
-             npcsOnCurrentMap.forEach(npc => {
-                if (npc.npcType === 'cultivator' && npc.stats.maxThoNguyen > 0) {
-                    const age = playerState.time.year - npc.birthTime.year;
+        // --- NPC Old Age Death Check & Succession ---
+        updateAndPersistPlayerState((p: PlayerState) => {
+            if (!p) return p;
+
+            const allNpcs = Object.values(p.generatedNpcs).flat();
+            const newlyDeceased: NPC[] = [];
+            const newJournalEntries: JournalEntry[] = [];
+            let stateAfterSuccession: PlayerState = p;
+
+            allNpcs.forEach(npc => {
+                if (
+                    npc.npcType === 'cultivator' &&
+                    npc.stats.maxThoNguyen > 0 &&
+                    !p.defeatedNpcIds.includes(npc.id)
+                ) {
+                    const age = p.time.year - npc.birthTime.year;
                     if (age >= npc.stats.maxThoNguyen) {
-                        // Check if the NPC is not already marked as defeated
-                        if (!playerState.defeatedNpcIds.includes(npc.id)) {
-                             deadNpcIds.push(npc.id);
-                             deadNpcMessages.push(`${npc.name} (${npc.role}) đã sống hết thọ mệnh, thân tử đạo tiêu.`);
-                        }
+                        newlyDeceased.push(npc);
                     }
                 }
             });
-        }
-        
-        if (deadNpcIds.length > 0) {
-            updateAndPersistPlayerState(p => {
-                if (!p) return null as any;
-                const newDefeatedIds = [...new Set([...p.defeatedNpcIds, ...deadNpcIds])];
 
+            if (newlyDeceased.length > 0) {
+                const newDefeatedIds = [...new Set([...p.defeatedNpcIds, ...newlyDeceased.map(n => n.id)])];
                 const newDeathInfo = { ...(p.deathInfo || {}) };
-                deadNpcIds.forEach(id => {
-                    const deadNpc = npcsOnCurrentMap.find(npc => npc.id === id);
-                    if (deadNpc) {
-                        const ageAtDeath = p.time.year - deadNpc.birthTime.year;
-                        newDeathInfo[id] = { age: ageAtDeath };
-                    }
-                });
                 
-                const newJournalEntries = deadNpcMessages.map(message => ({
-                    time: p.time,
-                    message,
-                    type: 'world' as 'world'
-                }));
+                newlyDeceased.forEach(npc => {
+                    const ageAtDeath = p.time.year - npc.birthTime.year;
+                    newDeathInfo[npc.id] = { age: ageAtDeath };
+                    
+                    const journalMessage = `${npc.name} (${npc.role}) đã sống hết ${npc.stats.maxThoNguyen} năm thọ nguyên, hôm nay tọa hóa quy tiên.`;
+                    newJournalEntries.push({ time: p.time, message: journalMessage, type: 'world' });
+                });
 
-                return {
+                let intermediateState: PlayerState = {
                     ...p,
                     defeatedNpcIds: newDefeatedIds,
                     deathInfo: newDeathInfo,
-                    journal: [...(p.journal || []), ...newJournalEntries]
                 };
-            });
-            return; // Let the effect re-run with the updated state
-        }
-        
+                
+                // Trigger succession for each deceased NPC
+                newlyDeceased.forEach(npc => {
+                    stateAfterSuccession = handleFactionSuccession(npc, intermediateState);
+                    if(stateAfterSuccession.generatedNpcs !== intermediateState.generatedNpcs) {
+                        const faction = FACTIONS.find(f => f.id === npc.factionId);
+                        const successor = Object.values(stateAfterSuccession.generatedNpcs).flat().find(n => n.role === npc.role && n.power === npc.power && !stateAfterSuccession.defeatedNpcIds.includes(n.id));
+                        if(faction && successor) {
+                             const successionMessage = `${faction.name} chấn động! ${npc.role} ${npc.name} đã tọa hóa. ${successor.role} ${successor.name} đã được đề cử lên thay thế, trở thành tân ${npc.role}.`;
+                            newJournalEntries.push({ time: p.time, message: successionMessage, type: 'world' });
+                        }
+                    }
+                    intermediateState = stateAfterSuccession;
+                });
+                
+                // Combine journal entries at the end
+                stateAfterSuccession.journal = [...(p.journal || []), ...newJournalEntries];
+                
+                return stateAfterSuccession;
+            }
+
+            return p; // No changes
+        });
+
+
         // --- Respawn Logic ---
         const now = gameTimeToMinutes(playerState.time);
         const newlyRespawnedInteractableIds = new Set(playerState.respawningInteractables
@@ -245,13 +261,18 @@ export const useWorldManager = (
             if (needsGeneration && !isLoading) {
                 setIsLoading(true);
                 try {
-                    const { npcs: newNpcs, totalTokenCount } = await loadNpcsForMap(currentMapId, POIS_BY_MAP, playerState.time);
+                    const { npcs: newNpcs, totalTokenCount, updatedNameCounts } = await loadNpcsForMap(currentMapId, POIS_BY_MAP, playerState);
                     trackApiCall('generateNpcs', totalTokenCount);
-                    updateAndPersistPlayerState(prev => {
+                    updateAndPersistPlayerState((prev: PlayerState) => {
                         if (!prev || prev.currentMap !== currentMapId) return prev;
                         const newGeneratedNpcs = { ...prev.generatedNpcs, [currentMapId]: newNpcs };
                         const newInitializedMaps = [...new Set([...(prev.initializedMaps || []), currentMapId])];
-                        return { ...prev, generatedNpcs: newGeneratedNpcs, initializedMaps: newInitializedMaps };
+                        return { 
+                            ...prev, 
+                            generatedNpcs: newGeneratedNpcs, 
+                            initializedMaps: newInitializedMaps,
+                            nameUsageCounts: updatedNameCounts 
+                        };
                     });
                 } catch (error) {
                     console.error("Failed to load NPCs for map:", error);
@@ -318,8 +339,10 @@ export const useWorldManager = (
                 return newState;
             });
         }
+        
 
-    }, [playerState, dataSource, isLoading, updateAndPersistPlayerState, setGameMessage, trackApiCall]); 
+
+    }, [playerState.currentMap, playerState.defeatedNpcIds, playerState.respawningInteractables, playerState.plantedPlots, playerState.time, playerState.generatedNpcs, playerState.generatedInteractables, dataSource, isLoading, updateAndPersistPlayerState, setGameMessage, trackApiCall, handleFactionSuccession]); 
 
     const handleRemoveAndRespawn = useCallback((interactable: Interactable, respawnTimeMultiplier: number = 1) => {
         const template = ALL_INTERACTABLES.find(t => t.baseId === interactable.baseId);

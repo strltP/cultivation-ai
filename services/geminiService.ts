@@ -221,13 +221,12 @@ THÔNG TIN VỀ BẢN THÂN BẠN (${npc.name})
 - Giới tính: ${npc.gender}
 - Tuổi: ${age}
 - Cảnh giới: ${npcCultivationInfo.name}
-- Tính cách: ${personalityString}. **QUAN TRỌNG:** Hãy thể hiện những tính cách này trong lời thoại của bạn.
+- Tính cách: ${personalityString}. **QUAN TRỌNG NHẤT:** Đây là những đặc điểm cốt lõi xác định con người của bạn. Bạn PHẢI luôn nhập vai và thể hiện những tính cách này một cách tự nhiên và nhất quán trong mọi lời thoại. Ví dụ, một người 'Kiêu ngạo' sẽ nói chuyện có phần bề trên, một người 'Nhân từ' sẽ nói chuyện ấm áp. Hãy diễn đạt các tính cách này, đừng chỉ lặp lại tên của chúng.
 - Thuộc tính: ${attributesString}.
 - Công pháp/Tâm pháp đã học: ${skillsString}.
 - Trang bị đang mặc: ${equipmentString}.
 - Vật phẩm trong túi đồ: ${inventoryString}.
 - Vật phẩm đang bán: ${forSaleString}.
-- Vai trò và tính cách cốt lõi: "${npc.prompt}"
 ${currentStateString ? `\n${currentStateString}\n` : ''}
 BỐI CẢNH TRÒ CHUYỆN
 - Bạn đang nói chuyện với một tu sĩ (${playerState.gender}) tên là '${playerState.name}', hiện đang ở cảnh giới ${playerCultivationInfo.name}.
@@ -302,6 +301,9 @@ Trả lời dưới dạng JSON.`;
         });
         
         const tokenCount = response.usageMetadata?.totalTokenCount || 0;
+        if (!response.text) {
+            throw new Error("Gemini response for getInteractionResponse is empty.");
+        }
         const jsonStr = response.text.trim();
         const data = JSON.parse(jsonStr) as GeminiInteractionResponse;
         return { data, tokenCount };
@@ -328,7 +330,6 @@ export const getNpcDefeatDecision = async (npc: NPC, player: PlayerState): Promi
         const npcCultivationInfo = getCultivationInfo(npc.cultivation!);
 
         const prompt = `Trong một trận đấu sinh tử, NPC '${npc.name}' (${npc.role}, giới tính ${npc.gender}${npc.title ? `, "${npc.title}"` : ''}, cảnh giới ${npcCultivationInfo.name}) đã đánh bại người chơi '${player.name}' (giới tính ${player.gender}, cảnh giới ${playerCultivationInfo.name}).
-Bản chất và tính cách cốt lõi của NPC là: "${npc.prompt}".
 Các thẻ tính cách của NPC: ${npc.personalityTags?.join(', ') || 'Không có'}.
 
 **QUAN TRỌNG:** Quyết định của bạn PHẢI tuyệt đối tuân theo bản chất và tính cách của NPC. Một NPC có thẻ 'Tà ác', 'Tàn nhẫn' SẼ KHÔNG tha mạng. Một NPC có thẻ 'Nhân từ', 'Hiền hòa' có thể sẽ tha mạng. Quyết định không phù hợp với nhân vật sẽ phá hỏng câu chuyện.
@@ -362,6 +363,9 @@ Sau đó, đưa ra một lời thoại ngắn gọn (1-2 câu) để NPC nói v�
             }
         });
         const tokenCount = response.usageMetadata?.totalTokenCount || 0;
+        if (!response.text) {
+            throw new Error("Gemini response for getNpcDefeatDecision is empty.");
+        }
         const jsonStr = response.text.trim();
         const data = JSON.parse(jsonStr) as NpcDecision;
         return { data, tokenCount };
@@ -380,18 +384,9 @@ Sau đó, đưa ra một lời thoại ngắn gọn (1-2 câu) để NPC nói v�
 
 export interface GeneratedNpcData {
     role: string;
-    power: number;
+    power?: number;
     personalityTags: string[];
     title?: string;
-    prompt: string;
-    attributes: {
-        canCot: number;
-        thanPhap: number;
-        thanThuc: number;
-        ngoTinh: number;
-        coDuyen: number;
-        tamCanh: number;
-    };
 }
 
 // Helper function to pick random unique elements from an array
@@ -436,7 +431,10 @@ const generatePersonalityTags = (): string[] => {
     return tags;
 };
 
-export const generateNpcs = async (generationPrompt: string, count: number, allowedRealmNames: string[], familyName?: string): Promise<GeminiServiceResponse<GeneratedNpcData[]>> => {
+export const generateNpcs = async (
+    generationPrompt: string, 
+    count: number
+): Promise<GeminiServiceResponse<{ title?: string | null; personalityTags: string[] }[]>> => {
     try {
         const client = getAIClient();
         
@@ -447,14 +445,11 @@ export const generateNpcs = async (generationPrompt: string, count: number, allo
         }
 
         const prompt = `${generationPrompt}
-Hãy tạo ra ${count} NPC độc đáo. Đối với mỗi NPC, hãy cung cấp:
-1.  Sử dụng lại chính xác chức vụ (role) được cung cấp trong prompt.
-2.  Sử dụng lại chính xác cấp độ quyền lực (power) được cung cấp trong prompt.
-3.  Một danh hiệu (title) tu tiên tùy chọn, dựa trên tỉ lệ và chủ đề đã cho. Nếu không có, để trống hoặc null.
-4.  Một lời nhắc đối thoại ngắn gọn (1-2 câu) để mời tương tác. Lời nhắc này phải phản ánh các thẻ tính cách được cung cấp.
-5.  Các thuộc tính cơ bản (Căn Cốt, Thân Pháp, Thần Thức, Ngộ Tính, Cơ Duyên, Tâm Cảnh) từ 5 đến 15. Phân bổ điểm để phản ánh vai trò.
+Dựa trên bối cảnh và vai trò đã cho, hãy tạo ra ${count} danh hiệu (title) tu tiên độc đáo cho các NPC.
+Mỗi danh hiệu phải phù hợp với chủ đề và các thẻ tính cách (personalityTags) được cung cấp dưới đây.
+Nếu không có danh hiệu nào hay, hãy để trống hoặc null.
 
-**QUAN TRỌNG:** Dưới đây là danh sách các thẻ tính cách (personalityTags) đã được xác định trước cho mỗi NPC. Bạn PHẢI sử dụng chính xác các thẻ này khi tạo lời nhắc đối thoại (prompt) cho họ.
+**QUAN TRỌNG:** Dưới đây là danh sách các thẻ tính cách đã được xác định trước cho mỗi NPC.
 ${allPersonalityTags.map((tags, index) => `NPC ${index + 1} có các tính cách: [${tags.join(', ')}]`).join('\n')}
 `;
         
@@ -471,39 +466,27 @@ ${allPersonalityTags.map((tags, index) => `NPC ${index + 1} có các tính cách
                     items: {
                         type: Type.OBJECT,
                         properties: {
-                            role: { type: Type.STRING, description: "Chức vụ hoặc vai trò của NPC." },
-                            power: { type: Type.INTEGER, description: "Cấp độ quyền lực của NPC, từ 1-100.", nullable: true },
                             title: { type: Type.STRING, description: "Danh hiệu tu tiên của NPC. Có thể là chuỗi rỗng hoặc null.", nullable: true },
-                            prompt: { type: Type.STRING, description: "Một lời thoại ngắn gọn, trong vai nhân vật, phản ánh tính cách đã cho." },
-                            attributes: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    canCot: { type: Type.INTEGER, description: "Thuộc tính Căn Cốt." },
-                                    thanPhap: { type: Type.INTEGER, description: "Thuộc tính Thân Pháp." },
-                                    thanThuc: { type: Type.INTEGER, description: "Thuộc tính Thần Thức." },
-                                    ngoTinh: { type: Type.INTEGER, description: "Thuộc tính Ngộ Tính." },
-                                    coDuyen: { type: Type.INTEGER, description: "Thuộc tính Cơ Duyên (Vận may)." },
-                                    tamCanh: { type: Type.INTEGER, description: "Thuộc tính Tâm Cảnh (Ý chí)." },
-                                },
-                                required: ["canCot", "thanPhap", "thanThuc", "ngoTinh", "coDuyen", "tamCanh"],
-                            },
                         },
-                        required: ["role", "prompt", "attributes"]
+                        required: []
                     }
                 }
             },
         });
         
         const tokenCount = response.usageMetadata?.totalTokenCount || 0;
+        if (!response.text) {
+            throw new Error("Gemini response for generateNpcs is empty.");
+        }
         const jsonStr = response.text.trim();
-        const result = JSON.parse(jsonStr);
+        const result = JSON.parse(jsonStr) as { title?: string | null }[];
 
         if (Array.isArray(result) && result.length === count) {
-             // Inject the pre-generated personality tags into the result
+             // Combine the generated titles with the pre-generated personality tags
             const data = result.map((npcData, index) => ({
-                ...npcData,
+                title: npcData.title,
                 personalityTags: allPersonalityTags[index]
-            })) as GeneratedNpcData[];
+            }));
             return { data, tokenCount };
         }
         console.error("Gemini response is not a valid array or count mismatch:", result);
@@ -511,75 +494,5 @@ ${allPersonalityTags.map((tags, index) => `NPC ${index + 1} có các tính cách
     } catch (error) {
         console.error("Error generating NPCs from Gemini:", error);
         return { data: [], tokenCount: 0 };
-    }
-};
-
-export interface PlaceToName {
-    id: string;
-    type: string; // e.g., 'Đại Lục', 'Thành Thị'
-    originalName: string;
-}
-
-export const generatePlaceNames = async (places: PlaceToName[]): Promise<GeminiServiceResponse<Record<string, string>>> => {
-    try {
-        const client = getAIClient();
-        const placesString = JSON.stringify(places.map(p => ({ id: p.id, type: p.type, name: p.originalName })));
-
-        const prompt = `Tôi đang tạo một thế giới cho game tu tiên. Dưới đây là danh sách các địa danh hiện có, bao gồm ID, loại địa danh, và tên gốc.
-Hãy tạo ra các tên mới, mang đậm phong cách huyền huyễn, tiên hiệp cho mỗi địa danh. Tên mới phải độc đáo và phù hợp với loại địa danh.
-Giữ nguyên ID của mỗi địa danh trong câu trả lời của bạn.
-
-Dữ liệu đầu vào:
-${placesString}
-
-Yêu cầu trả về kết quả dưới dạng JSON theo schema đã cho.`;
-
-        const response = await client.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                systemInstruction: "Bạn là một người sáng tạo thế giới (world-builder) chuyên về tiểu thuyết tiên hiệp và huyền huyễn. Phản hồi của bạn phải sáng tạo, giàu hình ảnh và đúng với không khí tu tiên. Chỉ trả lời bằng JSON.",
-                temperature: 0.9,
-                topP: 1.0,
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                       places: {
-                            type: Type.ARRAY,
-                            description: "Danh sách các địa danh đã được đặt tên lại.",
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    id: { type: Type.STRING, description: "ID gốc của địa danh." },
-                                    name: { type: Type.STRING, description: "Tên mới, huyền huyễn cho địa danh." }
-                                },
-                                required: ["id", "name"]
-                            }
-                       }
-                    },
-                    required: ["places"]
-                }
-            },
-        });
-        
-        const tokenCount = response.usageMetadata?.totalTokenCount || 0;
-        const jsonStr = response.text.trim();
-        const result = JSON.parse(jsonStr) as { places: { id: string; name: string }[] };
-        
-        if (result && Array.isArray(result.places)) {
-            const nameMap = result.places.reduce((acc, place) => {
-                acc[place.id] = place.name;
-                return acc;
-            }, {} as Record<string, string>);
-            return { data: nameMap, tokenCount };
-        }
-
-        console.error("Gemini response for place names is not in the expected format:", result);
-        return { data: {}, tokenCount };
-
-    } catch (error) {
-        console.error("Error generating place names from Gemini:", error);
-        return { data: {}, tokenCount: 0 };
     }
 };

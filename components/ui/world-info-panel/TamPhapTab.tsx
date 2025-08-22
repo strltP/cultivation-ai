@@ -5,6 +5,7 @@ import { SKILL_TIER_INFO } from '../../../data/skills/skills';
 import { ALL_TAM_PHAP } from '../../../data/skills/tam_phap';
 import type { Skill, SkillBonus } from '../../../types/skill';
 import { FaArrowUp, FaPlus } from 'react-icons/fa';
+import { LINH_CAN_DATA, LINH_CAN_ICONS } from '../../../data/linhcan';
 
 const ATTRIBUTE_NAMES: Record<string, string> = {
     canCot: 'Căn Cốt',
@@ -49,8 +50,20 @@ const SkillInfoCard: React.FC<{ skillDef: Skill }> = ({ skillDef }) => {
             <p className="text-gray-400 mt-2 text-sm italic whitespace-pre-wrap flex-grow">{skillDef.description}</p>
             
             <div className="mt-4 pt-3 border-t border-gray-700/50 space-y-2">
+                <div className="flex justify-between text-sm">
+                    <span className="text-gray-300 font-semibold flex items-center gap-2">Yêu Cầu Linh Căn:</span>
+                    {skillDef.requiredLinhCan && skillDef.requiredLinhCan.length > 0 ? (
+                        <div className="flex gap-1 text-lg">
+                            {skillDef.requiredLinhCan.map(lc =>
+                                <span key={lc} title={LINH_CAN_DATA[lc].name}>{LINH_CAN_ICONS[lc]}</span>
+                            )}
+                        </div>
+                    ) : (
+                        <span className="text-white font-bold">Không</span>
+                    )}
+                </div>
                 {skillDef.bonuses && skillDef.bonuses.length > 0 && (
-                    <div className="space-y-1">
+                    <div className="space-y-1 pt-2">
                         <h4 className="text-gray-300 font-semibold text-sm">Thuộc tính gia tăng (tầng 1):</h4>
                         {skillDef.bonuses.map((bonus, index) => <BonusDisplay key={index} bonus={bonus} />)}
                     </div>

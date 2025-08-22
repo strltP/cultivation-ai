@@ -1,43 +1,41 @@
 import React, { useState } from 'react';
 import type { PlayerState } from '../../types/character';
-import { FaBookDead, FaBook, FaBoxOpen, FaUsers, FaGlobeAsia } from 'react-icons/fa';
-import { GiDiamondHard, GiGalaxy } from 'react-icons/gi';
-import CongPhapTab from './world-info-panel/CongPhapTab';
-import TamPhapTab from './world-info-panel/TamPhapTab';
-import VatPhamTab from './world-info-panel/VatPhamTab';
-import TrangBiTab from './world-info-panel/TrangBiTab';
+import { FaBook, FaBoxOpen, FaUsers, FaGlobeAsia } from 'react-icons/fa';
+import { GiDiamondHard, GiGalaxy, GiChessRook } from 'react-icons/gi';
 import LinhCanWorldInfoTab from './world-info-panel/LinhCanTab';
 import ChungSinhLucTab from './world-info-panel/ChungSinhLucTab';
 import TheGioiTab from './world-info-panel/TheGioiTab';
+import VatPhamTab from './world-info-panel/VatPhamTab';
+import TrangBiTab from './world-info-panel/TrangBiTab';
+import PhatQuyetTab from './world-info-panel/PhatQuyetTab';
+import TheLucTab from './world-info-panel/TheLucTab';
 
 interface WorldInfoPanelProps {
   onClose: () => void;
   playerState: PlayerState;
 }
 
-type ActiveTab = 'thegioi' | 'congphap' | 'tamphap' | 'linhcan' | 'vatpham' | 'trangbi' | 'chungsinh';
+type ActiveTab = 'thegioi' | 'phapquyet' | 'linhcan' | 'vatpham' | 'trangbi' | 'chungsinh' | 'theluc';
 
 const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({ onClose, playerState }) => {
     const [activeTab, setActiveTab] = useState<ActiveTab>('thegioi');
 
     const tabs: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
         { id: 'thegioi', label: 'Tổng Quan Thế Giới', icon: <FaGlobeAsia /> },
-        { id: 'congphap', label: 'Công Pháp', icon: <FaBookDead /> },
-        { id: 'tamphap', label: 'Tâm Pháp', icon: <FaBook /> },
+        { id: 'phapquyet', label: 'Công Pháp - Tâm Pháp', icon: <FaBook /> },
         { id: 'linhcan', label: 'Linh Căn', icon: <GiGalaxy /> },
         { id: 'vatpham', label: 'Vật Phẩm', icon: <FaBoxOpen /> },
         { id: 'trangbi', label: 'Trang Bị', icon: <GiDiamondHard /> },
         { id: 'chungsinh', label: 'Chúng Sinh Lục', icon: <FaUsers /> },
+        { id: 'theluc', label: 'Thế Lực', icon: <GiChessRook /> },
     ];
 
     const renderContent = () => {
         switch (activeTab) {
             case 'thegioi':
                 return <TheGioiTab />;
-            case 'congphap':
-                return <CongPhapTab />;
-            case 'tamphap':
-                return <TamPhapTab />;
+            case 'phapquyet':
+                return <PhatQuyetTab />;
             case 'linhcan':
                 return <LinhCanWorldInfoTab />;
             case 'vatpham':
@@ -46,6 +44,8 @@ const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({ onClose, playerState })
                 return <TrangBiTab />;
             case 'chungsinh':
                 return <ChungSinhLucTab playerState={playerState} />;
+            case 'theluc':
+                return <TheLucTab playerState={playerState} />;
             default:
                 return null;
         }

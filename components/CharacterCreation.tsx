@@ -6,7 +6,7 @@ import { LINH_CAN_DATA } from '../data/linhcan';
 import { getLinhCanTierInfo } from '../services/cultivationService';
 
 interface CharacterCreationProps {
-  onCharacterCreate: (name: string, useRandomNames: boolean, linhCan: LinhCan[], gender: 'Nam' | 'Nữ') => void;
+  onCharacterCreate: (name: string, linhCan: LinhCan[], gender: 'Nam' | 'Nữ') => void;
   setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>;
 }
 
@@ -45,7 +45,6 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onCharacterCreate
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'Nam' | 'Nữ'>('Nam');
   const [message, setMessage] = useState<string | null>(null);
-  const [useRandomNames, setUseRandomNames] = useState(false);
   const [linhCanChoices, setLinhCanChoices] = useState<LinhCan[][] | null>(null);
   const [selectedChoiceIndex, setSelectedChoiceIndex] = useState<number | null>(null);
 
@@ -66,7 +65,7 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onCharacterCreate
         setTimeout(() => setMessage(null), 4000);
         return;
     }
-    onCharacterCreate(name.trim(), useRandomNames, linhCanChoices[selectedChoiceIndex], gender);
+    onCharacterCreate(name.trim(), linhCanChoices[selectedChoiceIndex], gender);
   };
   
   const handleImportSave = () => {
@@ -123,17 +122,6 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onCharacterCreate
           </div>
           
           <div className="mt-auto flex flex-col gap-4">
-            <div className="flex items-center gap-3 justify-center">
-                <input
-                    type="checkbox"
-                    id="randomNames"
-                    checked={useRandomNames}
-                    onChange={(e) => setUseRandomNames(e.target.checked)}
-                    className="h-5 w-5 rounded border-gray-500 text-yellow-400 focus:ring-yellow-500 bg-gray-700"
-                />
-                <label htmlFor="randomNames" className="text-gray-300 select-none">Sử dụng tên địa danh ngẫu nhiên</label>
-            </div>
-
             <button
                 onClick={handleGenerateChoices}
                 className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-purple-500/30 border border-indigo-300 transform transition-all duration-200 hover:scale-105"

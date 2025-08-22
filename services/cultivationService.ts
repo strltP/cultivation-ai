@@ -1,3 +1,6 @@
+
+
+
 import { REALM_PROGRESSION } from '../constants';
 import { INITIAL_PLAYER_STATE as BASE_INITIAL_PLAYER_STATE } from '../hooks/usePlayerPersistence';
 import type { CultivationState, CharacterAttributes, CombatStats } from '../types/stats';
@@ -63,6 +66,39 @@ export const getLinhCanTierInfo = (linhCan: LinhCan[]): { name: string; qiMultip
     return { name, qiMultiplier, color };
 };
 
+export const calculateSkillEffectiveness = (
+    userLinhCan: LinhCan[], 
+    userAttributes: CharacterAttributes,
+    skill: Skill
+): number => {
+    const required = skill.requiredLinhCan;
+
+    // No requirement, 100% effectiveness
+    if (!required || required.length === 0) {
+        return 1.0;
+    }
+
+    // Check for match
+    const hasMatchingLinhCan = userLinhCan.some(lc => required.includes(lc.type));
+    if (hasMatchingLinhCan) {
+        return 1.0;
+    }
+
+    // No match, calculate penalty based on Ngộ Tính
+    const ngoTinh = userAttributes.ngoTinh;
+    const minNgoTinh = 10;
+    const maxNgoTinh = 150; // Cap the benefit at 150
+    
+    // Normalize Ngộ Tính to a 0-1 range within the min/max bounds
+    const normalizedNgoTinh = Math.max(0, Math.min(1, (ngoTinh - minNgoTinh) / (maxNgoTinh - minNgoTinh)));
+    
+    // Effectiveness ranges from 50% (at minNgoTinh) to 75% (at maxNgoTinh)
+    // Base 50% + up to 25% bonus from Ngộ Tính
+    const effectiveness = 0.50 + (0.25 * normalizedNgoTinh);
+
+    return effectiveness;
+};
+
 export interface CalculatedSkillAttributes {
     manaCost: number;
     manaCostPercent: number;
@@ -113,7 +149,7 @@ export function calculateSkillAttributesForLevel(skillDef: Skill, level: number)
 
 
 export const calculateAllStats = (
-    baseAttributes: CharacterAttributes, 
+    baseAttributes: CharacterAttributes,
     cultivation: CultivationState,
     baseCultivationStats: Partial<CombatStats & CharacterAttributes>,
     learnedSkills: LearnedSkill[],
@@ -125,37 +161,44 @@ export const calculateAllStats = (
 ): { finalStats: CombatStats; finalAttributes: CharacterAttributes } => {
     // 1. Start with absolute base stats of a mortal.
     const finalStats: Required<Mutable<Partial<CombatStats>>> = { ...BASE_INITIAL_PLAYER_STATE.stats };
-    const modifiedAttributes: CharacterAttributes = { ...baseAttributes }; // FIX: Use passed-in base attributes for NPCs
+    
+    // Start final attributes with the base talent. This object will be progressively modified.
+    const finalAttributes: CharacterAttributes = { ...baseAttributes };
 
-    // Apply pre-rolled stats from cultivation
+    // 2. Apply pre-rolled stats from cultivation.
     for(const key in baseCultivationStats) {
         const statKey = key as keyof (CombatStats & CharacterAttributes);
         const value = baseCultivationStats[statKey] || 0;
         if (statKey in finalStats) {
             (finalStats as any)[statKey] += value;
-        } else if (statKey in modifiedAttributes) {
-            (modifiedAttributes as any)[statKey] += value;
+        } else if (statKey in finalAttributes) {
+            (finalAttributes as any)[statKey] += value;
         }
     }
+    
+    // --- 3. Apply all other bonuses (Tam Phap, Equipment, Linh Can) to stats and final attributes ---
     
     // --- Apply Tam Phap bonuses ---
     learnedSkills.forEach(learnedSkill => {
         const skillDef = allSkills.find(s => s.id === learnedSkill.skillId);
         if (skillDef?.type === 'TAM_PHAP') {
+            const effectiveness = calculateSkillEffectiveness(linhCan, finalAttributes, skillDef);
             const calculatedBonuses = calculateSkillAttributesForLevel(skillDef, learnedSkill.currentLevel).bonuses;
+
             calculatedBonuses.forEach(bonus => {
+                const effectiveValue = bonus.value * effectiveness;
                 if (bonus.targetAttribute) {
                     if (bonus.modifier === 'ADDITIVE') {
-                        modifiedAttributes[bonus.targetAttribute] += bonus.value;
+                        finalAttributes[bonus.targetAttribute] += effectiveValue;
                     } else if (bonus.modifier === 'MULTIPLIER') {
-                        modifiedAttributes[bonus.targetAttribute] *= (1 + bonus.value);
+                        finalAttributes[bonus.targetAttribute] *= (1 + effectiveValue);
                     }
                 }
                 if (bonus.targetStat) {
                     if (bonus.modifier === 'ADDITIVE') {
-                        finalStats[bonus.targetStat] += bonus.value;
+                        (finalStats[bonus.targetStat] as number) += effectiveValue;
                     } else if (bonus.modifier === 'MULTIPLIER') {
-                        finalStats[bonus.targetStat] *= (1 + bonus.value);
+                        (finalStats[bonus.targetStat] as number) *= (1 + effectiveValue);
                     }
                 }
             });
@@ -170,16 +213,16 @@ export const calculateAllStats = (
             const value = bonus.value;
              if (bonus.targetAttribute) {
                 if (bonus.modifier === 'ADDITIVE') {
-                    modifiedAttributes[bonus.targetAttribute] += value;
+                    finalAttributes[bonus.targetAttribute] += value;
                 } else if (bonus.modifier === 'MULTIPLIER') {
-                    modifiedAttributes[bonus.targetAttribute] *= (1 + value);
+                    finalAttributes[bonus.targetAttribute] *= (1 + value);
                 }
             }
             if (bonus.targetStat) {
                 if (bonus.modifier === 'ADDITIVE') {
-                    finalStats[bonus.targetStat] += value;
+                    (finalStats[bonus.targetStat] as number) += value;
                 } else if (bonus.modifier === 'MULTIPLIER') {
-                    finalStats[bonus.targetStat] *= (1 + value);
+                    (finalStats[bonus.targetStat] as number) *= (1 + value);
                 }
             }
         });
@@ -192,30 +235,30 @@ export const calculateAllStats = (
             const bonusValue = bonus.valuePerPurity * lc.purity;
             if (bonus.targetAttribute) {
                  if (bonus.modifier === 'ADDITIVE') {
-                    modifiedAttributes[bonus.targetAttribute] += bonusValue;
+                    finalAttributes[bonus.targetAttribute] += bonusValue;
                 } else if (bonus.modifier === 'MULTIPLIER') {
-                    modifiedAttributes[bonus.targetAttribute] *= (1 + bonusValue);
+                    finalAttributes[bonus.targetAttribute] *= (1 + bonusValue);
                 }
             }
             if (bonus.targetStat) {
                  if (bonus.modifier === 'ADDITIVE') {
-                    finalStats[bonus.targetStat] += bonusValue;
+                    (finalStats[bonus.targetStat] as number) += bonusValue;
                 } else if (bonus.modifier === 'MULTIPLIER') {
-                    finalStats[bonus.targetStat] *= (1 + bonusValue);
+                    (finalStats[bonus.targetStat] as number) *= (1 + bonusValue);
                 }
             }
         });
     });
 
-    // 4. Finally, add contributions from the final modified attributes to stats
-    finalStats.maxHp += modifiedAttributes.canCot * 5;
-    finalStats.maxMana += modifiedAttributes.thanThuc * 3 + modifiedAttributes.ngoTinh * 3 + modifiedAttributes.tamCanh * 4;
-    finalStats.attackPower += modifiedAttributes.thanThuc * 1;
-    finalStats.defensePower += Math.round(modifiedAttributes.canCot * 0.5);
-    finalStats.speed += modifiedAttributes.thanPhap * 0.5;
-    finalStats.critRate += modifiedAttributes.thanThuc / 3000 + modifiedAttributes.coDuyen / 6000;
-    finalStats.critDamage += modifiedAttributes.coDuyen / 500;
-    finalStats.armorPenetration = (modifiedAttributes.thanThuc / 3000) + (modifiedAttributes.coDuyen / 6000);
+    // 4. Finally, add contributions from the fully-buffed final attributes to stats
+    finalStats.maxHp += finalAttributes.canCot * 5;
+    finalStats.maxMana += finalAttributes.thanThuc * 3 + finalAttributes.ngoTinh * 3 + finalAttributes.tamCanh * 4;
+    finalStats.attackPower += finalAttributes.thanThuc * 1;
+    finalStats.defensePower += Math.round(finalAttributes.canCot * 0.5);
+    finalStats.speed += finalAttributes.thanPhap * 0.5;
+    finalStats.critRate += finalAttributes.thanThuc / 3000 + finalAttributes.coDuyen / 6000;
+    finalStats.critDamage += finalAttributes.coDuyen / 500;
+    finalStats.armorPenetration = (finalAttributes.thanThuc / 3000) + (finalAttributes.coDuyen / 6000);
     
     // ** FIX: Calculate maxQi based on the NEXT level's requirement **
     const { qiMultiplier } = getLinhCanTierInfo(linhCan);
@@ -235,17 +278,19 @@ export const calculateAllStats = (
     Object.keys(finalStats).forEach(key => {
         const statKey = key as keyof CombatStats;
         if (statKey !== 'critRate' && statKey !== 'critDamage' && statKey !== 'armorPenetration') {
-            finalStats[statKey] = Math.round(finalStats[statKey]);
+             if (typeof finalStats[statKey] === 'number') {
+                finalStats[statKey] = Math.round(finalStats[statKey]);
+            }
         }
     });
 
-    // Also round the final attributes to ensure they are integers
-    Object.keys(modifiedAttributes).forEach(key => {
+    // Also round the final DISPLAY attributes to ensure they are integers
+    Object.keys(finalAttributes).forEach(key => {
         const attrKey = key as keyof CharacterAttributes;
-        modifiedAttributes[attrKey] = Math.round(modifiedAttributes[attrKey]);
+        finalAttributes[attrKey] = Math.round(finalAttributes[attrKey]);
     });
 
-    return { finalStats: finalStats as CombatStats, finalAttributes: modifiedAttributes };
+    return { finalStats: finalStats as CombatStats, finalAttributes: finalAttributes };
 };
 
 type Mutable<T> = {

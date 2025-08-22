@@ -12,14 +12,15 @@ import type { InventorySlot } from '../types/item';
 import { INVENTORY_SIZE } from '../constants';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
 import { advanceTime, gameTimeToMinutes } from '../services/timeService';
-import { calculateSkillAttributesForLevel } from '../services/cultivationService';
+import { calculateSkillAttributesForLevel, calculateSkillEffectiveness } from '../services/cultivationService';
+import { FACTIONS } from '../data/factions';
 
 
 export const useCombatManager = (
     playerState: PlayerState,
     updateAndPersistPlayerState: (updater: (prevState: PlayerState) => PlayerState) => void,
     setGameMessage: (message: string | null) => void,
-    addJournalEntry: (message: string) => void,
+    addJournalEntry: (message: string, type?: 'player' | 'world') => void,
     stopAllActions: React.MutableRefObject<() => void>,
     handleAddItemToInventory: (itemId: string, quantity: number) => void,
     handleAddLinhThach: (amount: number) => void,
@@ -109,6 +110,86 @@ export const useCombatManager = (
         });
         setCombatState(null);
     }, [playerState, updateAndPersistPlayerState, setGameMessage, addJournalEntry]);
+
+    const handleFactionSuccession = useCallback((defeatedNpc: NPC, currentState: PlayerState): PlayerState => {
+        const MIN_POWER_FOR_SUCCESSION = 50;
+
+        if (!defeatedNpc.factionId || !defeatedNpc.power || defeatedNpc.power < MIN_POWER_FOR_SUCCESSION) {
+            return currentState;
+        }
+
+        const faction = FACTIONS.find(f => f.id === defeatedNpc.factionId);
+        if (!faction) return currentState;
+
+        const allNpcsInFaction = Object.values(currentState.generatedNpcs).flat().filter(
+            n => n.factionId === defeatedNpc.factionId && n.id !== defeatedNpc.id && !currentState.defeatedNpcIds.includes(n.id)
+        );
+
+        if (allNpcsInFaction.length === 0) return currentState;
+        
+        const sortedRoles = [...faction.roles].sort((a, b) => b.power - a.power);
+        const defeatedRoleIndex = sortedRoles.findIndex(r => r.name === defeatedNpc.role);
+        
+        if (defeatedRoleIndex === -1 || defeatedRoleIndex >= sortedRoles.length - 1) {
+            // Can't be succeeded or is already lowest rank
+            return currentState;
+        }
+
+        // Find the best candidate from the next rank down
+        const successorRole = sortedRoles[defeatedRoleIndex + 1];
+        
+        const candidates = allNpcsInFaction
+            .filter(n => n.role === successorRole.name)
+            .sort((a, b) => {
+                // Sort by realm index, then level
+                if (a.cultivation!.realmIndex !== b.cultivation!.realmIndex) {
+                    return b.cultivation!.realmIndex - a.cultivation!.realmIndex;
+                }
+                return b.cultivation!.level - a.cultivation!.level;
+            });
+            
+        let successor = candidates[0];
+
+        if (!successor) {
+             // No one in the next rank, try one lower
+            const nextSuccessorRoleIndex = defeatedRoleIndex + 2;
+            if (nextSuccessorRoleIndex < sortedRoles.length) {
+                const nextSuccessorRole = sortedRoles[nextSuccessorRoleIndex];
+                const nextCandidates = allNpcsInFaction
+                    .filter(n => n.role === nextSuccessorRole.name)
+                    .sort((a, b) => (b.cultivation?.realmIndex ?? 0) - (a.cultivation?.realmIndex ?? 0));
+                successor = nextCandidates[0];
+            }
+        }
+
+        if (!successor) {
+            return currentState;
+        }
+
+        const newGeneratedNpcs = JSON.parse(JSON.stringify(currentState.generatedNpcs));
+        
+        let successorFoundAndUpdated = false;
+        for (const mapId in newGeneratedNpcs) {
+            const npcIndex = newGeneratedNpcs[mapId].findIndex((n: NPC) => n.id === successor.id);
+            if (npcIndex !== -1) {
+                newGeneratedNpcs[mapId][npcIndex].role = defeatedNpc.role;
+                newGeneratedNpcs[mapId][npcIndex].power = defeatedNpc.power;
+                successorFoundAndUpdated = true;
+                break;
+            }
+        }
+        
+        if (successorFoundAndUpdated) {
+            const successionMessage = `${faction.name} chấn động! ${defeatedNpc.role} ${defeatedNpc.name} đã tử trận. ${successor.role} ${successor.name} đã được đề cử lên thay thế, trở thành tân ${defeatedNpc.role}.`;
+            // These UI calls will be handled by the calling function.
+            // setGameMessage(successionMessage); 
+            // addJournalEntry(successionMessage, 'world');
+            return { ...currentState, generatedNpcs: newGeneratedNpcs };
+        }
+        
+        return currentState;
+
+    }, []);
 
     const handleKillNpc = useCallback(() => {
         if (!combatState || !combatState.npc) return;
@@ -202,9 +283,8 @@ export const useCombatManager = (
                     remainingQuantity -= amountForNewStack;
                 }
             });
-
-            // Construct the new state object immutably
-            return {
+            
+            let intermediateState = {
                 ...p,
                 hp: playerInCombat.hp,
                 mana: playerInCombat.mana,
@@ -215,6 +295,23 @@ export const useCombatManager = (
                 linhThach: p.linhThach + linhThachDropped,
                 inventory: newInventory,
             };
+
+            // Call succession logic if it's not a monster
+            if (npc.npcType !== 'monster') {
+                 const finalState = handleFactionSuccession(npc, intermediateState);
+                 const faction = FACTIONS.find(f => f.id === npc.factionId);
+                 if (faction && finalState.generatedNpcs !== intermediateState.generatedNpcs) {
+                    const successor = Object.values(finalState.generatedNpcs).flat().find(n => n.role === npc.role && n.power === npc.power);
+                    if (successor) {
+                        const successionMessage = `${faction.name} chấn động! ${npc.role} ${npc.name} đã tử trận. ${successor.role} ${successor.name} đã được đề cử lên thay thế, trở thành tân ${npc.role}.`;
+                        setGameMessage(successionMessage);
+                        addJournalEntry(successionMessage, 'world');
+                    }
+                 }
+                 return finalState;
+            }
+           
+            return intermediateState;
         });
 
         // --- Final UI updates ---
@@ -224,7 +321,7 @@ export const useCombatManager = (
             addJournalEntry(gameWinMessage);
             setCombatState(null);
         }, 100);
-    }, [combatState, updateAndPersistPlayerState, setGameMessage, addJournalEntry]);
+    }, [combatState, updateAndPersistPlayerState, setGameMessage, addJournalEntry, handleFactionSuccession]);
     
     const handleSpareNpc = useCallback(() => {
         if (!combatState || !combatState.npc || combatState.npc.npcType === 'monster') return;
@@ -340,8 +437,11 @@ export const useCombatManager = (
                 if (skillDef.damage) {
                     const result = combatService.calculateSkillDamage({state: updatedAttacker}, skillDef, learnedSkill, {state: updatedDefender});
 
-                    if (result.incompatibilityPenalty) {
+                    if (result.weaponIncompatibilityPenalty) {
                         addCombatLog(`Nhưng do vũ khí không phù hợp, uy lực của [${skillDef.name}] đã giảm đi đáng kể!`, 'info');
+                    }
+                     if (result.linhCanEffectiveness) {
+                        addCombatLog(`Do linh căn không phù hợp, uy lực của [${skillDef.name}] chỉ phát huy được ${(result.linhCanEffectiveness * 100).toFixed(0)}%!`, 'info');
                     }
 
                     if (result.isEvaded) {
@@ -362,6 +462,11 @@ export const useCombatManager = (
                         if (Math.random() < effectDef.chance) {
                             switch (effectDef.type) {
                                 case 'HEAL': {
+                                    const effectiveness = calculateSkillEffectiveness(updatedAttacker.linhCan, updatedAttacker.attributes, skillDef);
+                                    if (effectiveness < 1.0) {
+                                        addCombatLog(`Do linh căn không phù hợp, hiệu quả của [${skillDef.name}] chỉ phát huy được ${(effectiveness * 100).toFixed(0)}%!`, 'info');
+                                    }
+
                                     let healAmount = 0;
                                     if (effectDef.valueIsPercent) {
                                         healAmount = Math.round(updatedAttacker.stats.maxHp * (effectDef.value || 0));
@@ -373,7 +478,8 @@ export const useCombatManager = (
                                         healAmount = Math.round(flatHeal);
                                     }
                                     
-                                    const newHp = Math.min(updatedAttacker.stats.maxHp, updatedAttacker.hp + healAmount);
+                                    const finalHealAmount = Math.round(healAmount * effectiveness);
+                                    const newHp = Math.min(updatedAttacker.stats.maxHp, updatedAttacker.hp + finalHealAmount);
                                     const actualHeal = newHp - updatedAttacker.hp;
                                     updatedAttacker.hp = newHp;
                                     
@@ -559,5 +665,6 @@ export const useCombatManager = (
         handleKillNpc,
         handleSpareNpc,
         handlePlayerDeathAndRespawn,
+        handleFactionSuccession,
     };
 };

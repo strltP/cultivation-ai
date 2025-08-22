@@ -18,6 +18,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
     journal: [],
     saveVersion: CURRENT_SAVE_VERSION,
     nextMonsterSpawnCheck: {},
+    nextNpcSpawnCheck: {},
     nextInteractableSpawnCheck: {},
     harvestedInteractableIds: [],
     lastNpcProgressionCheck: { year: 17, season: 'Xuân', month: 1, day: 1, hour: 8, minute: 0 },
@@ -33,6 +34,7 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
         }
     },
     affinity: {},
+    nameUsageCounts: { male: {}, female: {} },
 };
 export { DAYS_PER_MONTH };
 
@@ -146,10 +148,9 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         if (!Array.isArray(parsed.respawningInteractables)) {
             parsed.respawningInteractables = [];
         }
-        if (!parsed.respawningNpcs) parsed.respawningNpcs = [];
-        if (parsed.useRandomNames === undefined) parsed.useRandomNames = false;
         if (!parsed.initializedMaps) parsed.initializedMaps = [];
-        if (!parsed.nameOverrides) parsed.nameOverrides = {};
+        if (parsed.nameOverrides) delete parsed.nameOverrides; // Remove old data
+        if (parsed.useRandomNames) delete parsed.useRandomNames; // Remove old data
         if (parsed.camNgo === undefined) parsed.camNgo = 0;
         if (!parsed.chatHistories) parsed.chatHistories = {};
         if (!parsed.gender) parsed.gender = 'Nam';
@@ -166,6 +167,7 @@ const processLoadedState = (parsed: any): PlayerState | null => {
             delete parsed.lastPopCheck;
         }
         if (!parsed.nextMonsterSpawnCheck) parsed.nextMonsterSpawnCheck = {};
+        if (!parsed.nextNpcSpawnCheck) parsed.nextNpcSpawnCheck = {};
         if (!parsed.nextInteractableSpawnCheck) parsed.nextInteractableSpawnCheck = {};
         if (!parsed.affinity) parsed.affinity = {};
         if (!parsed.apiUsageStats) {
@@ -180,6 +182,7 @@ const processLoadedState = (parsed: any): PlayerState | null => {
                 }
             };
         }
+        if (!parsed.nameUsageCounts) parsed.nameUsageCounts = { male: {}, female: {} };
 
         
         // Add checks for numeric stats that might be missing in old saves.
@@ -312,7 +315,7 @@ export const usePlayerPersistence = (): [PlayerState | null, React.Dispatch<Reac
     return [playerState, setPlayerState];
 };
 
-export const createNewPlayer = (name: string, useRandomNames: boolean, linhCan: LinhCan[], gender: 'Nam' | 'Nữ'): PlayerState => {
+export const createNewPlayer = (name: string, linhCan: LinhCan[], gender: 'Nam' | 'Nữ'): PlayerState => {
     let newPlayerState: PlayerState = {
         ...INITIAL_PLAYER_STATE,
         name: name,
@@ -321,8 +324,6 @@ export const createNewPlayer = (name: string, useRandomNames: boolean, linhCan: 
             ...INITIAL_PLAYER_STATE.time,
             year: 17, // Bắt đầu từ 16 tuổi (năm - 1)
         },
-        useRandomNames: useRandomNames,
-        nameOverrides: {},
         chatHistories: {},
         linhCan: linhCan,
         cultivation: { realmIndex: 0, level: -1 }, // Start as Mortal
@@ -332,7 +333,8 @@ export const createNewPlayer = (name: string, useRandomNames: boolean, linhCan: 
         inventory: [
             ...INITIAL_PLAYER_STATE.inventory,
             { itemId: 'seed_linh_thao', quantity: 5 }
-        ]
+        ],
+        nameUsageCounts: { male: {}, female: {} },
     };
     
     // Simulate first breakthrough to Luyện Khí Tầng 1 (level 0)

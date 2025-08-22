@@ -1,10 +1,12 @@
+
+
 import React, { useState, useMemo } from 'react';
 import type { NPC, PlayerState, RelationshipType } from '../../types/character';
 import { getCultivationInfo, getLinhCanTierInfo } from '../../services/cultivationService';
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
 import { ALL_SKILLS, SKILL_TIER_INFO } from '../../data/skills/skills';
-import { FaBookDead, FaBook, FaGem, FaHourglassHalf, FaLock, FaShoePrints, FaInfoCircle, FaFistRaised, FaUsers, FaHeart } from 'react-icons/fa';
+import { FaBookDead, FaBook, FaGem, FaHourglassHalf, FaLock, FaShoePrints, FaInfoCircle, FaFistRaised, FaUsers, FaHeart, FaLongArrowAltRight, FaMale, FaFemale } from 'react-icons/fa';
 import { ALL_ITEMS } from '../../data/items/index';
 import type { EquipmentSlot } from '../../types/equipment';
 import { EQUIPMENT_SLOT_NAMES } from '../../types/equipment';
@@ -12,6 +14,7 @@ import { GiDiamondHard, GiBackpack, GiGalaxy, GiTwoCoins, GiBrain, GiPaintBrush 
 import { LINH_CAN_DATA } from '../../data/linhcan';
 import { formatCurrentIntentStatus } from '../../services/npcActionService';
 import { getAffinityLevel } from '../../services/affinityService';
+import { FACTIONS } from '../../data/factions';
 
 // --- Relationship Logic ---
 
@@ -21,29 +24,38 @@ interface ProcessedRelationship {
 }
 
 const RELATIONSHIP_MAP: Partial<Record<RelationshipType, RelationshipType>> = {
-    father: 'son', // This will be adjusted for gender
-    mother: 'son', // This will be adjusted for gender
+    father: 'son',
+    mother: 'son',
     master: 'disciple',
     disciple: 'master',
     husband: 'wife',
     wife: 'husband',
 };
 
-const RELATIONSHIP_DISPLAY_MAP: Record<RelationshipType, (gender: 'Nam' | 'Nữ') => string> = {
-    father: () => 'Cha của',
-    mother: () => 'Mẹ của',
-    son: () => 'Con trai của',
-    daughter: () => 'Con gái của',
-    older_brother: () => 'Anh trai của',
-    younger_brother: () => 'Em trai của',
-    older_sister: () => 'Chị gái của',
-    younger_sister: () => 'Em gái của',
-    sibling: () => 'Anh chị em của',
-    master: () => 'Sư phụ của',
-    disciple: () => 'Đệ tử của',
-    husband: () => 'Chồng của',
-    wife: () => 'Vợ của',
+const RELATIONSHIP_CATEGORY_MAP: Record<RelationshipType, 'GIA TỘC' | 'TÔNG MÔN & THẾ LỰC'> = {
+    father: 'GIA TỘC', mother: 'GIA TỘC', son: 'GIA TỘC', daughter: 'GIA TỘC',
+    older_brother: 'GIA TỘC', younger_brother: 'GIA TỘC', older_sister: 'GIA TỘC', younger_sister: 'GIA TỘC',
+    sibling: 'GIA TỘC', husband: 'GIA TỘC', wife: 'GIA TỘC',
+    master: 'GIA TỘC', disciple: 'GIA TỘC',
+    superior: 'TÔNG MÔN & THẾ LỰC', subordinate: 'TÔNG MÔN & THẾ LỰC',
+    peer_same_role: 'TÔNG MÔN & THẾ LỰC', peer_different_role: 'TÔNG MÔN & THẾ LỰC',
 };
+
+const RELATIONSHIP_TEXT_MAP_CARD: Record<RelationshipType, string> = {
+    father: 'Phụ Thân', mother: 'Mẫu Thân',
+    son: 'Con Trai', daughter: 'Con Gái',
+    older_brother: 'Huynh Trưởng', younger_brother: 'Đệ Đệ',
+    older_sister: 'Tỷ Tỷ', younger_sister: 'Muội Muội',
+    sibling: 'Huynh Đệ/Tỷ Muội', husband: 'Phu Quân', wife: 'Thê Tử',
+    master: 'Sư Phụ', disciple: 'Đệ Tử',
+    superior: 'Cấp Trên', subordinate: 'Cấp Dưới',
+    peer_same_role: 'Đồng Môn', peer_different_role: 'Đồng Cấp',
+};
+
+interface FactionHierarchyLevel {
+    roleName: string;
+    members: NPC[];
+}
 
 // --- Main Component ---
 
@@ -52,6 +64,40 @@ interface NpcInfoPanelProps {
   onClose: () => void;
   playerState: PlayerState;
 }
+
+const PersonalRelationshipCard: React.FC<{ relationship: ProcessedRelationship; playerState: PlayerState }> = ({ relationship, playerState }) => {
+    const { targetNpc, type } = relationship;
+    const cultivationInfo = getCultivationInfo(targetNpc.cultivation!);
+    const affinityScore = playerState.affinity?.[targetNpc.id] || 0;
+    const affinityInfo = getAffinityLevel(affinityScore);
+
+    return (
+        <div className="bg-gray-800/60 p-3 rounded-lg border border-gray-700 flex items-center gap-3 transition-colors hover:bg-gray-700/50">
+            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-black/30 border-2 border-gray-600 text-2xl">
+                 {targetNpc.gender === 'Nữ' ? <FaFemale className="text-pink-300" /> : <FaMale className="text-blue-300" />}
+            </div>
+            <div className="flex-grow overflow-hidden">
+                <p className="text-sm font-bold text-yellow-300">{RELATIONSHIP_TEXT_MAP_CARD[type] || type}</p>
+                <p className="text-base font-semibold text-white truncate" title={targetNpc.name}>{targetNpc.name}</p>
+                {targetNpc.title && <p className="text-xs text-cyan-400 italic truncate" title={targetNpc.title}>« {targetNpc.title} »</p>}
+                <p className="text-xs text-gray-400 truncate">{cultivationInfo.name}</p>
+                <div className="flex items-center gap-1.5 text-xs mt-1" title={`Thiện cảm: ${affinityScore}`}>
+                    <FaHeart className={affinityInfo.color} />
+                    <span className={`font-semibold ${affinityInfo.color}`}>{affinityInfo.level}</span>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+const OrgChartNode: React.FC<{ member: NPC; isCurrent: boolean }> = ({ member, isCurrent }) => (
+    <div className={`p-2 rounded-lg border-2 text-center transition-all duration-300 ${isCurrent ? 'border-yellow-400 bg-yellow-900/50 scale-105 shadow-lg' : 'border-gray-600 bg-gray-800/70'}`}
+        title={`${member.name}\n${member.role}`}
+    >
+        <p className="font-bold text-white truncate text-sm">{member.name}</p>
+        <p className="text-xs text-gray-400 truncate">{member.role}</p>
+    </div>
+);
 
 const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'history' | 'relationships'>('info');
@@ -118,22 +164,19 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
     
     const linhCanTierInfo = !isMonster ? getLinhCanTierInfo(npc.linhCan) : null;
     
-     const processedRelationships = useMemo((): ProcessedRelationship[] => {
-        if (npc.npcType === 'monster') return [];
+    const { personalRelationships, factionHierarchy } = useMemo(() => {
+        if (npc.npcType === 'monster') return { personalRelationships: [], factionHierarchy: null };
 
-        const allRelationships: ProcessedRelationship[] = [];
+        // --- Personal Relationship Logic ---
         const allNpcs = Object.values(playerState.generatedNpcs).flat();
         const npcMap = new Map(allNpcs.map(n => [n.id, n]));
+        let allRelationships: ProcessedRelationship[] = [];
 
-        // 1. Direct relationships from the current NPC
         npc.relationships?.forEach(rel => {
             const targetNpc = npcMap.get(rel.targetNpcId);
-            if (targetNpc) {
-                allRelationships.push({ targetNpc, type: rel.type });
-            }
+            if (targetNpc) allRelationships.push({ targetNpc, type: rel.type });
         });
 
-        // 2. Reciprocal relationships (others pointing to this NPC)
         allNpcs.forEach(otherNpc => {
             otherNpc.relationships?.forEach(rel => {
                 if (rel.targetNpcId === npc.id) {
@@ -147,47 +190,41 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
                 }
             });
         });
-
-        // 3. Derived relationships (Siblings)
-        const parents = allNpcs.filter(p => p.relationships?.some(rel => rel.targetNpcId === npc.id && (rel.type === 'father' || rel.type === 'mother')));
         
-        if (parents.length > 0) {
-            const siblingIds = new Set<string>();
-            parents.forEach(parent => {
-                parent.relationships?.forEach(rel => {
-                    if ((rel.type === 'father' || rel.type === 'mother') && rel.targetNpcId !== npc.id) {
-                        siblingIds.add(rel.targetNpcId);
-                    }
-                });
-            });
-
-            siblingIds.forEach(siblingId => {
-                const siblingNpc = npcMap.get(siblingId);
-                if (siblingNpc) {
-                    const thisAge = playerState.time.year - npc.birthTime.year;
-                    const otherAge = playerState.time.year - siblingNpc.birthTime.year;
-                    
-                    let siblingType: RelationshipType;
-                    if (thisAge > otherAge) { // Current NPC is older
-                        siblingType = siblingNpc.gender === 'Nam' ? 'younger_brother' : 'younger_sister';
-                    } else { // Current NPC is younger or same age
-                        siblingType = siblingNpc.gender === 'Nam' ? 'older_brother' : 'older_sister';
-                    }
-                    allRelationships.push({ targetNpc: siblingNpc, type: siblingType });
-                }
-            });
-        }
-        
-        // Deduplicate
-        const uniqueRelationships = new Map<string, ProcessedRelationship>();
-        allRelationships.forEach(r => {
-            const key = `${r.targetNpc.id}-${r.type}`;
-            uniqueRelationships.set(key, r);
+        const uniquePersonalRelationships = new Map<string, ProcessedRelationship>();
+        allRelationships.filter(r => RELATIONSHIP_CATEGORY_MAP[r.type] === 'GIA TỘC').forEach(r => {
+            uniquePersonalRelationships.set(`${r.targetNpc.id}-${r.type}`, r);
         });
+        
+        // --- Faction Hierarchy Logic ---
+        let hierarchy: FactionHierarchyLevel[] | null = null;
+        if (npc.factionId) {
+            const faction = FACTIONS.find(f => f.id === npc.factionId);
+            if (faction) {
+                const factionMembers = allNpcs.filter(member => member.factionId === npc.factionId && !playerState.defeatedNpcIds.includes(member.id));
+                const membersByRole = new Map<string, NPC[]>();
+                factionMembers.forEach(member => {
+                    if (!membersByRole.has(member.role)) {
+                        membersByRole.set(member.role, []);
+                    }
+                    membersByRole.get(member.role)!.push(member);
+                });
 
-        return Array.from(uniqueRelationships.values());
-    }, [npc, playerState.generatedNpcs, playerState.time.year]);
+                hierarchy = [...faction.roles]
+                    .sort((a, b) => b.power - a.power)
+                    .map(role => ({
+                        roleName: role.name,
+                        members: membersByRole.get(role.name) || []
+                    }))
+                    .filter(level => level.members.length > 0);
+            }
+        }
 
+        return {
+            personalRelationships: Array.from(uniquePersonalRelationships.values()),
+            factionHierarchy: hierarchy,
+        };
+    }, [npc, playerState]);
 
   return (
     <div
@@ -516,19 +553,43 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
                 </div>
             )}
              {activeTab === 'relationships' && (
-                <div className="space-y-3 pt-2">
-                    {processedRelationships.length > 0 ? (
-                        processedRelationships.map((rel, index) => (
-                            <div key={index} className="bg-gray-800/50 p-3 rounded-md flex items-center justify-center text-center text-lg">
-                                <span className="font-bold text-blue-300">{npc.name}</span>
-                                <span className="text-gray-400 mx-4">--</span>
-                                <span className="font-semibold text-yellow-300">{RELATIONSHIP_DISPLAY_MAP[rel.type](rel.targetNpc.gender)}</span>
-                                <span className="text-gray-400 mx-4">--</span>
-                                <span className="font-bold text-green-300">{rel.targetNpc.name}</span>
+                <div className="space-y-6 pt-2">
+                    {factionHierarchy && factionHierarchy.length > 0 ? (
+                        <div>
+                             <h3 className="text-xl font-semibold text-amber-300 border-b border-amber-500/50 pb-2 mb-3">
+                                Quan Hệ Thế Lực: {FACTIONS.find(f => f.id === npc.factionId)?.name}
+                            </h3>
+                            <div className="flex flex-col items-center gap-0">
+                                {factionHierarchy.map((level) => (
+                                    <div key={level.roleName} className="org-chart-level">
+                                        {level.members.map(member => (
+                                            <OrgChartNode key={member.id} member={member} isCurrent={member.id === npc.id} />
+                                        ))}
+                                    </div>
+                                ))}
                             </div>
-                        ))
+                        </div>
                     ) : (
-                        <p className="text-gray-500 italic text-center pt-8">Người này không có mối quan hệ nào đáng chú ý.</p>
+                        <p className="text-gray-500 italic text-center pt-4">Người này là tán tu, không thuộc thế lực nào.</p>
+                    )}
+
+                    {personalRelationships.length > 0 && (
+                        <div>
+                            <h3 className="text-xl font-semibold text-amber-300 border-b border-amber-500/50 pb-2 mb-3 mt-6">
+                                Quan Hệ Nhân Mạch
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {personalRelationships
+                                    .sort((a,b) => (b.targetNpc.power || 0) - (a.targetNpc.power || 0))
+                                    .map((rel, index) => (
+                                    <PersonalRelationshipCard key={index} relationship={rel} playerState={playerState} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {(!factionHierarchy || factionHierarchy.length === 0) && personalRelationships.length === 0 && (
+                         <p className="text-gray-500 italic text-center pt-8">Người này không có mối quan hệ nào đáng chú ý.</p>
                     )}
                 </div>
             )}

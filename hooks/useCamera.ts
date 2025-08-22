@@ -1,6 +1,3 @@
-
-
-
 import { useState, useLayoutEffect, RefObject } from 'react';
 import type { Position } from '../types/common';
 import type { GameMap, PointOfInterest, MapArea } from '../types/map';
@@ -15,6 +12,7 @@ export const useCamera = (
     const [cameraPosition, setCameraPosition] = useState({ x: 0, y: 0 });
     const [currentZone, setCurrentZone] = useState<string | null>(null);
     const [currentArea, setCurrentArea] = useState<string | null>(null);
+    const [currentMapArea, setCurrentMapArea] = useState<MapArea | null>(null);
     const [dangerLevel, setDangerLevel] = useState<number | null>(null);
 
     useLayoutEffect(() => {
@@ -40,18 +38,26 @@ export const useCamera = (
         );
         setCurrentZone(zone ? zone.name : null);
 
-        const area = currentMapAreas.find(area =>
+        const overlappingAreas = currentMapAreas.filter(area =>
             playerPosition.x >= area.position.x - area.size.width / 2 &&
             playerPosition.x <= area.position.x + area.size.width / 2 &&
             playerPosition.y >= area.position.y - area.size.height / 2 &&
             playerPosition.y <= area.position.y + area.size.height / 2
         );
+
+        // Sắp xếp theo diện tích (nhỏ nhất trước) để ưu tiên các khu vực cụ thể hơn
+        overlappingAreas.sort((a, b) => (a.size.width * a.size.height) - (b.size.width * b.size.height));
+
+        const area = overlappingAreas[0] || null; // Khu vực nhỏ nhất là khu vực cụ thể nhất
+
         setCurrentArea(area ? area.name : null);
+        setCurrentMapArea(area || null);
+
 
         // Prioritize POI danger level over area danger level
         setDangerLevel(zone?.dangerLevel ?? area?.dangerLevel ?? null);
 
     }, [playerPosition, currentMapData.size, currentPois, currentMapAreas, gameContainerRef]);
 
-    return { cameraPosition, currentZone, currentArea, dangerLevel };
+    return { cameraPosition, currentZone, currentArea, currentMapArea, dangerLevel };
 };

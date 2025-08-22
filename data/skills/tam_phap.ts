@@ -1,3 +1,4 @@
+
 import type { Skill } from '../../types/skill';
 import type { CharacterAttributes, CombatStats } from '../../types/stats';
 
@@ -14,11 +15,11 @@ export const ALL_TAM_PHAP: Skill[] = [
         enlightenmentCostPerLevel: 15,
         enlightenmentCostExponent: 1.5,
         bonuses: [
-            { targetStat: 'maxMana', modifier: 'ADDITIVE', value: 20 },
+            { targetStat: 'maxMana', modifier: 'MULTIPLIER', value: 0.02 },
         ],
         levelBonuses: Array.from({ length: 4 }, (_, i) => ({
             level: i + 2,
-            upgrade: { addBonus: { targetStat: 'maxMana', modifier: 'ADDITIVE', value: 20 } }
+            upgrade: { addBonus: { targetStat: 'maxMana', modifier: 'MULTIPLIER', value: 0.02 } }
         }))
     },
     {
@@ -32,11 +33,11 @@ export const ALL_TAM_PHAP: Skill[] = [
         enlightenmentCostPerLevel: 10,
         enlightenmentCostExponent: 1.45,
         bonuses: [
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 15 },
+            { targetStat: 'maxHp', modifier: 'MULTIPLIER', value: 0.01 },
         ],
         levelBonuses: Array.from({ length: 9 }, (_, i) => ({
             level: i + 2,
-            upgrade: { addBonus: { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 15 } }
+            upgrade: { addBonus: { targetStat: 'maxHp', modifier: 'MULTIPLIER', value: 0.01 } }
         }))
     },
     {
@@ -63,6 +64,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Hấp thu mộc linh khí, tăng cường Căn Cốt, giúp thân thể thêm bền bỉ.',
         type: 'TAM_PHAP',
         tier: 'HOANG',
+        requiredLinhCan: ['MOC'],
         maxLevel: 10,
         enlightenmentBaseCost: 45,
         enlightenmentCostPerLevel: 10,
@@ -81,6 +83,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Mô phỏng bước chân trên mây, tăng Thân Pháp, giúp di chuyển nhẹ nhàng hơn.',
         type: 'TAM_PHAP',
         tier: 'HOANG',
+        requiredLinhCan: ['PHONG'],
         maxLevel: 10,
         enlightenmentBaseCost: 45,
         enlightenmentCostPerLevel: 10,
@@ -135,6 +138,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Tập trung toàn bộ sức mạnh vào một đòn, tăng nhẹ tỉ lệ bạo kích.',
         type: 'TAM_PHAP',
         tier: 'HOANG',
+        requiredLinhCan: ['KIM'],
         maxLevel: 5,
         enlightenmentBaseCost: 80,
         enlightenmentCostPerLevel: 20,
@@ -153,6 +157,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Bước chân nhanh nhẹn khó đoán như loài vượn, tăng tốc độ chiến đấu.',
         type: 'TAM_PHAP',
         tier: 'HOANG',
+        requiredLinhCan: ['PHONG'],
         maxLevel: 5,
         enlightenmentBaseCost: 80,
         enlightenmentCostPerLevel: 20,
@@ -171,6 +176,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Vận công khiến cơ thể cứng như đá, tăng Lực Thủ.',
         type: 'TAM_PHAP',
         tier: 'HOANG',
+        requiredLinhCan: ['THO'],
         maxLevel: 10,
         enlightenmentBaseCost: 40,
         enlightenmentCostPerLevel: 10,
@@ -207,6 +213,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Tâm pháp luyện thể cơ bản, giúp tăng cường khả năng phòng ngự và sinh mệnh lực.',
         type: 'TAM_PHAP',
         tier: 'HOANG',
+        requiredLinhCan: ['KIM'],
         maxLevel: 10,
         enlightenmentBaseCost: 50,
         enlightenmentCostPerLevel: 15,
@@ -236,16 +243,17 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Vận chuyển linh khí bảo vệ cơ thể, tạo thành một lớp phòng ngự vững chắc như sắt thép.',
         type: 'TAM_PHAP',
         tier: 'HUYEN',
+        requiredLinhCan: ['KIM', 'THO'],
         maxLevel: 8,
         enlightenmentBaseCost: 180,
         enlightenmentCostPerLevel: 35,
         enlightenmentCostExponent: 1.7,
         bonuses: [
-            { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 5 },
+            { targetStat: 'defensePower', modifier: 'MULTIPLIER', value: 0.015 },
         ],
         levelBonuses: Array.from({ length: 7 }, (_, i) => ({
             level: i + 2,
-            upgrade: { addBonus: { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 5 } }
+            upgrade: { addBonus: { targetStat: 'defensePower', modifier: 'MULTIPLIER', value: 0.015 } }
         }))
     },
     {
@@ -254,6 +262,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Tâm pháp giúp thân thể trở nên nhẹ nhàng, linh hoạt, tăng mạnh Thân Pháp.',
         type: 'TAM_PHAP',
         tier: 'HUYEN',
+        requiredLinhCan: ['PHONG'],
         maxLevel: 8,
         enlightenmentBaseCost: 180,
         enlightenmentCostPerLevel: 35,
@@ -269,16 +278,17 @@ export const ALL_TAM_PHAP: Skill[] = [
     {
         id: 'tam-phap-huyen-3',
         name: 'Huyết Sát Kinh',
-        description: 'Tâm pháp ma đạo, kích thích tiềm năng cơ thể, tăng Sinh Lực và một chút Lực Công.',
+        description: 'Tâm pháp ma đạo, kích thích tiềm năng cơ thể, tăng Sinh Lực và Lực Công.',
         type: 'TAM_PHAP',
         tier: 'HUYEN',
+        requiredLinhCan: ['AM'],
         maxLevel: 8,
         enlightenmentBaseCost: 250,
         enlightenmentCostPerLevel: 50,
         enlightenmentCostExponent: 1.75,
         bonuses: [
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 50 },
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 3 },
+            { targetStat: 'maxHp', modifier: 'MULTIPLIER', value: 0.02 },
+            { targetStat: 'attackPower', modifier: 'MULTIPLIER', value: 0.01 },
         ],
         levelBonuses: Array.from({ length: 7 }, (_, i) => {
             const level = i + 2;
@@ -287,76 +297,11 @@ export const ALL_TAM_PHAP: Skill[] = [
                 level,
                 upgrade: {
                     addBonus: isAttackPowerLevel
-                        ? { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 3 }
-                        : { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 50 }
+                        ? { targetStat: 'attackPower', modifier: 'MULTIPLIER', value: 0.01 }
+                        : { targetStat: 'maxHp', modifier: 'MULTIPLIER', value: 0.02 }
                 }
             };
         })
-    },
-    {
-        id: 'tam-phap-huyen-4',
-        name: 'Cự Linh Công',
-        description: 'Mô phỏng sức mạnh của Cự Linh Thần, tăng mạnh Căn Cốt và Sinh Lực tối đa.',
-        type: 'TAM_PHAP',
-        tier: 'HUYEN',
-        maxLevel: 8,
-        enlightenmentBaseCost: 200,
-        enlightenmentCostPerLevel: 40,
-        enlightenmentCostExponent: 1.72,
-        bonuses: [
-            { targetAttribute: 'canCot', modifier: 'ADDITIVE', value: 3 },
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 30 },
-        ],
-        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
-            level: i + 2,
-            upgrade: { addBonus: { targetAttribute: 'canCot', modifier: 'ADDITIVE', value: 3 } }
-        }))
-    },
-    {
-        id: 'tam-phap-huyen-5',
-        name: 'Vô Ảnh Thân Pháp',
-        description: 'Thân pháp cao thâm, di chuyển không để lại dấu vết, tăng Thân Pháp và Tốc Độ.',
-        type: 'TAM_PHAP',
-        tier: 'HUYEN',
-        maxLevel: 8,
-        enlightenmentBaseCost: 220,
-        enlightenmentCostPerLevel: 45,
-        enlightenmentCostExponent: 1.73,
-        bonuses: [
-            { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 3 },
-            { targetStat: 'speed', modifier: 'ADDITIVE', value: 2 },
-        ],
-        levelBonuses: Array.from({ length: 7 }, (_, i) => {
-            const level = i + 2;
-            const isSpeedLevel = level % 2 === 1; // Levels 3, 5, 7 add Speed
-            return {
-                level,
-                upgrade: {
-                    addBonus: isSpeedLevel
-                        ? { targetStat: 'speed', modifier: 'ADDITIVE', value: 2 }
-                        : { targetAttribute: 'thanPhap', modifier: 'ADDITIVE', value: 3 }
-                }
-            };
-        })
-    },
-    {
-        id: 'tam-phap-huyen-6',
-        name: 'Đại Diễn Thần Quyết',
-        description: 'Tâm pháp giúp mở rộng thần thức, suy diễn thiên cơ, tăng mạnh Thần Thức và Ngộ Tính.',
-        type: 'TAM_PHAP',
-        tier: 'HUYEN',
-        maxLevel: 8,
-        enlightenmentBaseCost: 280,
-        enlightenmentCostPerLevel: 60,
-        enlightenmentCostExponent: 1.78,
-        bonuses: [
-            { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', value: 3 },
-            { targetAttribute: 'ngoTinh', modifier: 'ADDITIVE', value: 3 },
-        ],
-        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
-            level: i + 2,
-            upgrade: { addBonus: { targetAttribute: 'thanThuc', modifier: 'ADDITIVE', value: 3 } }
-        }))
     },
     {
         id: 'tam-phap-huyen-7',
@@ -364,73 +309,57 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Tâm pháp của chiến tướng, mỗi đòn đánh đều mang theo sát khí, tăng Lực Công và sát thương bạo kích.',
         type: 'TAM_PHAP',
         tier: 'HUYEN',
+        requiredLinhCan: ['KIM'],
         maxLevel: 8,
         enlightenmentBaseCost: 300,
         enlightenmentCostPerLevel: 65,
         enlightenmentCostExponent: 1.76,
         bonuses: [
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 8 },
+            { targetStat: 'attackPower', modifier: 'MULTIPLIER', value: 0.01 },
             { targetStat: 'critDamage', modifier: 'ADDITIVE', value: 0.05 }, // +5% crit damage
         ],
         levelBonuses: Array.from({ length: 7 }, (_, i) => ({
             level: i + 2,
-            upgrade: { addBonus: { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 8 } }
+            upgrade: { addBonus: { targetStat: 'attackPower', modifier: 'MULTIPLIER', value: 0.01 } }
         }))
     },
     {
-        id: 'tam-phap-huyen-8',
-        name: 'Bất Động Minh Vương',
-        description: 'Thân thể vững như núi, khó lòng lay chuyển. Tăng mạnh Lực Thủ nhưng làm giảm Tốc Độ.',
+        id: 'tam-phap-huyen-11',
+        name: 'Liệt Hỏa Chân Kinh',
+        description: 'Tâm pháp của Hỏa tu, tăng cường uy lực của tất cả công pháp hệ Hỏa.',
         type: 'TAM_PHAP',
         tier: 'HUYEN',
+        requiredLinhCan: ['HOA'],
         maxLevel: 8,
-        enlightenmentBaseCost: 260,
-        enlightenmentCostPerLevel: 55,
-        enlightenmentCostExponent: 1.74,
+        enlightenmentBaseCost: 300,
+        enlightenmentCostPerLevel: 60,
+        enlightenmentCostExponent: 1.7,
         bonuses: [
-            { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 10 },
-            { targetStat: 'speed', modifier: 'ADDITIVE', value: -1 },
+            { targetStat: 'hoaDamageBonus', modifier: 'ADDITIVE', value: 0.03 },
         ],
         levelBonuses: Array.from({ length: 7 }, (_, i) => ({
             level: i + 2,
-            upgrade: { addBonus: { targetStat: 'defensePower', modifier: 'ADDITIVE', value: 10 } }
+            upgrade: { addBonus: { targetStat: 'hoaDamageBonus', modifier: 'ADDITIVE', value: 0.03 } }
         }))
     },
-    {
-        id: 'tam-phap-huyen-9',
-        name: 'Ma Kha Vô Lượng',
-        description: 'Mở rộng kinh mạch, giúp chứa được lượng lớn linh khí và chân khí.',
+     {
+        id: 'tam-phap-huyen-12',
+        name: 'Huyền Thủy Quyết',
+        description: 'Tâm pháp Thủy tu, tăng hiệu quả của công pháp hệ Thủy và Băng.',
         type: 'TAM_PHAP',
         tier: 'HUYEN',
+        requiredLinhCan: ['THUY'],
         maxLevel: 8,
-        enlightenmentBaseCost: 240,
-        enlightenmentCostPerLevel: 50,
-        enlightenmentCostExponent: 1.77,
+        enlightenmentBaseCost: 300,
+        enlightenmentCostPerLevel: 60,
+        enlightenmentCostExponent: 1.7,
         bonuses: [
-            { targetStat: 'maxMana', modifier: 'ADDITIVE', value: 40 },
+            { targetStat: 'thuyDamageBonus', modifier: 'ADDITIVE', value: 0.03 },
+            { targetStat: 'bangDamageBonus', modifier: 'ADDITIVE', value: 0.03 },
         ],
         levelBonuses: Array.from({ length: 7 }, (_, i) => ({
             level: i + 2,
-            upgrade: { addBonus: { targetStat: 'maxMana', modifier: 'ADDITIVE', value: 40 } }
-        }))
-    },
-    {
-        id: 'tam-phap-huyen-10',
-        name: 'Sát Lục Tâm Kinh',
-        description: 'Ma công lấy việc giết chóc để tu luyện, tăng mạnh Lực Công nhưng làm tổn hại căn cơ (giảm Sinh Lực).',
-        type: 'TAM_PHAP',
-        tier: 'HUYEN',
-        maxLevel: 8,
-        enlightenmentBaseCost: 400,
-        enlightenmentCostPerLevel: 100,
-        enlightenmentCostExponent: 1.8,
-        bonuses: [
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 15 },
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', value: -20 },
-        ],
-        levelBonuses: Array.from({ length: 7 }, (_, i) => ({
-            level: i + 2,
-            upgrade: { addBonus: { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 15 } }
+            upgrade: { addBonus: { targetStat: 'thuyDamageBonus', modifier: 'ADDITIVE', value: 0.03 } }
         }))
     },
     
@@ -441,6 +370,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Tâm pháp của kiếm tu, tăng cường sức mạnh của các đòn tấn công.',
         type: 'TAM_PHAP',
         tier: 'DIA',
+        requiredLinhCan: ['KIM'],
         maxLevel: 6,
         enlightenmentBaseCost: 1000,
         enlightenmentCostPerLevel: 200,
@@ -482,82 +412,25 @@ export const ALL_TAM_PHAP: Skill[] = [
         })
     },
     {
-        id: 'tam-phap-dia-3',
-        name: 'Phá Thiên Kiếm Ý',
-        description: 'Ngưng tụ kiếm ý sắc bén, giúp các đòn tấn công trở nên cực kỳ nguy hiểm, tăng mạnh tỉ lệ bạo kích.',
-        type: 'TAM_PHAP',
-        tier: 'DIA',
-        maxLevel: 6,
-        enlightenmentBaseCost: 1200,
-        enlightenmentCostPerLevel: 250,
-        enlightenmentCostExponent: 1.92,
-        bonuses: [
-            { targetStat: 'critRate', modifier: 'ADDITIVE', value: 0.01 }, // +1% crit rate
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 200 },
-        ],
-        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
-            level: i + 2,
-            upgrade: { addBonus: { targetStat: 'critRate', modifier: 'ADDITIVE', value: 0.01 } } 
-        }))
-    },
-    {
         id: 'tam-phap-dia-4',
         name: 'Hải Vương Kinh',
         description: 'Tâm pháp thượng cổ, giúp người tu luyện có được trữ lượng linh lực dồi dào như biển cả, vô cùng vô tận.',
         type: 'TAM_PHAP',
         tier: 'DIA',
+        requiredLinhCan: ['THUY'],
         maxLevel: 6,
         enlightenmentBaseCost: 2000,
         enlightenmentCostPerLevel: 400,
         enlightenmentCostExponent: 1.95,
         bonuses: [
-            { targetStat: 'maxMana', modifier: 'MULTIPLIER', value: 0.2 }, // +20% per level
+            { targetStat: 'maxMana', modifier: 'MULTIPLIER', value: 0.1 }, 
         ],
         levelBonuses: Array.from({ length: 5 }, (_, i) => ({
             level: i + 2,
-            upgrade: { addBonus: { targetStat: 'maxMana', modifier: 'MULTIPLIER', value: 0.2 } }
+            upgrade: { addBonus: { targetStat: 'maxMana', modifier: 'MULTIPLIER', value: 0.1 } }
         }))
     },
-    {
-        id: 'tam-phap-dia-5',
-        name: 'Long Tượng Thần Công',
-        description: 'Luyện thể công pháp mô phỏng sức mạnh của Long và Tượng, tu luyện đến đại thành sẽ có sức mạnh dời non lấp bể, thân thể vô cùng cứng rắn.',
-        type: 'TAM_PHAP',
-        tier: 'DIA',
-        maxLevel: 6,
-        enlightenmentBaseCost: 1800,
-        enlightenmentCostPerLevel: 350,
-        enlightenmentCostExponent: 1.94,
-        bonuses: [
-            { targetAttribute: 'canCot', modifier: 'ADDITIVE', value: 8 },
-            { targetStat: 'maxHp', modifier: 'ADDITIVE', value: 250 },
-        ],
-        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
-            level: i + 2,
-            upgrade: { addBonus: { targetAttribute: 'canCot', modifier: 'ADDITIVE', value: 8 } }
-        }))
-    },
-    {
-        id: 'tam-phap-dia-6',
-        name: 'Thất Sát Ma Công',
-        description: 'Ma công bá đạo, lấy việc kích phát sát khí để tăng sức mạnh hủy diệt, nhưng sẽ làm cho phòng ngự của bản thân trở nên yếu đi.',
-        type: 'TAM_PHAP',
-        tier: 'DIA',
-        maxLevel: 6,
-        enlightenmentBaseCost: 2200,
-        enlightenmentCostPerLevel: 450,
-        enlightenmentCostExponent: 2.05,
-        bonuses: [
-            { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 300 },
-            { targetStat: 'critDamage', modifier: 'ADDITIVE', value: 0.1 },
-            { targetStat: 'defensePower', modifier: 'MULTIPLIER', value: -0.05 },
-        ],
-        levelBonuses: Array.from({ length: 5 }, (_, i) => ({
-            level: i + 2,
-            upgrade: { addBonus: { targetStat: 'attackPower', modifier: 'ADDITIVE', value: 300 } }
-        }))
-    },
-
+    
     // -- THIÊN GIAI --
     {
         id: 'tam-phap-thien-1',
@@ -565,6 +438,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Tâm pháp luyện thể tối thượng, thân thể trở nên bất hoại, tăng mạnh Sinh Lực và Lực Thủ.',
         type: 'TAM_PHAP',
         tier: 'THIEN',
+        requiredLinhCan: ['KIM', 'THO'],
         maxLevel: 4,
         enlightenmentBaseCost: 5000,
         enlightenmentCostPerLevel: 1000,
@@ -584,6 +458,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Tâm pháp thượng cổ, tương truyền do Thánh Nhân sáng tạo, tăng toàn bộ thuộc tính và trữ lượng Linh Lực.',
         type: 'TAM_PHAP',
         tier: 'THIEN',
+        requiredLinhCan: ['QUANG'],
         maxLevel: 4,
         enlightenmentBaseCost: 8000,
         enlightenmentCostPerLevel: 2000,
@@ -613,6 +488,7 @@ export const ALL_TAM_PHAP: Skill[] = [
         description: 'Pháp môn chiến đấu chí cao, càng chiến càng mạnh, giúp người tu luyện có được ý chí và sức mạnh chiến đấu vô song.',
         type: 'TAM_PHAP',
         tier: 'THIEN',
+        requiredLinhCan: ['KIM', 'LOI'],
         maxLevel: 4,
         enlightenmentBaseCost: 6000,
         enlightenmentCostPerLevel: 1500,
@@ -626,23 +502,4 @@ export const ALL_TAM_PHAP: Skill[] = [
             upgrade: { addBonus: { targetStat: 'attackPower', modifier: 'MULTIPLIER', value: 0.25 } }
         }))
     },
-    {
-        id: 'tam-phap-thien-4',
-        name: 'Cửu Thiên Thần Hành Bộ',
-        description: 'Thân pháp thần diệu, bước một bước là vượt Cửu Thiên, khiến đối thủ không thể nắm bắt được thân hình.',
-        type: 'TAM_PHAP',
-        tier: 'THIEN',
-        maxLevel: 4,
-        enlightenmentBaseCost: 5500,
-        enlightenmentCostPerLevel: 1300,
-        enlightenmentCostExponent: 2.35,
-        bonuses: [
-            { targetAttribute: 'thanPhap', modifier: 'MULTIPLIER', value: 0.2 },
-            { targetStat: 'speed', modifier: 'MULTIPLIER', value: 0.05 },
-        ],
-        levelBonuses: Array.from({ length: 3 }, (_, i) => ({
-            level: i + 2,
-            upgrade: { addBonus: { targetAttribute: 'thanPhap', modifier: 'MULTIPLIER', value: 0.2 } }
-        }))
-    }
 ];

@@ -1,16 +1,18 @@
+
 import type { CombatStats } from '../types/stats';
 import type { Skill, LearnedSkill } from '../types/skill';
 import type { PlayerState, NPC } from '../types/character';
 import type { NpcAction, CombatState } from '../types/combat';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { ALL_ITEMS } from '../data/items/index';
-import { calculateSkillAttributesForLevel } from './cultivationService';
+import { calculateSkillAttributesForLevel, calculateSkillEffectiveness } from './cultivationService';
 
 export interface DamageResult {
     damage: number;
     isCritical: boolean;
     isEvaded: boolean;
-    incompatibilityPenalty?: boolean;
+    weaponIncompatibilityPenalty?: boolean;
+    linhCanEffectiveness?: number;
 }
 
 export const calculateDamage = (attacker: { stats: CombatStats }, defender: { stats: CombatStats }): DamageResult => {
@@ -53,17 +55,20 @@ export const calculateSkillDamage = (
     if (Math.random() < dodgeChance) {
         return { damage: 0, isCritical: false, isEvaded: true };
     }
+    
+    // NEW: Calculate Linh Can Effectiveness
+    const effectiveness = calculateSkillEffectiveness(caster.state.linhCan, caster.state.attributes, skill);
 
-    // New logic: Check for weapon incompatibility
-    let damageMultiplier = 1.0;
-    let incompatibilityPenalty = false;
+    // Check for weapon incompatibility
+    let weaponDamageMultiplier = 1.0;
+    let weaponIncompatibilityPenalty = false;
     if (skill.weaponType) {
         const equippedWeaponSlot = caster.state.equipment?.WEAPON;
         const equippedWeaponDef = equippedWeaponSlot ? ALL_ITEMS.find(i => i.id === equippedWeaponSlot.itemId) : null;
 
         if (!equippedWeaponDef || equippedWeaponDef.weaponType !== skill.weaponType) {
-            damageMultiplier = 0.5;
-            incompatibilityPenalty = true;
+            weaponDamageMultiplier = 0.5;
+            weaponIncompatibilityPenalty = true;
         }
     }
 
@@ -95,10 +100,29 @@ export const calculateSkillDamage = (
     const damageReduction = effectiveDefense / (effectiveDefense + caster.state.stats.attackPower);
     const finalDamage = Math.max(1, Math.round(criticalDamage * (1 - damageReduction)));
 
-    // 8. Apply weapon incompatibility penalty
-    const finalDamageWithPenalty = Math.round(finalDamage * damageMultiplier);
+    // 8. Apply elemental bonuses from Tam Phap
+    let elementalBonus = 1.0;
+    if (skill.requiredLinhCan) {
+        for (const lcType of skill.requiredLinhCan) {
+            switch (lcType) {
+                case 'HOA': elementalBonus += (caster.state.stats.hoaDamageBonus || 0); break;
+                case 'MOC': elementalBonus += (caster.state.stats.mocDamageBonus || 0); break;
+                case 'THUY': elementalBonus += (caster.state.stats.thuyDamageBonus || 0); break;
+                case 'KIM': elementalBonus += (caster.state.stats.kimDamageBonus || 0); break;
+                case 'THO': elementalBonus += (caster.state.stats.thoDamageBonus || 0); break;
+                case 'PHONG': elementalBonus += (caster.state.stats.phongDamageBonus || 0); break;
+                case 'LOI': elementalBonus += (caster.state.stats.loiDamageBonus || 0); break;
+                case 'BĂNG': elementalBonus += (caster.state.stats.bangDamageBonus || 0); break;
+                case 'QUANG': elementalBonus += (caster.state.stats.quangDamageBonus || 0); break;
+                case 'AM': elementalBonus += (caster.state.stats.amDamageBonus || 0); break;
+            }
+        }
+    }
 
-    return { damage: finalDamageWithPenalty, isCritical, isEvaded: false, incompatibilityPenalty };
+    // 9. Apply all penalties and bonuses
+    const finalDamageWithPenalties = Math.round(finalDamage * elementalBonus * weaponDamageMultiplier * effectiveness);
+
+    return { damage: finalDamageWithPenalties, isCritical, isEvaded: false, weaponIncompatibilityPenalty, linhCanEffectiveness: effectiveness < 1 ? effectiveness : undefined };
 };
 
 export const getNpcDeterministicAction = (combatState: CombatState, allSkills: Skill[]): NpcAction => {

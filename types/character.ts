@@ -40,7 +40,15 @@ export interface PathStep {
     targetPosition: Position;
 }
 
-export type RelationshipType = 'father' | 'mother' | 'son' | 'daughter' | 'older_brother' | 'younger_brother' | 'older_sister' | 'younger_sister' | 'sibling' | 'master' | 'disciple' | 'husband' | 'wife';
+export type RelationshipType = 
+    // Family
+    'father' | 'mother' | 'son' | 'daughter' | 
+    'older_brother' | 'younger_brother' | 'older_sister' | 'younger_sister' | 'sibling' | 
+    'husband' | 'wife' |
+    // Master/Disciple
+    'master' | 'disciple' |
+    // Organizational
+    'superior' | 'subordinate' | 'peer_same_role' | 'peer_different_role';
 
 export interface NpcRelationship {
     targetNpcId: string; // The ID of the NPC this relationship points to
@@ -66,7 +74,6 @@ export interface NPC {
   homeMapId: MapID;
   homePoiId?: string; // ID of the Point of Interest that is the NPC's home.
   cannotActUntil?: GameTime; // NPC cannot get a new intent until this time has passed.
-  prompt: string;
   birthTime: GameTime;
   relationships?: NpcRelationship[]; // Mối quan hệ của NPC
 
@@ -165,12 +172,6 @@ export interface PlayerState {
   harvestedInteractableIds: string[]; // IDs of gathered/destroyed interactables
   deathInfo?: Record<string, { age: number }>; // Stores age of NPCs at time of death
   plantedPlots: { plotId: string; mapId: MapID; seedId: string; plantedAt: GameTime; }[];
-  respawningNpcs?: {
-      originalId: string;
-      baseId: string;
-      mapId: MapID;
-      respawnAt: GameTime;
-  }[];
   respawningInteractables: {
       originalId: string;
       baseId: string;
@@ -181,6 +182,7 @@ export interface PlayerState {
   }[];
   chatHistories?: Record<string, ChatMessage[]>;
   nextMonsterSpawnCheck?: Record<string, GameTime>; // Key: mapId-areaId for monster population, Value: next check time
+  nextNpcSpawnCheck?: Record<string, GameTime>; // Key: mapId-ruleId for procedural NPC population
   nextInteractableSpawnCheck?: Record<string, GameTime>; // Key: mapId-areaId for interactable population
   lastNpcProgressionCheck?: GameTime; // The last time NPC cultivation was processed
   journal: JournalEntry[];
@@ -190,7 +192,9 @@ export interface PlayerState {
   time: GameTime;
 
   // Feature flags
-  useRandomNames: boolean;
-  nameOverrides?: Record<string, string>;
+  nameUsageCounts?: {
+    male: Record<string, number>;
+    female: Record<string, number>;
+  };
   apiUsageStats?: ApiUsageStats;
 }

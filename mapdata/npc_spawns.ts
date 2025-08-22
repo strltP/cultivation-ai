@@ -7,11 +7,12 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             type: 'procedural',
             roles: [
                 {
-                    factionId: 'THAT_HUYEN_THANH',
+                    factionId: 'UNAFFILIATED',
                     roleDistribution: [{ roleName: 'Tán tu', count: 10 }],
+                    ageDistribution: { young: 0.4, middle: 0.3, old: 0.3 },
                     poiIds: [], // Sinh ra ngẫu nhiên ở bất kỳ đâu
                 }
-            ]
+            ],
         }
     ],
     HAC_AM_SAM_LAM: [
@@ -48,7 +49,6 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                     factionId: 'THAT_HUYEN_THANH',
                     ageDistribution: { young: 0.3, middle: 0.5, old: 0.2 },
                     roleDistribution: [
-                        { roleName: 'Tán tu', count: 10 },
                         { roleName: 'Vệ binh', count: 5 },
                         { roleName: 'Thường dân', count: 5 }
                     ],
@@ -60,7 +60,18 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                     roleDistribution: [{ roleName: 'Chủ tiệm lớn', count: 2 }],
                     poiIds: ['tht-poi-1', 'tht-poi-2'],
                 }
-            ]
+            ],
+        },
+        {
+            type: 'procedural',
+            roles: [
+                {
+                    factionId: 'UNAFFILIATED',
+                    ageDistribution: { young: 0.4, middle: 0.4, old: 0.2 },
+                    roleDistribution: [{ roleName: 'Tán tu', count: 10 }],
+                    poiIds: [],
+                }
+            ],
         }
     ],
     MO_LINH_THANH: [
@@ -70,14 +81,23 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 {
                     factionId: 'THAT_HUYEN_THANH',
                     roleDistribution: [
-                        { roleName: 'Tán tu', count: 4 },
                         { roleName: 'Vệ binh', count: 3 },
                         { roleName: 'Thường dân', count: 3 },
                         { roleName: 'Tiểu nhị', count: 2 }
                     ],
                     poiIds: ['mlt-poi-1', 'mlt-poi-2', 'mlt-poi-3', 'mlt-poi-4'],
                 }
-            ]
+            ],
+        },
+        {
+            type: 'procedural',
+            roles: [
+                {
+                    factionId: 'UNAFFILIATED',
+                    roleDistribution: [{ roleName: 'Tán tu', count: 4 }],
+                    poiIds: [], 
+                }
+            ],
         }
     ],
     THIEN_MA_TUU_LAU: [
@@ -87,12 +107,21 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 {
                     factionId: 'THAT_HUYEN_THANH',
                     roleDistribution: [
-                        { roleName: 'Tán tu', count: 2 },
                         { roleName: 'Thường dân', count: 2 }
                     ],
                     poiIds: [], 
                 }
-            ]
+            ],
+        },
+        {
+            type: 'procedural',
+            roles: [
+                {
+                    factionId: 'UNAFFILIATED',
+                    roleDistribution: [{ roleName: 'Tán tu', count: 2 }],
+                    poiIds: [],
+                }
+            ],
         }
     ],
     VAN_BAO_LAU: [
@@ -153,7 +182,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                     roleDistribution: [{ roleName: 'Ẩn thế tu sĩ', count: 1 }],
                     poiIds: []
                 }
-            ]
+            ],
         }
     ],
     BAC_VUC: [],
@@ -162,15 +191,24 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             type: 'procedural',
             roles: [
                 {
-                    factionId: 'THAT_HUYEN_THANH', // Using a generic city dweller faction for now
+                    factionId: 'THAT_HUYEN_THANH', 
                     roleDistribution: [
-                        { roleName: 'Tán tu', count: 4 },
                         { roleName: 'Vệ binh', count: 3 },
                         { roleName: 'Thường dân', count: 3 }
                     ],
                     poiIds: ['hth-poi-1', 'hth-poi-2', 'hth-poi-3', 'hth-poi-4', 'hth-poi-5'],
                 }
-            ]
+            ],
+        },
+        {
+            type: 'procedural',
+            roles: [
+                {
+                    factionId: 'UNAFFILIATED',
+                    roleDistribution: [{ roleName: 'Tán tu', count: 4 }],
+                    poiIds: [],
+                }
+            ],
         }
     ],
     THANH_VAN_MON: [
