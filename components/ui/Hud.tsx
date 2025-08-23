@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { PlayerState } from '../../types/character';
 import type { GameMap } from '../../types/map';
 import { getCultivationInfo } from '../../services/cultivationService';
-import { FaMapMarkedAlt, FaCompass, FaYinYang, FaEye, FaEyeSlash, FaBookOpen, FaGem, FaIdCard, FaHourglassHalf, FaRadiationAlt } from 'react-icons/fa';
+import { FaMapMarkedAlt, FaCompass, FaYinYang, FaEye, FaEyeSlash, FaBookOpen, FaGem, FaIdCard, FaHourglassHalf, FaRadiationAlt, FaTrophy } from 'react-icons/fa';
 import { GiGalaxy, GiBrain, GiScrollQuill, GiCaveEntrance } from 'react-icons/gi';
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
@@ -23,10 +23,11 @@ interface HudProps {
   onToggleJournalPanel: () => void;
   onToggleWorldInfoPanel: () => void;
   onToggleSeclusionPanel: () => void;
+  onToggleLeaderboardPanel: () => void;
   isMeditating: boolean;
 }
 
-const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoading, currentArea, currentZone, onBreakthrough, onToggleMap, onToggleMeditation, onToggleInfoPanel, onToggleJournalPanel, onToggleWorldInfoPanel, onToggleSeclusionPanel, isMeditating }) => {
+const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoading, currentArea, currentZone, onBreakthrough, onToggleMap, onToggleMeditation, onToggleInfoPanel, onToggleJournalPanel, onToggleWorldInfoPanel, onToggleSeclusionPanel, onToggleLeaderboardPanel, isMeditating }) => {
   const [visibleMessage, setVisibleMessage] = useState<string | null>(null);
   const [isPlayerInfoVisible, setIsPlayerInfoVisible] = useState(true);
 
@@ -198,6 +199,14 @@ const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoadi
             title="Mở Nhật Ký Tu Luyện"
         >
             <GiScrollQuill size={30} />
+        </button>
+         <button
+            onClick={onToggleLeaderboardPanel}
+            className="hud-action-button"
+            aria-label="Bảng Xếp Hạng"
+            title="Mở Bảng Xếp Hạng"
+        >
+            <FaTrophy size={28} />
         </button>
         <button
             onClick={onToggleWorldInfoPanel}

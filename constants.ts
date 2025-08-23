@@ -148,6 +148,9 @@ export const INITIAL_PLAYER_STATE: Omit<PlayerState, 'saveVersion'> = {
   plantedPlots: [],
   respawningInteractables: [],
   initializedMaps: [],
+  leaderboards: {},
+  lastLeaderboardUpdateYear: 0,
+  lastYoungStarsLeaderboardUpdateYear: 0,
 };
 
 export const INTERACTION_RADIUS = 60; // pixels

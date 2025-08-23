@@ -20,6 +20,7 @@ import { getNextCultivationLevel, getRealmLevelInfo, calculateAllStats, getCulti
 import { ALL_SKILLS } from '../data/skills/skills';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
 import { FACTIONS } from '../data/factions';
+import { updatePowerLeaderboard, updateYoungStarsLeaderboard } from '../services/leaderboardService';
 
 
 // --- TYPE DEFINITIONS FOR CONTEXTS ---
@@ -45,6 +46,8 @@ interface IUIContext {
     setIsAlchemyPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
     isSeclusionPanelOpen: boolean;
     setIsSeclusionPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    isLeaderboardPanelOpen: boolean;
+    setIsLeaderboardPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
     tradingNpc: NPC | null;
     setTradingNpc: React.Dispatch<React.SetStateAction<NPC | null>>;
     plantingPlot: Interactable | null;
@@ -204,6 +207,42 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
     useEffect(() => {
         if (!isGameReady || !playerState || !playerState.time) return;
 
+        // --- Leaderboard Update Logic ---
+        let stateNeedsUpdate = false;
+        let newState = { ...playerState };
+        let newJournalEntries: JournalEntry[] = [];
+
+        const lastPowerUpdateYear = playerState.lastLeaderboardUpdateYear || 0;
+        if (playerState.time.year >= lastPowerUpdateYear + 10) {
+            newState = updatePowerLeaderboard(newState);
+            newJournalEntries.push({
+                time: playerState.time,
+                message: `Thiên cơ biến đổi, Bảng Chiến Thần đã được làm mới!`,
+                type: 'world'
+            });
+            stateNeedsUpdate = true;
+        }
+        
+        const lastYoungStarsUpdateYear = playerState.lastYoungStarsLeaderboardUpdateYear || 0;
+        if (playerState.time.year >= lastYoungStarsUpdateYear + 3) {
+            newState = updateYoungStarsLeaderboard(newState);
+             newJournalEntries.push({
+                time: playerState.time,
+                message: `Thiên địa dị tượng, "Thiên Nam Thập Nhị Tinh Tú" đã xuất thế!`,
+                type: 'world'
+            });
+            stateNeedsUpdate = true;
+        }
+        
+        if (stateNeedsUpdate) {
+             updateAndPersistPlayerState((p: PlayerState) => ({
+                ...newState,
+                journal: [...(p.journal || []), ...newJournalEntries]
+            }));
+        }
+
+
+        // --- NPC Progression & World Events ---
         const lastCheck = playerState.lastNpcProgressionCheck || playerState.time;
         const monthsPassed = (playerState.time.year - lastCheck.year) * 12 + (playerState.time.month - lastCheck.month);
         
@@ -315,6 +354,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
     const [teleportingWithItemIndex, setTeleportingWithItemIndex] = useState<number | null>(null);
     const [isAlchemyPanelOpen, setIsAlchemyPanelOpen] = useState<boolean>(false);
     const [isSeclusionPanelOpen, setIsSeclusionPanelOpen] = useState<boolean>(false);
+    const [isLeaderboardPanelOpen, setIsLeaderboardPanelOpen] = useState<boolean>(false);
     const [tradingNpc, setTradingNpc] = useState<NPC | null>(null);
     const [plantingPlot, setPlantingPlot] = useState<Interactable | null>(null);
     const [isSimulating, setIsSimulating] = useState<boolean>(false);
@@ -410,6 +450,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         setPlantingPlot(null);
         setIsAlchemyPanelOpen(false);
         setIsSeclusionPanelOpen(false);
+        setIsLeaderboardPanelOpen(false);
         interactionManager.handleCloseChat();
     }, [playerActions, interactionManager]);
 
@@ -618,12 +659,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         teleportingWithItemIndex, setTeleportingWithItemIndex,
         isAlchemyPanelOpen, setIsAlchemyPanelOpen,
         isSeclusionPanelOpen, setIsSeclusionPanelOpen,
+        isLeaderboardPanelOpen, setIsLeaderboardPanelOpen,
         tradingNpc, setTradingNpc,
         plantingPlot, setPlantingPlot,
         isSimulating, setIsSimulating,
         simulationProgress, setSimulationProgress,
         seclusionReport, setSeclusionReport,
-    }), [playerState, updateAndPersistPlayerState, isGameReady, allMaps, isMapOpen, isInfoPanelOpen, isJournalOpen, isWorldInfoPanelOpen, isTeleportUIOpen, teleportingWithItemIndex, isAlchemyPanelOpen, isSeclusionPanelOpen, tradingNpc, plantingPlot, isSimulating, simulationProgress, seclusionReport]);
+    }), [playerState, updateAndPersistPlayerState, isGameReady, allMaps, isMapOpen, isInfoPanelOpen, isJournalOpen, isWorldInfoPanelOpen, isTeleportUIOpen, teleportingWithItemIndex, isAlchemyPanelOpen, isSeclusionPanelOpen, isLeaderboardPanelOpen, tradingNpc, plantingPlot, isSimulating, simulationProgress, seclusionReport]);
 
     const worldContextValue: IWorldContext = useMemo(() => ({
         gameMessage: gameMessageObject,

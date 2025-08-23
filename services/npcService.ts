@@ -29,6 +29,9 @@ type Mutable<T> = {
 
 const MAX_NAME_USAGE = 3;
 
+// Phân bổ tuổi mặc định cho các NPC được tạo ngẫu nhiên.
+const DEFAULT_AGE_DISTRIBUTION = { young: 0.6, middle: 0.3, old: 0.1 };
+
 const getEstimatedLifespan = (realmIndex: number, level: number): number => {
     let totalLifespan = 80; // Mortal base from INITIAL_PLAYER_STATE
     
@@ -400,7 +403,7 @@ export function createNpcFromData(
         ];
 
         // 1. Calculate Minimum Age (Genius Path)
-        let minAge = 16; // Start cultivating at 16
+        let minAge = 7; // Start cultivating at 7
         for (let i = 0; i < cultivation.realmIndex; i++) {
             const range = REALM_TIME_RANGES[i] || [10, 20];
             minAge += range[0]; // Add the minimum time for each completed realm
@@ -752,23 +755,21 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
                 const count = distribution.count;
                 if (count <= 0) continue;
 
+                // --- NEW AGE DISTRIBUTION LOGIC ---
                 const ageCategories: (AgeCategory | undefined)[] = [];
-                const { ageDistribution } = roleDef;
-                if (ageDistribution) {
-                    const numYoung = Math.floor(count * ageDistribution.young);
-                    const numMiddle = Math.floor(count * ageDistribution.middle);
-                    const numOld = Math.floor(count * ageDistribution.old);
+                const ageDistribution = roleDef.ageDistribution || DEFAULT_AGE_DISTRIBUTION;
+                
+                const numYoung = Math.floor(count * ageDistribution.young);
+                const numMiddle = Math.floor(count * ageDistribution.middle);
+                const numOld = Math.floor(count * ageDistribution.old);
 
-                    for (let i = 0; i < numYoung; i++) ageCategories.push('Young');
-                    for (let i = 0; i < numMiddle; i++) ageCategories.push('Middle');
-                    for (let i = 0; i < numOld; i++) ageCategories.push('Old');
-                    
-                    while (ageCategories.length < count) ageCategories.push('Middle');
+                for (let i = 0; i < numYoung; i++) ageCategories.push('Young');
+                for (let i = 0; i < numMiddle; i++) ageCategories.push('Middle');
+                for (let i = 0; i < numOld; i++) ageCategories.push('Old');
+                
+                while (ageCategories.length < count) ageCategories.push('Middle'); // Fill remaining with middle-aged
 
-                    ageCategories.sort(() => 0.5 - Math.random());
-                } else {
-                    for (let i = 0; i < count; i++) ageCategories.push(undefined);
-                }
+                ageCategories.sort(() => 0.5 - Math.random());
                 
                 const maxRealmIndex = Math.max(...role.realmDistribution.map(d => d.realmIndex));
                 const maxTitleChance = role.titleChance.base + (maxRealmIndex * role.titleChance.perRealm);

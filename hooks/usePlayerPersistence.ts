@@ -15,7 +15,7 @@ import type { MapID } from '../types/map';
 
 
 const PLAYER_STATE_STORAGE_KEY = 'tu_tien_player_state_v3';
-const CURRENT_SAVE_VERSION = '2.1';
+const CURRENT_SAVE_VERSION = '2.2';
 
 export const INITIAL_PLAYER_STATE: PlayerState = {
     ...BASE_INITIAL_PLAYER_STATE,
@@ -39,6 +39,9 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
     },
     affinity: {},
     nameUsageCounts: { male: {}, female: {} },
+    leaderboards: {},
+    lastLeaderboardUpdateYear: 0,
+    lastYoungStarsLeaderboardUpdateYear: 0,
 };
 export { DAYS_PER_MONTH };
 
@@ -187,6 +190,9 @@ const processLoadedState = (parsed: any): PlayerState | null => {
             };
         }
         if (!parsed.nameUsageCounts) parsed.nameUsageCounts = { male: {}, female: {} };
+        if (!parsed.leaderboards) parsed.leaderboards = {};
+        if (parsed.lastLeaderboardUpdateYear === undefined) parsed.lastLeaderboardUpdateYear = 0;
+        if (parsed.lastYoungStarsLeaderboardUpdateYear === undefined) parsed.lastYoungStarsLeaderboardUpdateYear = 0;
 
         
         // Add checks for numeric stats that might be missing in old saves.

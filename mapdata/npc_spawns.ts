@@ -1,6 +1,10 @@
 import type { MapID } from '../types/map';
 import type { NpcSpawnDefinition } from '../data/npcs/npc_types';
 
+// LƯU Ý: Giờ đây hệ thống có một phân bổ tuổi mặc định (DEFAULT_AGE_DISTRIBUTION) trong file npcService.ts.
+// Bất kỳ vai trò nào không có định nghĩa `ageDistribution` riêng sẽ tự động sử dụng giá trị mặc định đó.
+// Chỉ cần định nghĩa `ageDistribution` ở đây nếu bạn muốn một vai trò cụ thể có tỷ lệ tuổi khác biệt (ví dụ: một tông môn toàn trưởng lão).
+
 export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> = {
     THIEN_NAM: [
         {
@@ -9,7 +13,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 {
                     factionId: 'UNAFFILIATED',
                     roleDistribution: [{ roleName: 'Tán tu', count: 10 }],
-                    ageDistribution: { young: 0.4, middle: 0.3, old: 0.3 },
+                    // ageDistribution đã được xóa, sẽ sử dụng mặc định toàn cục
                     poiIds: [], // Sinh ra ngẫu nhiên ở bất kỳ đâu
                 }
             ],
@@ -22,7 +26,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             roles: [
                 {
                     factionId: 'THAT_HUYEN_THANH',
-                    ageDistribution: { young: 0.3, middle: 0.5, old: 0.2 },
+                    ageDistribution: { young: 0.3, middle: 0.5, old: 0.2 }, // Giữ lại để tạo cảm giác thành thị sầm uất
                     roleDistribution: [
                         { roleName: 'Vệ binh', count: 5 },
                         { roleName: 'Thường dân', count: 5 }
@@ -31,7 +35,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 },
                  {
                     factionId: 'THAT_HUYEN_THANH',
-                    ageDistribution: { young: 0.1, middle: 0.5, old: 0.4 },
+                    ageDistribution: { young: 0.1, middle: 0.5, old: 0.4 }, // Chủ tiệm thường lớn tuổi hơn
                     roleDistribution: [{ roleName: 'Chủ tiệm lớn', count: 2 }],
                     poiIds: ['tht-poi-1', 'tht-poi-2'],
                 }
@@ -42,7 +46,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             roles: [
                 {
                     factionId: 'UNAFFILIATED',
-                    ageDistribution: { young: 0.4, middle: 0.4, old: 0.2 },
+                    // ageDistribution đã được xóa, sẽ sử dụng mặc định toàn cục
                     roleDistribution: [{ roleName: 'Tán tu', count: 5 }],
                     poiIds: [],
                 }
@@ -137,13 +141,13 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             roles: [
                 {
                     factionId: 'LUC_YEN_THON',
-                    ageDistribution: { young: 0.1, middle: 0.4, old: 0.5 },
+                    ageDistribution: { young: 0.1, middle: 0.4, old: 0.5 }, // Lão bản thường già
                     roleDistribution: [{ roleName: 'Lão bản', count: 1 }],
                     poiIds: ['lyt-poi-2']
                 },
                 {
                     factionId: 'LUC_YEN_THON',
-                    ageDistribution: { young: 0.4, middle: 0.5, old: 0.1 },
+                    ageDistribution: { young: 0.4, middle: 0.5, old: 0.1 }, // Dân làng trẻ và trung niên nhiều
                     roleDistribution: [
                         { roleName: 'Thợ săn', count: 2 },
                         { roleName: 'Nông dân', count: 3 },
@@ -153,7 +157,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 },
                 {
                     factionId: 'LUC_YEN_THON',
-                    ageDistribution: { young: 0.0, middle: 0.2, old: 0.8 },
+                    ageDistribution: { young: 0.0, middle: 0.2, old: 0.8 }, // Ẩn thế tu sĩ phải già
                     roleDistribution: [{ roleName: 'Ẩn thế tu sĩ', count: 1 }],
                     poiIds: []
                 }
@@ -247,7 +251,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 {
                     factionId: 'UNAFFILIATED',
                     roleDistribution: [{ roleName: 'Tán tu', count: 15 }],
-                    ageDistribution: { young: 0.3, middle: 0.4, old: 0.3 },
+                    // ageDistribution đã được xóa, sẽ sử dụng mặc định toàn cục
                     poiIds: ['bv-poi-tlt', 'bv-poi-dnt', 'bv-poi-tlth', 'bv-poi-dlth'],
                 }
             ],

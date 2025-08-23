@@ -137,6 +137,16 @@ export interface ApiUsageStats {
 
 export type AffinityLevel = 'Thù Địch' | 'Ghét Bỏ' | 'Xa Lạ' | 'Thân Thiện' | 'Tin Tưởng' | 'Tri Kỷ';
 
+export interface LeaderboardEntry {
+    npcId: string;
+    name: string;
+    title: string | undefined;
+    factionName: string;
+    cultivationName: string;
+    score: number;
+    age: number;
+}
+
 export interface PlayerState {
   saveVersion: string;
   name: string;
@@ -187,6 +197,12 @@ export interface PlayerState {
   lastNpcProgressionCheck?: GameTime; // The last time NPC cultivation was processed
   journal: JournalEntry[];
   affinity: { [npcId: string]: number };
+  leaderboards: {
+      CHIEN_THAN_BANG?: LeaderboardEntry[];
+      THIEN_NAM_TINH_TU?: LeaderboardEntry[];
+  };
+  lastLeaderboardUpdateYear: number;
+  lastYoungStarsLeaderboardUpdateYear: number;
   
   // Game Time
   time: GameTime;
