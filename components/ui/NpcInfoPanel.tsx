@@ -104,6 +104,7 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
   const age = playerState.time.year - npc.birthTime.year;
   const agePercentage = (age / npc.stats.maxThoNguyen) * 100;
   const ageColorClass = agePercentage > 90 ? 'text-red-400 animate-pulse' : agePercentage > 75 ? 'text-yellow-400' : 'text-gray-400';
+  const faction = npc.factionId ? FACTIONS.find(f => f.id === npc.factionId) : null;
 
   const hpPercentage = (npc.hp / npc.stats.maxHp) * 100;
   const manaPercentage = (npc.mana / npc.stats.maxMana) * 100;
@@ -237,7 +238,10 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
             <div>
                 <h2 className="text-2xl font-bold text-yellow-300">{npc.name}</h2>
                 {!isMonster && npc.title && <p className="text-lg text-cyan-400 mt-1 italic">« {npc.title} »</p>}
-                <p className="text-base text-gray-400">{npc.role} {!isMonster && `(${npc.gender})`}</p>
+                <p className="text-base text-gray-400">
+                    {faction && <span className="font-semibold text-amber-300">{faction.name} - </span>}
+                    {npc.role} {!isMonster && `(${npc.gender})`}
+                </p>
                  {isMonster ? (
                     <p className="text-base text-red-300 mt-1">Cấp {npc.level}</p>
                 ) : (

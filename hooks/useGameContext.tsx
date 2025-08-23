@@ -11,7 +11,7 @@ import { useInteractionManager } from './useInteractionManager';
 import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP, MAP_AREAS_BY_MAP } from '../mapdata';
 import { advanceTime, gameTimeToMinutes } from '../services/timeService';
 import { ALL_ITEMS } from '../data/items/index';
-import { ALL_INTERACTABLES } from '../data/interactables';
+import { ALL_INTERACTABLES } from '../data/interactables/index';
 import { ALL_RECIPES } from '../../data/alchemy_recipes';
 import type { CombatState, PlayerAction } from '../types/combat';
 import { processNpcActionsForTimeSkip } from '../services/npcActionService';

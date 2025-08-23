@@ -43,7 +43,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 {
                     factionId: 'UNAFFILIATED',
                     ageDistribution: { young: 0.4, middle: 0.4, old: 0.2 },
-                    roleDistribution: [{ roleName: 'Tán tu', count: 10 }],
+                    roleDistribution: [{ roleName: 'Tán tu', count: 5 }],
                     poiIds: [],
                 }
             ],
@@ -176,12 +176,12 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 },
                 { 
                     factionId: 'CUU_TUYET_MON', 
-                    roleDistribution: [{ roleName: 'Nội môn đệ tử', count: 10 }], 
+                    roleDistribution: [{ roleName: 'Nội môn đệ tử', count: 4 }], 
                     poiIds: ['bv-poi-ctm'] 
                 },
                 { 
                     factionId: 'CUU_TUYET_MON', 
-                    roleDistribution: [{ roleName: 'Ngoại môn đệ tử', count: 20 }], 
+                    roleDistribution: [{ roleName: 'Ngoại môn đệ tử', count: 5 }], 
                     poiIds: ['bv-poi-ctm'] 
                 }
             ]
@@ -196,22 +196,22 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 },
                 { 
                     factionId: 'HUYEN_THIEN_KIEM_TONG', 
-                    roleDistribution: [{ roleName: 'Kiếm Trưởng Lão', count: 4 }], 
+                    roleDistribution: [{ roleName: 'Kiếm Trưởng Lão', count: 2 }], 
                     poiIds: ['bv-poi-htkt'] 
                 },
                 { 
                     factionId: 'HUYEN_THIEN_KIEM_TONG', 
-                    roleDistribution: [{ roleName: 'Chân truyền đệ tử', count: 8 }], 
+                    roleDistribution: [{ roleName: 'Chân truyền đệ tử', count: 2 }], 
                     poiIds: ['bv-poi-htkt'] 
                 },
                 { 
                     factionId: 'HUYEN_THIEN_KIEM_TONG', 
-                    roleDistribution: [{ roleName: 'Nội môn đệ tử', count: 15 }], 
+                    roleDistribution: [{ roleName: 'Nội môn đệ tử', count: 5 }], 
                     poiIds: ['bv-poi-htkt'] 
                 },
                 { 
                     factionId: 'HUYEN_THIEN_KIEM_TONG', 
-                    roleDistribution: [{ roleName: 'Ngoại môn đệ tử', count: 30 }], 
+                    roleDistribution: [{ roleName: 'Ngoại môn đệ tử', count: 6 }], 
                     poiIds: ['bv-poi-htkt'] 
                 }
             ]
@@ -236,7 +236,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 },
                 { 
                     factionId: 'THAN_THUONG_MON', 
-                    roleDistribution: [{ roleName: 'Đệ tử', count: 18 }], 
+                    roleDistribution: [{ roleName: 'Đệ tử', count: 8 }], 
                     poiIds: ['bv-poi-ttm'] 
                 }
             ]
@@ -304,12 +304,12 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
                 },
                 { 
                     factionId: 'THANH_VAN_MON', 
-                    roleDistribution: [{ roleName: 'Nội môn đệ tử', count: 8 }], 
+                    roleDistribution: [{ roleName: 'Nội môn đệ tử', count: 5 }], 
                     poiIds: ['tvm-poi-4'] 
                 },
                 { 
                     factionId: 'THANH_VAN_MON', 
-                    roleDistribution: [{ roleName: 'Ngoại môn đệ tử', count: 12 }], 
+                    roleDistribution: [{ roleName: 'Ngoại môn đệ tử', count: 8 }], 
                     poiIds: ['tvm-poi-4', 'tvm-poi-7'] 
                 }
             ]

@@ -6,7 +6,7 @@ import type { MapID, PointOfInterest, TeleportLocation, GameMap } from '../types
 import { getInteractionResponse, createChatSession } from '../services/geminiService';
 import { advanceTime, gameTimeToMinutes } from '../services/timeService';
 import { ALL_ITEMS } from '../data/items/index';
-import { ALL_INTERACTABLES } from '../data/interactables';
+import { ALL_INTERACTABLES } from '../data/interactables/index';
 import { INTERACTION_RADIUS, INVENTORY_SIZE } from '../constants';
 import type { InventorySlot } from '../types/item';
 import type { Chat } from '@google/genai';

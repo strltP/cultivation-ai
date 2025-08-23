@@ -1,0 +1,78 @@
+import React from 'react';
+import type { Item } from '../../types/item';
+import { GiStoneBlock, GiWoodPile } from 'react-icons/gi';
+
+export const ORES: Item[] = [
+    {
+        id: 'material_huyen_thiet',
+        name: 'Huyền Thiết Khoáng',
+        description: 'Một loại khoáng thạch cứng rắn, chứa đựng kim khí. Thường được dùng để luyện khí, chế tạo pháp bảo.',
+        type: 'ore',
+        icon: React.createElement(GiStoneBlock, { className: "text-gray-400" }),
+        stackable: 99,
+        value: 15,
+    },
+    {
+        id: 'material_tinh_thiet',
+        name: 'Tinh Thiết',
+        description: 'Loại sắt đã được tinh luyện, cứng hơn sắt thường, là vật liệu luyện khí phổ biến.',
+        type: 'ore',
+        icon: React.createElement(GiStoneBlock, { className: "text-slate-500" }),
+        stackable: 99,
+        value: 20,
+    },
+    {
+        id: 'material_thanh_cuong_thach',
+        name: 'Thanh Cương Thạch',
+        description: 'Một loại đá cứng có màu xanh lam, dùng để gia cố pháp bảo.',
+        type: 'ore',
+        icon: React.createElement(GiStoneBlock, { className: "text-blue-500" }),
+        stackable: 99,
+        value: 22,
+    },
+    {
+        id: 'material_lam_ngoc',
+        name: 'Lam Ngọc',
+        description: 'Một loại ngọc thạch màu xanh lam, chứa đựng linh khí ôn hòa, có thể dùng để chế tác pháp khí phụ trợ.',
+        type: 'ore',
+        icon: React.createElement(GiStoneBlock, { className: "text-sky-400" }),
+        stackable: 99,
+        value: 45,
+    },
+    {
+        id: 'material_tinh_ngan_khoang',
+        name: 'Tinh Ngân Khoáng',
+        description: 'Khoáng thạch màu bạc, nhẹ nhưng cực kỳ bền chắc, là vật liệu cao cấp để luyện khí.',
+        type: 'ore',
+        icon: React.createElement(GiStoneBlock, { className: "text-gray-300" }),
+        stackable: 99,
+        value: 60,
+    },
+    {
+        id: 'material_kim_tinh',
+        name: 'Kim Tinh',
+        description: 'Tinh hoa của kim loại, được tìm thấy trong các mạch vàng quý hiếm, có giá trị rất cao.',
+        type: 'ore',
+        icon: React.createElement(GiStoneBlock, { className: "text-yellow-400" }),
+        stackable: 99,
+        value: 120,
+    },
+    {
+        id: 'material_han_ngoc',
+        name: 'Hàn Ngọc',
+        description: 'Ngọc thạch được hình thành ở nơi cực hàn, bên trong chứa đựng hàn khí tinh khiết.',
+        type: 'ore',
+        icon: React.createElement(GiStoneBlock, { className: "text-cyan-200" }),
+        stackable: 99,
+        value: 140,
+    },
+     {
+        id: 'material_ma_van_moc',
+        name: 'Ma Vân Mộc',
+        description: 'Gỗ từ cây cổ thụ trong ma địa, trên thớ gỗ có những đường vân tự nhiên như mặt quỷ, là vật liệu tuyệt vời để chế tác ma khí.',
+        type: 'ore',
+        icon: React.createElement(GiWoodPile, { className: "text-red-900" }),
+        stackable: 99,
+        value: 80,
+    },
+];

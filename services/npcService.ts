@@ -336,7 +336,7 @@ export function createNpcFromData(
                 });
             }
         }
-        const commonItems = ALL_ITEMS.filter(i => i.type === 'material' || i.type === 'consumable');
+        const commonItems = ALL_ITEMS.filter(i => ['material', 'consumable', 'herb', 'ore'].includes(i.type));
          if (commonItems.length > 0) {
             for (let i = 0; i < numInventoryItems; i++) {
                  const item = commonItems[Math.floor(Math.random() * commonItems.length)];

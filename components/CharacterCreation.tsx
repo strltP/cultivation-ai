@@ -6,7 +6,7 @@ import { LINH_CAN_DATA } from '../data/linhcan';
 import { getLinhCanTierInfo } from '../services/cultivationService';
 
 interface CharacterCreationProps {
-  onCharacterCreate: (name: string, linhCan: LinhCan[], gender: 'Nam' | 'Nữ') => void;
+  onCharacterCreate: (name: string, linhCan: LinhCan[], gender: 'Nam' | 'Nữ') => Promise<void>;
   setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>;
 }
 
@@ -47,6 +47,7 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onCharacterCreate
   const [message, setMessage] = useState<string | null>(null);
   const [linhCanChoices, setLinhCanChoices] = useState<LinhCan[][] | null>(null);
   const [selectedChoiceIndex, setSelectedChoiceIndex] = useState<number | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleGenerateChoices = () => {
     setSelectedChoiceIndex(null); // Reset selection on reroll
@@ -54,7 +55,7 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onCharacterCreate
     setLinhCanChoices(choices);
   };
 
-  const handleStartGame = () => {
+  const handleStartGame = async () => {
     if (!name.trim()) {
         setMessage('Tiên danh không thể để trống.');
         setTimeout(() => setMessage(null), 4000);
@@ -65,7 +66,8 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onCharacterCreate
         setTimeout(() => setMessage(null), 4000);
         return;
     }
-    onCharacterCreate(name.trim(), linhCanChoices[selectedChoiceIndex], gender);
+    setIsCreating(true);
+    await onCharacterCreate(name.trim(), linhCanChoices[selectedChoiceIndex], gender);
   };
   
   const handleImportSave = () => {
@@ -78,6 +80,16 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onCharacterCreate
         }
     });
   };
+
+  if (isCreating) {
+    return (
+        <div className="w-screen h-screen bg-gray-900 flex flex-col items-center justify-center text-center p-4">
+            <div className="w-16 h-16 border-4 border-t-transparent border-yellow-400 rounded-full animate-spin"></div>
+            <p className="mt-4 text-xl text-yellow-300">Đang gieo mầm sinh linh cho thế giới mới...</p>
+            <p className="mt-2 text-gray-400">Quá trình này có thể mất một lúc.</p>
+        </div>
+    );
+  }
 
   return (
     <div 

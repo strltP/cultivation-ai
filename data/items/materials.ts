@@ -1,46 +1,10 @@
 import React from 'react';
 import type { Item } from '../../types/item';
-import { GiCrystalGrowth, GiStoneBlock, GiHerbsBundle, GiWoodPile, GiWaterDrop } from 'react-icons/gi';
-import { FaGem, FaLeaf, FaBone } from 'react-icons/fa';
+import { GiCrystalGrowth, GiWaterDrop } from 'react-icons/gi';
+import { FaBone } from 'react-icons/fa';
 
 export const MATERIALS: Item[] = [
     {
-        id: 'material_linh_thao',
-        name: 'Linh Thảo',
-        description: 'Một loại thảo dược thông thường, chứa đựng một lượng linh khí ít ỏi. Nguyên liệu cơ bản để luyện chế đan dược.',
-        type: 'material',
-        icon: React.createElement(FaLeaf, { className: "text-green-400" }),
-        stackable: 99,
-        value: 5,
-    },
-    {
-        id: 'material_han_bang_thao',
-        name: 'Hàn Băng Thảo',
-        description: 'Linh thảo mọc ở những nơi cực hàn, tỏa ra hàn khí lạnh lẽo. Dùng để luyện chế đan dược thuộc tính băng.',
-        type: 'material',
-        icon: React.createElement(GiHerbsBundle, { className: "text-cyan-300" }),
-        stackable: 99,
-        value: 20,
-    },
-    {
-        id: 'material_huyen_thiet',
-        name: 'Huyền Thiết Khoáng',
-        description: 'Một loại khoáng thạch cứng rắn, chứa đựng kim khí. Thường được dùng để luyện khí, chế tạo pháp bảo.',
-        type: 'material',
-        icon: React.createElement(GiStoneBlock, { className: "text-gray-400" }),
-        stackable: 99,
-        value: 15,
-    },
-    {
-        id: 'material_linh_thach',
-        name: 'Hạ Phẩm Linh Thạch',
-        description: 'Đơn vị tiền tệ của tu sĩ, chứa đựng linh khí tinh khiết. Có thể dùng để tu luyện hoặc giao dịch.',
-        type: 'material',
-        icon: React.createElement(FaGem, { className: "text-blue-300" }),
-        stackable: 999,
-        value: 1,
-    },
-     {
         id: 'material_yeu_dan',
         name: 'Yêu Đan Luyện Khí',
         description: 'Nội đan của yêu thú cấp Luyện Khí, chứa đựng tinh hoa của yêu thú. Là vật đại bổ nhưng cũng ẩn chứa yêu khí cuồng bạo.',
@@ -52,7 +16,7 @@ export const MATERIALS: Item[] = [
     {
         id: 'material_monster_core_1',
         name: 'Yêu Đan Cấp 1',
-        description: 'Nội đan của yêu thú cấp thấp, chứa đựng yêu khí và một ít tinh hoa天地.',
+        description: 'Nội đan của yêu thú cấp thấp, chứa đựng yêu khí và một ít tinh hoa thiên địa.',
         type: 'material',
         icon: React.createElement(GiCrystalGrowth, { className: "text-red-400" }),
         stackable: 99,
@@ -75,160 +39,5 @@ export const MATERIALS: Item[] = [
         icon: React.createElement(GiWaterDrop, { className: "text-red-600" }),
         stackable: 99,
         value: 15,
-    },
-    // --- New Tier 1 Herbs ---
-    {
-        id: 'material_tinh_luc_thao',
-        name: 'Tinh Lực Thảo',
-        description: 'Loại cỏ dại phổ biến, chứa một ít sinh lực, dùng làm phụ liệu cho các loại đan dược cấp thấp.',
-        type: 'material',
-        icon: React.createElement(GiHerbsBundle, { className: "text-lime-500" }),
-        stackable: 99,
-        value: 8,
-    },
-    {
-        id: 'material_da_hop_hoa',
-        name: 'Dạ Hợp Hoa',
-        description: 'Loài hoa chỉ nở vào ban đêm, có tác dụng an thần, thường được dùng trong các loại thuốc an thần.',
-        type: 'material',
-        icon: React.createElement(GiHerbsBundle, { className: "text-indigo-300" }),
-        stackable: 99,
-        value: 10,
-    },
-    {
-        id: 'material_huyet_tinh_chi',
-        name: 'Huyết Tinh Chi',
-        description: 'Một loại nấm màu đỏ như máu, có tác dụng bổ huyết, là nguyên liệu tốt để luyện đan trị thương.',
-        type: 'material',
-        icon: React.createElement(GiHerbsBundle, { className: "text-red-500" }),
-        stackable: 99,
-        value: 12,
-    },
-
-    // --- New Tier 2 Herbs ---
-    {
-        id: 'material_bach_linh_sam',
-        name: 'Bạch Linh Sâm',
-        description: 'Củ nhân sâm có màu trắng ngọc, chứa đựng linh khí tương đối dồi dào, có thể dùng để bồi bổ nguyên khí.',
-        type: 'material',
-        icon: React.createElement(GiHerbsBundle, { className: "text-gray-200" }),
-        stackable: 99,
-        value: 25,
-    },
-    {
-        id: 'material_tuyet_ngoc_chi',
-        name: 'Tuyết Ngọc Chi',
-        description: 'Linh chi mọc ở nơi giá lạnh, có màu trắng như tuyết, giúp hồi phục linh lực.',
-        type: 'material',
-        icon: React.createElement(GiHerbsBundle, { className: "text-cyan-200" }),
-        stackable: 99,
-        value: 30,
-    },
-    {
-        id: 'material_ngan_tuy_hoa',
-        name: 'Ngân Tủy Hoa',
-        description: 'Đóa hoa có cánh màu bạc, chứa đựng kim khí, giúp tu sĩ rèn luyện thần thức.',
-        type: 'material',
-        icon: React.createElement(GiHerbsBundle, { className: "text-slate-300" }),
-        stackable: 99,
-        value: 40,
-    },
-    {
-        id: 'material_am_cot_hoa',
-        name: 'Âm Cốt Hoa',
-        description: 'Loài hoa mọc ở nơi âm khí nặng nề, cánh hoa mỏng như xương, có thể dùng để luyện chế các loại độc dược hoặc ma đạo đan dược.',
-        type: 'material',
-        icon: React.createElement(GiHerbsBundle, { className: "text-purple-400" }),
-        stackable: 99,
-        value: 35,
-    },
-
-    // --- New Tier 3 Herbs ---
-    {
-        id: 'material_tu_van_thao',
-        name: 'Tử Vân Thảo',
-        description: 'Linh thảo hiếm có, xung quanh luôn có một làn sương tím bao phủ, dược lực rất mạnh.',
-        type: 'material',
-        icon: React.createElement(GiHerbsBundle, { className: "text-purple-400" }),
-        stackable: 99,
-        value: 75,
-    },
-    {
-        id: 'material_hoang_kim_qua',
-        name: 'Hoàng Kim Quả',
-        description: 'Một loại linh quả quý hiếm, mười năm mới kết trái một lần, có thể tăng tốc độ tu luyện.',
-        type: 'material',
-        icon: React.createElement(GiHerbsBundle, { className: "text-yellow-400" }),
-        stackable: 99,
-        value: 90,
-    },
-
-    // --- New Tier 1 Minerals ---
-    {
-        id: 'material_tinh_thiet',
-        name: 'Tinh Thiết',
-        description: 'Loại sắt đã được tinh luyện, cứng hơn sắt thường, là vật liệu luyện khí phổ biến.',
-        type: 'material',
-        icon: React.createElement(GiStoneBlock, { className: "text-slate-500" }),
-        stackable: 99,
-        value: 20,
-    },
-    {
-        id: 'material_thanh_cuong_thach',
-        name: 'Thanh Cương Thạch',
-        description: 'Một loại đá cứng có màu xanh lam, dùng để gia cố pháp bảo.',
-        type: 'material',
-        icon: React.createElement(GiStoneBlock, { className: "text-blue-500" }),
-        stackable: 99,
-        value: 22,
-    },
-
-    // --- New Tier 2 Minerals ---
-    {
-        id: 'material_lam_ngoc',
-        name: 'Lam Ngọc',
-        description: 'Một loại ngọc thạch màu xanh lam, chứa đựng linh khí ôn hòa, có thể dùng để chế tác pháp khí phụ trợ.',
-        type: 'material',
-        icon: React.createElement(GiStoneBlock, { className: "text-sky-400" }),
-        stackable: 99,
-        value: 45,
-    },
-    {
-        id: 'material_tinh_ngan_khoang',
-        name: 'Tinh Ngân Khoáng',
-        description: 'Khoáng thạch màu bạc, nhẹ nhưng cực kỳ bền chắc, là vật liệu cao cấp để luyện khí.',
-        type: 'material',
-        icon: React.createElement(GiStoneBlock, { className: "text-gray-300" }),
-        stackable: 99,
-        value: 60,
-    },
-
-    // --- New Tier 3 Minerals ---
-    {
-        id: 'material_kim_tinh',
-        name: 'Kim Tinh',
-        description: 'Tinh hoa của kim loại, được tìm thấy trong các mạch vàng quý hiếm, có giá trị rất cao.',
-        type: 'material',
-        icon: React.createElement(GiStoneBlock, { className: "text-yellow-400" }),
-        stackable: 99,
-        value: 120,
-    },
-    {
-        id: 'material_han_ngoc',
-        name: 'Hàn Ngọc',
-        description: 'Ngọc thạch được hình thành ở nơi cực hàn, bên trong chứa đựng hàn khí tinh khiết.',
-        type: 'material',
-        icon: React.createElement(GiStoneBlock, { className: "text-cyan-200" }),
-        stackable: 99,
-        value: 140,
-    },
-     {
-        id: 'material_ma_van_moc',
-        name: 'Ma Vân Mộc',
-        description: 'Gỗ từ cây cổ thụ trong ma địa, trên thớ gỗ có những đường vân tự nhiên như mặt quỷ, là vật liệu tuyệt vời để chế tác ma khí.',
-        type: 'material',
-        icon: React.createElement(GiWoodPile, { className: "text-red-900" }),
-        stackable: 99,
-        value: 80,
     },
 ];

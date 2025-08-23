@@ -3,7 +3,7 @@ import { GameProvider, useUI, useCombat, useInteraction, useWorld, usePlayerActi
 import { useCamera } from './hooks/useCamera';
 import { useGameLoop } from './hooks/useGameLoop';
 import type { PlayerState } from './types/character';
-import { usePlayerPersistence, createNewPlayer, savePlayerState } from './hooks/usePlayerPersistence';
+import { usePlayerPersistence, createNewPlayer, savePlayerState, initializeNewWorld } from './hooks/usePlayerPersistence';
 import type { LinhCan } from './types/linhcan';
 import UIManager from './components/ui/UIManager';
 import WorldRenderer from './components/world/WorldRenderer';
@@ -24,9 +24,10 @@ const App: React.FC = () => {
         }
     }, [debouncedPlayerState]);
 
-    const handleCharacterCreate = (name: string, linhCan: LinhCan[], gender: 'Nam' | 'Nữ') => {
+    const handleCharacterCreate = async (name: string, linhCan: LinhCan[], gender: 'Nam' | 'Nữ') => {
         const newPlayer = createNewPlayer(name, linhCan, gender);
-        setPlayerState(newPlayer);
+        const initializedPlayer = await initializeNewWorld(newPlayer);
+        setPlayerState(initializedPlayer);
     };
 
     if (!playerState) {

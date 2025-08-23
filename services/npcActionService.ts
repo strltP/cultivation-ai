@@ -7,7 +7,7 @@ import { advanceTime, gameTimeToMinutes } from './timeService';
 import { getMapPath, generateGlobalNpcIntent } from './npcIntentService';
 import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP, MAP_AREAS_BY_MAP } from '../mapdata';
 import { FACTIONS } from '../data/factions';
-import { ALL_INTERACTABLES } from '../data/interactables';
+import { ALL_INTERACTABLES } from '../data/interactables/index';
 import type { Interactable } from '../types/interaction';
 
 

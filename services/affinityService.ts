@@ -40,10 +40,10 @@ export const calculateGiftAffinityChange = (npc: NPC, item: Item | null, playerA
         const isBlacksmith = npc.role.toLowerCase().includes('rèn');
         const isAlchemist = npc.role.toLowerCase().includes('luyện đan') || npc.role.toLowerCase().includes('dược sư');
         
-        if (isBlacksmith && item.type === 'material' && (item.id.includes('thiet') || item.id.includes('khoang'))) {
+        if (isBlacksmith && item.type === 'ore') {
             multiplier *= 1.8;
         }
-        if (isAlchemist && item.type === 'material' && (item.id.includes('thao') || item.id.includes('linh_chi'))) {
+        if (isAlchemist && item.type === 'herb') {
              multiplier *= 1.8;
         }
         if (npc.role.toLowerCase().includes('tu sĩ') && (item.type === 'consumable' || item.type === 'book')) {

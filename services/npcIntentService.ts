@@ -3,7 +3,7 @@ import type { MapID, PointOfInterest, TeleportLocation, MapArea } from '../types
 import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP, MAP_AREAS_BY_MAP } from '../mapdata';
 import type { Position } from '../types/common';
 import { SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/interactable_spawns';
-import { ALL_INTERACTABLES } from '../data/interactables';
+import { ALL_INTERACTABLES } from '../data/interactables/index';
 import type { ProceduralSpawnRule } from '../mapdata/interactable_spawns';
 
 

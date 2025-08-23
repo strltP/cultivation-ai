@@ -5,6 +5,7 @@ import { FaUserSecret, FaLeaf, FaCube, FaBoxOpen, FaMale, FaFemale } from 'react
 import { GiSprout, GiPlantSeed, GiHerbsBundle, GiFireBowl, GiWyvern } from 'react-icons/gi';
 import { getCultivationInfo } from '../services/cultivationService';
 import { getAffinityLevel } from '../services/affinityService';
+import { FACTIONS } from '../data/factions';
 
 interface GameEntityProps {
   entity: NPC | Interactable;
@@ -37,7 +38,9 @@ const GameEntity: React.FC<GameEntityProps> = ({ entity, onClick, playerState })
         const cultivationInfo = getCultivationInfo(entity.cultivation!);
         const age = playerState.time.year - entity.birthTime.year;
         const powerString = entity.power ? `\nQuyền Lực: ${entity.power}` : '';
-        title = `${entity.name}${entity.title ? ` «${entity.title}»` : ''}\nGiới tính: ${entity.gender}\nChức vụ: ${entity.role}${powerString}\nCảnh giới: ${cultivationInfo.name}\nTuổi: ${age}\nThiện Cảm: ${affinityInfo.level} (${affinityScore})\nHP: ${entity.hp}/${entity.stats.maxHp}`;
+        const faction = entity.factionId ? FACTIONS.find(f => f.id === entity.factionId) : null;
+        const factionString = faction ? `${faction.name} - ` : '';
+        title = `${entity.name}${entity.title ? ` «${entity.title}»` : ''}\nGiới tính: ${entity.gender}\nChức vụ: ${factionString}${entity.role}${powerString}\nCảnh giới: ${cultivationInfo.name}\nTuổi: ${age}\nThiện Cảm: ${affinityInfo.level} (${affinityScore})\nHP: ${entity.hp}/${entity.stats.maxHp}`;
     }
   } else {
     const interactable = entity as Interactable;

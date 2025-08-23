@@ -20,7 +20,7 @@ import * as huyenNgocThanhData from './bac_vuc/huyen_ngoc_thanh/index';
 import * as daiHoangData from './dai_hoang/index';
 import * as dongHaiData from './dong_hai/index';
 
-import { ALL_INTERACTABLES } from '../data/interactables';
+import { ALL_INTERACTABLES } from '../data/interactables/index';
 import { SPAWN_DEFINITIONS_BY_MAP } from './interactable_spawns';
 
 const allMapData = {

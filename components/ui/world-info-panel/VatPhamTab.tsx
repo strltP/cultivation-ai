@@ -1,11 +1,14 @@
 
+
 import React, { useState } from 'react';
 import { ALL_ITEMS } from '../../../data/items/index';
 import type { Item, ItemType } from '../../../types/item';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const ITEM_TYPE_NAMES: Record<ItemType, string> = {
-    material: 'Nguyên Liệu',
+    material: 'Nguyên Liệu Yêu Thú',
+    herb: 'Linh Dược',
+    ore: 'Khoáng Thạch & Linh Mộc',
     consumable: 'Tiêu Hao Phẩm',
     book: 'Sách Kỹ Năng',
     quest: 'Vật Phẩm Nhiệm Vụ',
@@ -51,7 +54,7 @@ const VatPhamTab: React.FC = () => {
         return acc;
     }, {} as Record<string, Item[]>);
 
-    const typeOrder: ItemType[] = ['material', 'seed', 'consumable', 'recipe', 'book', 'quest', 'tool'];
+    const typeOrder: ItemType[] = ['herb', 'ore', 'material', 'seed', 'consumable', 'recipe', 'book', 'quest', 'tool'];
     
     const handlePageChange = (type: ItemType, newPage: number) => {
         setCurrentPages(prev => ({ ...prev, [type]: newPage }));

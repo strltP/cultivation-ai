@@ -3,7 +3,7 @@ import type { EquipmentSlot, WeaponType, EquipmentBonus } from './equipment';
 import type { SkillTier } from './skill';
 import type { LinhCanType } from './linhcan';
 
-export type ItemType = 'material' | 'consumable' | 'quest' | 'book' | 'equipment' | 'seed' | 'recipe' | 'tool';
+export type ItemType = 'material' | 'consumable' | 'quest' | 'book' | 'equipment' | 'seed' | 'recipe' | 'tool' | 'herb' | 'ore';
 
 export type ConsumableEffectType = 'RESTORE_HP' | 'RESTORE_QI' | 'RESTORE_MANA' | 'TELEPORT' | 'OPEN_ALCHEMY_PANEL' | 'INCREASE_LINH_CAN_PURITY';
 

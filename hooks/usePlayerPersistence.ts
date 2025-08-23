@@ -8,7 +8,11 @@ import { ALL_ITEMS } from '../data/items/index';
 import type { LinhCan, LinhCanType } from '../types/linhcan';
 import { LINH_CAN_TYPES } from '../types/linhcan';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
-import { MAPS } from '../mapdata';
+import { MAPS, POIS_BY_MAP } from '../mapdata';
+import { loadNpcsForMap } from '../services/npcService';
+import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
+import type { MapID } from '../types/map';
+
 
 const PLAYER_STATE_STORAGE_KEY = 'tu_tien_player_state_v3';
 const CURRENT_SAVE_VERSION = '2.1';
@@ -313,6 +317,49 @@ export const savePlayerState = (state: PlayerState) => {
 export const usePlayerPersistence = (): [PlayerState | null, React.Dispatch<React.SetStateAction<PlayerState | null>>] => {
     const [playerState, setPlayerState] = useState<PlayerState | null>(loadPlayerState);
     return [playerState, setPlayerState];
+};
+
+export const initializeNewWorld = async (playerState: PlayerState): Promise<PlayerState> => {
+    let stateWithNpcs = { ...playerState };
+
+    const mapsToInitialize = (Object.keys(NPC_SPAWN_DEFINITIONS_BY_MAP) as MapID[]).filter(mapId => {
+        const defs = NPC_SPAWN_DEFINITIONS_BY_MAP[mapId];
+        return defs && defs.length > 0;
+    });
+
+    for (const mapId of mapsToInitialize) {
+        const { npcs, totalTokenCount, updatedNameCounts } = await loadNpcsForMap(mapId, POIS_BY_MAP, stateWithNpcs);
+        
+        const currentApiStats = stateWithNpcs.apiUsageStats || {
+            totalTokens: 0,
+            calls: {
+                getInteractionResponse: 0,
+                getNpcDefeatDecision: 0,
+                generateNpcs: 0,
+                generatePlaceNames: 0,
+                sendMessage: 0,
+            }
+        };
+
+        stateWithNpcs = {
+            ...stateWithNpcs,
+            generatedNpcs: {
+                ...stateWithNpcs.generatedNpcs,
+                [mapId]: npcs,
+            },
+            initializedMaps: [...new Set([...(stateWithNpcs.initializedMaps || []), mapId])],
+            nameUsageCounts: updatedNameCounts,
+            apiUsageStats: {
+                ...currentApiStats,
+                totalTokens: (currentApiStats.totalTokens || 0) + totalTokenCount,
+                calls: {
+                    ...currentApiStats.calls,
+                    generateNpcs: (currentApiStats.calls.generateNpcs || 0) + 1,
+                }
+            }
+        };
+    }
+    return stateWithNpcs;
 };
 
 export const createNewPlayer = (name: string, linhCan: LinhCan[], gender: 'Nam' | 'Nữ'): PlayerState => {

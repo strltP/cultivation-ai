@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import type { PlayerState, NPC, ApiUsageStats, JournalEntry } from '../types/character';
 import type { Interactable, InteractableTemplate } from '../types/interaction';
@@ -8,7 +7,7 @@ import { loadNpcsForMap, createMonsterFromData } from '../services/npcService';
 import { POIS_BY_MAP } from '../mapdata'; // Only needed for NPC spawning logic
 import { gameTimeToMinutes, advanceTime } from '../services/timeService';
 import { ALL_ITEMS } from '../data/items/index';
-import { ALL_INTERACTABLES } from '../data/interactables';
+import { ALL_INTERACTABLES } from '../data/interactables/index';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
 import { SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/interactable_spawns';
 import type { ProceduralSpawnRule } from '../mapdata/interactable_spawns';
@@ -324,7 +323,8 @@ export const useWorldManager = (
                                     const y = area.position.y - area.size.height / 2 + Math.random() * area.size.height;
                                     const id = `proc-monster-${currentMapId}-${baseId}-${Date.now()}-${Math.random()}`;
                                     
-                                    newMonsters.push(createMonsterFromData(template, level, id, {x, y}, ruleKey, p.time, currentMapId));
+                                    const spawnRuleId = `${currentMapId}-${rule.areaId}`;
+                                    newMonsters.push(createMonsterFromData(template, level, id, {x, y}, spawnRuleId, p.time, currentMapId));
 
                                     const [minTime, maxTime] = template.repopulationTimeMinutes;
                                     const repopulationMinutes = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
