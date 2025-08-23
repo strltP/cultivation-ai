@@ -375,7 +375,7 @@ export const createNewPlayer = (name: string, linhCan: LinhCan[], gender: 'Nam' 
     newPlayerState.attributes = finalAttributes;
     newPlayerState.hp = finalStats.maxHp;
     newPlayerState.mana = finalStats.maxMana;
-    newPlayerState.qi = 0; // Start with 0 Qi, need to meditate
+    newPlayerState.qi = 0; // Start with 0 Tu Vi, need to meditate
 
     return newPlayerState;
 };

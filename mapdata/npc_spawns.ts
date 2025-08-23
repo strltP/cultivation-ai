@@ -15,32 +15,7 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             ],
         }
     ],
-    HAC_AM_SAM_LAM: [
-        {
-            type: 'procedural_monster',
-            areaId: 'hasl-area-1',
-            monsterBaseIds: ['monster_da_lang'],
-            initialCount: 5,
-            maxCount: 10,
-            levelRange: [1, 4]
-        },
-        {
-            type: 'procedural_monster',
-            areaId: 'hasl-area-2',
-            monsterBaseIds: ['monster_hac_ma_chu'],
-            initialCount: 4,
-            maxCount: 8,
-            levelRange: [2, 5]
-        },
-        {
-            type: 'procedural_monster',
-            areaId: 'hasl-area-3',
-            monsterBaseIds: ['monster_da_lang', 'monster_hac_ma_chu'],
-            initialCount: 2,
-            maxCount: 5,
-            levelRange: [4, 7]
-        }
-    ],
+    HAC_AM_SAM_LAM: [],
     THAT_HUYEN_THANH: [
         {
             type: 'procedural',
@@ -185,7 +160,99 @@ export const NPC_SPAWN_DEFINITIONS_BY_MAP: Record<MapID, NpcSpawnDefinition[]> =
             ],
         }
     ],
-    BAC_VUC: [],
+    BAC_VUC: [
+        {
+            type: 'procedural',
+            roles: [
+                { 
+                    factionId: 'CUU_TUYET_MON', 
+                    roleDistribution: [{ roleName: 'Môn chủ', count: 1 }], 
+                    poiIds: ['bv-poi-ctm'] 
+                },
+                { 
+                    factionId: 'CUU_TUYET_MON', 
+                    roleDistribution: [{ roleName: 'Trưởng lão', count: 3 }], 
+                    poiIds: ['bv-poi-ctm'] 
+                },
+                { 
+                    factionId: 'CUU_TUYET_MON', 
+                    roleDistribution: [{ roleName: 'Nội môn đệ tử', count: 10 }], 
+                    poiIds: ['bv-poi-ctm'] 
+                },
+                { 
+                    factionId: 'CUU_TUYET_MON', 
+                    roleDistribution: [{ roleName: 'Ngoại môn đệ tử', count: 20 }], 
+                    poiIds: ['bv-poi-ctm'] 
+                }
+            ]
+        },
+        {
+            type: 'procedural',
+            roles: [
+                { 
+                    factionId: 'HUYEN_THIEN_KIEM_TONG', 
+                    roleDistribution: [{ roleName: 'Tông chủ', count: 1 }], 
+                    poiIds: ['bv-poi-htkt'] 
+                },
+                { 
+                    factionId: 'HUYEN_THIEN_KIEM_TONG', 
+                    roleDistribution: [{ roleName: 'Kiếm Trưởng Lão', count: 4 }], 
+                    poiIds: ['bv-poi-htkt'] 
+                },
+                { 
+                    factionId: 'HUYEN_THIEN_KIEM_TONG', 
+                    roleDistribution: [{ roleName: 'Chân truyền đệ tử', count: 8 }], 
+                    poiIds: ['bv-poi-htkt'] 
+                },
+                { 
+                    factionId: 'HUYEN_THIEN_KIEM_TONG', 
+                    roleDistribution: [{ roleName: 'Nội môn đệ tử', count: 15 }], 
+                    poiIds: ['bv-poi-htkt'] 
+                },
+                { 
+                    factionId: 'HUYEN_THIEN_KIEM_TONG', 
+                    roleDistribution: [{ roleName: 'Ngoại môn đệ tử', count: 30 }], 
+                    poiIds: ['bv-poi-htkt'] 
+                }
+            ]
+        },
+        {
+            type: 'procedural',
+            roles: [
+                { 
+                    factionId: 'THAN_THUONG_MON', 
+                    roleDistribution: [{ roleName: 'Môn chủ', count: 1 }], 
+                    poiIds: ['bv-poi-ttm'] 
+                },
+                { 
+                    factionId: 'THAN_THUONG_MON', 
+                    roleDistribution: [{ roleName: 'Trưởng lão', count: 2 }], 
+                    poiIds: ['bv-poi-ttm'] 
+                },
+                { 
+                    factionId: 'THAN_THUONG_MON', 
+                    roleDistribution: [{ roleName: 'Đệ tử tinh anh', count: 6 }], 
+                    poiIds: ['bv-poi-ttm'] 
+                },
+                { 
+                    factionId: 'THAN_THUONG_MON', 
+                    roleDistribution: [{ roleName: 'Đệ tử', count: 18 }], 
+                    poiIds: ['bv-poi-ttm'] 
+                }
+            ]
+        },
+        {
+            type: 'procedural',
+            roles: [
+                {
+                    factionId: 'UNAFFILIATED',
+                    roleDistribution: [{ roleName: 'Tán tu', count: 15 }],
+                    ageDistribution: { young: 0.3, middle: 0.4, old: 0.3 },
+                    poiIds: ['bv-poi-tlt', 'bv-poi-dnt', 'bv-poi-tlth', 'bv-poi-dlth'],
+                }
+            ],
+        }
+    ],
     HUYEN_NGOC_THANH: [
         {
             type: 'procedural',

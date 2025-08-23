@@ -31,6 +31,10 @@ export interface CombatState {
     damageToShow?: { target: 'player' | 'npc'; amount: number | string; type: 'damage' | 'heal' | 'evade' | 'critical' | 'effect' };
     npcDecision?: NpcDecision;
     camNgoGained?: number;
+    // New fields for Tu Vi calculation
+    playerDamageDealt: number;
+    npcDamageDealt: number; // Damage player received
+    playerHealed: number;
 }
 
 export interface NpcAction {

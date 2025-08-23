@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo } from 'react';
 import type { NPC, PlayerState, RelationshipType } from '../../types/character';
 import { getCultivationInfo, getLinhCanTierInfo } from '../../services/cultivationService';
@@ -309,7 +307,7 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
                         </div>
                     </div>
                      <div>
-                        <p className="text-xs text-cyan-200 mb-1 text-right">{npc.qi} / {npc.stats.maxQi} Chân Khí</p>
+                        <p className="text-xs text-cyan-200 mb-1 text-right">{npc.qi} / {npc.stats.maxQi} Tu Vi</p>
                         <div className="w-full bg-gray-700/50 rounded-full h-3.5 border border-black/20">
                             <div
                                 className="bg-cyan-400 h-full rounded-full qi-bar-glow"

@@ -58,9 +58,11 @@ const ChungSinhLucTab: React.FC<ChungSinhLucTabProps> = ({ playerState }) => {
     const { livingNpcs, deceasedNpcs } = useMemo(() => {
         const allNpcs = Object.values(playerState.generatedNpcs).flat();
         const defeatedIds = new Set(playerState.defeatedNpcIds);
+        const cultivatorsOnly = allNpcs.filter(npc => npc && npc.npcType !== 'monster');
+
         return {
-            livingNpcs: allNpcs.filter(npc => npc && !defeatedIds.has(npc.id)),
-            deceasedNpcs: allNpcs.filter(npc => npc && defeatedIds.has(npc.id)),
+            livingNpcs: cultivatorsOnly.filter(npc => !defeatedIds.has(npc.id)),
+            deceasedNpcs: cultivatorsOnly.filter(npc => defeatedIds.has(npc.id)),
         }
     }, [playerState.generatedNpcs, playerState.defeatedNpcIds]);
 

@@ -7,7 +7,7 @@ export const CONSUMABLES: Item[] = [
     {
         id: 'consumable_tu_khi_dan',
         name: 'Tụ Khí Đan',
-        description: 'Đan dược cấp thấp, có thể giúp tu sĩ Luyện Khí Kỳ nhanh chóng hồi phục và tích lũy chân khí.',
+        description: 'Đan dược cấp thấp, có thể giúp tu sĩ Luyện Khí Kỳ nhanh chóng hồi phục và tích lũy tu vi.',
         type: 'consumable',
         icon: React.createElement("div", { className: "w-4 h-4 rounded-full bg-blue-500 border-2 border-blue-200" }),
         stackable: 20,

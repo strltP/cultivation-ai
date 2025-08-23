@@ -15,6 +15,20 @@ import { advanceTime, gameTimeToMinutes } from '../services/timeService';
 import { calculateSkillAttributesForLevel, calculateSkillEffectiveness } from '../services/cultivationService';
 import { FACTIONS } from '../data/factions';
 
+// Bảng tu vi cơ bản nhận được theo cấp độ yêu thú
+const TU_VI_BASE_BY_LEVEL: Record<number, number> = {
+    1: 150,    // Luyện Khí 1-9
+    2: 300,    // Luyện Khí 10-13
+    3: 1000,   // Trúc Cơ Sơ-Trung
+    4: 2500,   // Trúc Cơ Hậu-Đỉnh
+    5: 8000,   // Kết Tinh Sơ-Trung
+    6: 15000,  // Kết Tinh Hậu-Đỉnh
+    7: 40000,  // Kim Đan
+    8: 100000, // Nguyên Anh
+    9: 250000, // Hóa Thần Sơ-Hậu
+    10: 500000, // Hóa Thần Đỉnh Phong
+};
+
 
 export const useCombatManager = (
     playerState: PlayerState,
@@ -74,6 +88,9 @@ export const useCombatManager = (
             log: [{ turn: 1, message: `Trận chiến với ${npc.name} đã bắt đầu!`, type: 'info' }],
             combatEnded: false,
             isProcessing: false,
+            playerDamageDealt: 0,
+            npcDamageDealt: 0,
+            playerHealed: 0,
         });
     }, [playerState, setGameMessage, stopAllActions, addJournalEntry]);
     
@@ -193,8 +210,15 @@ export const useCombatManager = (
 
     const handleKillNpc = useCallback(() => {
         if (!combatState || !combatState.npc) return;
-        const { npc, camNgoGained = 0, player: playerInCombat } = combatState;
+        const { npc, camNgoGained = 0, player: playerInCombat, playerDamageDealt, npcDamageDealt, playerHealed, turn } = combatState;
         const isMonster = npc.npcType === 'monster';
+
+        // --- Calculate New Tu Vi ---
+        const tuViCoBan = TU_VI_BASE_BY_LEVEL[npc.level || 1] || 10;
+        const heSoHieuSuat = 1 + (playerDamageDealt / (npc.stats.maxHp * turn * 2));
+        const bonusRuiRo = Math.floor(npcDamageDealt * 0.1);
+        const bonusHoiPhuc = Math.floor(playerHealed * 0.05);
+        const totalTuViGained = Math.round((tuViCoBan * heSoHieuSuat) + bonusRuiRo + bonusHoiPhuc);
 
         // --- Calculate Loot ---
         const allLootItems: InventorySlot[] = [];
@@ -240,6 +264,12 @@ export const useCombatManager = (
         
         // --- Create Loot Message ---
         const lootMessages: string[] = [];
+        if (totalTuViGained > 0) {
+            lootMessages.push(`${totalTuViGained.toLocaleString()} Tu Vi`);
+        }
+        if (camNgoGained > 0) {
+             lootMessages.push(`${camNgoGained.toLocaleString()} Cảm Ngộ`);
+        }
         if (linhThachDropped > 0) {
             lootMessages.push(`${linhThachDropped.toLocaleString()} Linh Thạch`);
         }
@@ -249,8 +279,8 @@ export const useCombatManager = (
                 lootMessages.push(`${itemLoot.quantity}x ${itemDef.name}`);
             }
         });
-        const finalLootMessage = lootMessages.length > 0 ? ` Chiến lợi phẩm: ${lootMessages.join(', ')}.` : '';
-        const gameWinMessage = `Đã kết liễu ${npc.name}. Nhận ${camNgoGained} Cảm Ngộ.${finalLootMessage}`;
+        const finalLootMessage = lootMessages.length > 0 ? ` Nhận được: ${lootMessages.join(', ')}.` : '';
+        const gameWinMessage = `Đã kết liễu ${npc.name}.${finalLootMessage}`;
 
         // --- Update Player State ---
         updateAndPersistPlayerState(p => {
@@ -288,6 +318,7 @@ export const useCombatManager = (
                 ...p,
                 hp: playerInCombat.hp,
                 mana: playerInCombat.mana,
+                qi: Math.min(p.stats.maxQi, p.qi + totalTuViGained),
                 camNgo: p.camNgo + camNgoGained,
                 activeEffects: [],
                 defeatedNpcIds: [...new Set([...p.defeatedNpcIds, npc.id])],
@@ -399,17 +430,19 @@ export const useCombatManager = (
             const camNgoGained = newState.npc.npcType === 'monster'
                 ? Math.max(5, Math.round(5 + (newState.npc.level || 1) * 2 + newState.npc.stats.maxHp / 50))
                 : Math.max(5, Math.round(10 + ((newState.npc.cultivation?.realmIndex ?? 0) * 15 + (newState.npc.cultivation?.level ?? 0)) - (newState.player.cultivation.realmIndex * 15 + newState.player.cultivation.level) * 2 + newState.npc.stats.maxHp / 50));
-            newState.camNgoGained = camNgoGained;
+            newState.camNgoGained = Math.max(0, camNgoGained);
             newState.isProcessing = false;
         }
         return newState;
     }, [addCombatLog, handleNpcDecision]);
 
-    const processTurn = useCallback(<A extends PlayerState | NPC, D extends PlayerState | NPC>(attackerState: A, defenderState: D, action: PlayerAction | NpcAction): { updatedAttacker: A, updatedDefender: D, endWinner?: 'player' | 'npc'} => {
+    const processTurn = useCallback(<A extends PlayerState | NPC, D extends PlayerState | NPC>(attackerState: A, defenderState: D, action: PlayerAction | NpcAction): { updatedAttacker: A, updatedDefender: D, endWinner?: 'player' | 'npc', damageDealt: number, healingDone: number} => {
         const updatedAttacker: A = { ...attackerState };
         const updatedDefender: D = { ...defenderState };
         const attackerIsPlayer = 'targetPosition' in attackerState;
         const targetSide = attackerIsPlayer ? 'npc' : 'player';
+        let damageDealt = 0;
+        let healingDone = 0;
         
         if (action.type === 'ATTACK') {
             const result = combatService.calculateDamage({ stats: updatedAttacker.stats }, { stats: updatedDefender.stats });
@@ -417,11 +450,12 @@ export const useCombatManager = (
                 addCombatLog(`${updatedAttacker.name} tấn công, nhưng ${updatedDefender.name} đã né được!`, 'evade');
                 showDamage(targetSide, 'Né', 'evade');
             } else {
-                updatedDefender.hp = Math.max(0, updatedDefender.hp - result.damage);
+                damageDealt = result.damage;
+                updatedDefender.hp = Math.max(0, updatedDefender.hp - damageDealt);
                 const logType = result.isCritical ? 'critical' : 'damage';
                 const damageType = result.isCritical ? 'critical' : 'damage';
-                addCombatLog(`${updatedAttacker.name} gây ${result.damage} sát thương cho ${updatedDefender.name}.${result.isCritical ? ' Thật là một đòn chí mạng!' : ''}`, logType);
-                showDamage(targetSide, result.damage, damageType);
+                addCombatLog(`${updatedAttacker.name} gây ${damageDealt} sát thương cho ${updatedDefender.name}.${result.isCritical ? ' Thật là một đòn chí mạng!' : ''}`, logType);
+                showDamage(targetSide, damageDealt, damageType);
             }
         } else if (action.type === 'SKILL' && action.skillId) {
             const skillDef = ALL_SKILLS.find(s => s.id === action.skillId);
@@ -448,11 +482,12 @@ export const useCombatManager = (
                          addCombatLog(`Nhưng ${updatedDefender.name} đã né được!`, 'evade');
                          showDamage(targetSide, 'Né', 'evade');
                     } else {
-                        updatedDefender.hp = Math.max(0, updatedDefender.hp - result.damage);
+                        damageDealt = result.damage;
+                        updatedDefender.hp = Math.max(0, updatedDefender.hp - damageDealt);
                         const logType = result.isCritical ? 'critical' : 'damage';
                         const damageType = result.isCritical ? 'critical' : 'damage';
-                        addCombatLog(`Kỹ năng gây ${result.damage} sát thương cho ${updatedDefender.name}.${result.isCritical ? ' Thật là một đòn chí mạng!' : ''}`, logType);
-                        showDamage(targetSide, result.damage, damageType);
+                        addCombatLog(`Kỹ năng gây ${damageDealt} sát thương cho ${updatedDefender.name}.${result.isCritical ? ' Thật là một đòn chí mạng!' : ''}`, logType);
+                        showDamage(targetSide, damageDealt, damageType);
                     }
                 }
 
@@ -481,6 +516,7 @@ export const useCombatManager = (
                                     const finalHealAmount = Math.round(healAmount * effectiveness);
                                     const newHp = Math.min(updatedAttacker.stats.maxHp, updatedAttacker.hp + finalHealAmount);
                                     const actualHeal = newHp - updatedAttacker.hp;
+                                    healingDone = actualHeal;
                                     updatedAttacker.hp = newHp;
                                     
                                     if (actualHeal > 0) {
@@ -520,7 +556,7 @@ export const useCombatManager = (
             endWinner = attackerIsPlayer ? 'player' : 'npc';
         }
         
-        return { updatedAttacker, updatedDefender, endWinner };
+        return { updatedAttacker, updatedDefender, endWinner, damageDealt, healingDone };
 
     }, [addCombatLog, showDamage]);
 
@@ -585,6 +621,8 @@ export const useCombatManager = (
             // --- Process player action ---
             let updatedNpcState = cs.npc;
             let finalPlayerState = playerAfterEffects;
+            let damageDealt = 0;
+            let healingDone = 0;
 
             if (action.type === 'FLEE') {
                 addCombatLog('Bạn đang cố gắng bỏ chạy...', 'info');
@@ -601,18 +639,20 @@ export const useCombatManager = (
             } else if (action.type === 'SKIP') {
                 addCombatLog('Bạn đã chọn bỏ qua lượt này.', 'info');
             } else { // ATTACK or SKILL
-                const { updatedAttacker, updatedDefender, endWinner } = processTurn(finalPlayerState, updatedNpcState, action);
+                const result = processTurn(finalPlayerState, updatedNpcState, action);
                 
-                finalPlayerState = updatedAttacker;
-                updatedNpcState = updatedDefender;
+                finalPlayerState = result.updatedAttacker;
+                updatedNpcState = result.updatedDefender;
+                damageDealt = result.damageDealt;
+                healingDone = result.healingDone;
 
-                if (endWinner) {
-                    return getCombatEndState({ ...cs, player: finalPlayerState, npc: updatedNpcState }, endWinner);
+                if (result.endWinner) {
+                    return getCombatEndState({ ...cs, player: finalPlayerState, npc: updatedNpcState, playerDamageDealt: cs.playerDamageDealt + damageDealt, playerHealed: cs.playerHealed + healingDone }, result.endWinner);
                 }
             }
 
             // --- Set state to trigger NPC turn via useEffect ---
-            return { ...cs, player: finalPlayerState, npc: updatedNpcState, isPlayerTurn: false, isProcessing: false };
+            return { ...cs, player: finalPlayerState, npc: updatedNpcState, isPlayerTurn: false, isProcessing: false, playerDamageDealt: cs.playerDamageDealt + damageDealt, playerHealed: cs.playerHealed + healingDone };
         });
     }, [processTurn, getCombatEndState, addCombatLog, processAndTickEffects, setGameMessage, closeCombatScreen, addJournalEntry]);
 
@@ -640,12 +680,14 @@ export const useCombatManager = (
                     setTimeout(() => {
                         setCombatState(s => {
                             if (!s || s.combatEnded) return s;
-                            const { updatedAttacker: finalNpc, updatedDefender: finalPlayer, endWinner } = processTurn(npcAfterEffects, s.player, npcAction);
+                            const result = processTurn(npcAfterEffects, s.player, npcAction);
                              
+                            const { updatedAttacker: finalNpc, updatedDefender: finalPlayer, endWinner, damageDealt } = result;
+                            
                             if (endWinner) {
-                                return getCombatEndState({ ...s, player: finalPlayer, npc: finalNpc }, endWinner);
+                                return getCombatEndState({ ...s, player: finalPlayer, npc: finalNpc, npcDamageDealt: s.npcDamageDealt + damageDealt }, endWinner);
                             } else {
-                                return { ...s, player: finalPlayer, npc: finalNpc, isPlayerTurn: true, isProcessing: false, turn: s.turn + 1 };
+                                return { ...s, player: finalPlayer, npc: finalNpc, isPlayerTurn: true, isProcessing: false, turn: s.turn + 1, npcDamageDealt: s.npcDamageDealt + damageDealt };
                             }
                         });
                     }, 1500);

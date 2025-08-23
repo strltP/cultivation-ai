@@ -121,7 +121,7 @@ const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoadi
                 </div>
 
                 <div className="pt-2 border-t border-blue-400/20 mt-3">
-                    <p className="text-xs text-cyan-200 mb-1 text-right">{playerState.qi} / {playerState.stats.maxQi} Chân Khí</p>
+                    <p className="text-xs text-cyan-200 mb-1 text-right">{playerState.qi} / {playerState.stats.maxQi} Tu Vi</p>
                     <div className="w-full bg-gray-700/50 rounded-full h-2.5 border border-black/20">
                         <div
                             className="bg-cyan-400 h-full rounded-full transition-all duration-500 qi-bar-glow"
@@ -171,7 +171,7 @@ const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoadi
             onClick={onToggleMeditation}
             className={`hud-action-button ${isMeditating ? 'active' : ''}`}
             aria-label={isMeditating ? "Dừng đả toạ" : "Đả Toạ"}
-            title={isMeditating ? "Dừng đả toạ" : "Đả Toạ (Hồi Chân Khí & Cảm Ngộ)"}
+            title={isMeditating ? "Dừng đả toạ" : "Đả Toạ (Hồi Tu Vi & Cảm Ngộ)"}
         >
             <FaYinYang size={32} className={isMeditating ? 'animate-spin' : ''} />
         </button>

@@ -443,61 +443,117 @@ export const useInteractionManager = (
 
         updateAndPersistPlayerState((p: PlayerState) => {
             if (!p) return p;
+            
             const currentItemSlot = p.inventory[itemInventoryIndex];
             if (!currentItemSlot || currentItemSlot.quantity < quantity) {
+                console.warn("Item quantity check failed inside updater.");
                 return p;
             }
+            const currentItemDef = ALL_ITEMS.find(i => i.id === currentItemSlot.itemId)!;
 
             const newInventory = JSON.parse(JSON.stringify(p.inventory));
-            if (newInventory[itemInventoryIndex].quantity > quantity) {
-                newInventory[itemInventoryIndex].quantity -= quantity;
-            } else {
+            const slotToUpdate = newInventory[itemInventoryIndex];
+            slotToUpdate.quantity -= quantity;
+            if (slotToUpdate.quantity <= 0) {
                 newInventory.splice(itemInventoryIndex, 1);
             }
 
-            // Apply affinity changes and update NPC inventory
             const { updatedNpcs, updatedAffinity } = applyCascadingAffinity(
-                p,
+                { ...p, inventory: newInventory },
                 chatTargetNpc.id,
-                itemDef,
+                currentItemDef,
                 0,
                 quantity
             );
-
-            return { ...p, inventory: newInventory, generatedNpcs: updatedNpcs, affinity: updatedAffinity };
+            
+            const systemMessage: ChatMessage = {
+                role: 'system',
+                text: `(Hệ thống: Bạn đã tặng ${quantity}x ${currentItemDef.name} cho ${chatTargetNpc.name})`
+            };
+            const oldSavedHistory = p.chatHistories?.[chatTargetNpc.id] || [];
+            const newSavedHistory = [...oldSavedHistory, systemMessage];
+            const newChatHistories = { ...(p.chatHistories || {}), [chatTargetNpc.id]: newSavedHistory };
+            
+            setChatHistory(newSavedHistory);
+            
+            return {
+                ...p,
+                inventory: newInventory,
+                generatedNpcs: updatedNpcs,
+                affinity: updatedAffinity,
+                chatHistories: newChatHistories,
+            };
         });
-        
-        handleSendMessage(`(Hệ thống: ${playerState.name} đã tặng bạn ${quantity}x ${itemDef.name}.)`);
-
-    }, [chatTargetNpc, playerState, updateAndPersistPlayerState, handleSendMessage, setGameMessage]);
-
+    }, [chatTargetNpc, playerState.inventory, setGameMessage, updateAndPersistPlayerState]);
+    
     const handleGiftLinhThach = useCallback((amount: number) => {
-        if (!chatTargetNpc || amount <= 0) return;
-        
-        if (playerState.linhThach < amount) {
-            setGameMessage("Không đủ Linh Thạch để tặng.");
-            return;
-        }
+        if (!chatTargetNpc || amount <= 0 || playerState.linhThach < amount) return;
 
         updateAndPersistPlayerState((p: PlayerState) => {
             if (!p || p.linhThach < amount) return p;
 
-            const newLinhThach = p.linhThach - amount;
-            
-            // Apply affinity changes and update NPC linh thach
             const { updatedNpcs, updatedAffinity } = applyCascadingAffinity(
-                p,
+                { ...p, linhThach: p.linhThach - amount },
                 chatTargetNpc.id,
                 null,
                 amount
             );
 
-            return { ...p, linhThach: newLinhThach, generatedNpcs: updatedNpcs, affinity: updatedAffinity };
+            const systemMessage: ChatMessage = {
+                role: 'system',
+                text: `(Hệ thống: Bạn đã tặng ${amount.toLocaleString()} Linh Thạch cho ${chatTargetNpc.name})`
+            };
+            const oldSavedHistory = p.chatHistories?.[chatTargetNpc.id] || [];
+            const newSavedHistory = [...oldSavedHistory, systemMessage];
+            const newChatHistories = { ...(p.chatHistories || {}), [chatTargetNpc.id]: newSavedHistory };
+            
+            setChatHistory(newSavedHistory);
+
+            return {
+                ...p,
+                linhThach: p.linhThach - amount,
+                generatedNpcs: updatedNpcs,
+                affinity: updatedAffinity,
+                chatHistories: newChatHistories,
+            };
         });
+    }, [chatTargetNpc, playerState.linhThach, updateAndPersistPlayerState]);
 
-        handleSendMessage(`(Hệ thống: ${playerState.name} đã tặng bạn ${amount.toLocaleString()} Linh Thạch.)`);
+    const handlePlantSeed = useCallback((plotId: string, seedItemId: string, inventoryIndex: number) => {
+        updateAndPersistPlayerState(prev => {
+            if (!prev) return prev;
 
-    }, [chatTargetNpc, playerState, updateAndPersistPlayerState, handleSendMessage, setGameMessage]);
+            const seedDef = ALL_ITEMS.find(i => i.id === seedItemId);
+            if (!seedDef) return prev;
+
+            const newInventory = [...prev.inventory];
+            const invSlot = newInventory[inventoryIndex];
+            if (invSlot.quantity > 1) {
+                invSlot.quantity -= 1;
+            } else {
+                newInventory.splice(inventoryIndex, 1);
+            }
+
+            const newPlantedPlots = [...prev.plantedPlots];
+            newPlantedPlots.push({
+                plotId,
+                mapId: prev.currentMap,
+                seedId: seedItemId,
+                plantedAt: prev.time,
+            });
+
+            const message = `Đã gieo trồng ${seedDef.name}.`;
+            setGameMessage(message);
+            addJournalEntry(message);
+            setPlantingPlot(null);
+
+            return {
+                ...prev,
+                inventory: newInventory,
+                plantedPlots: newPlantedPlots,
+            };
+        });
+    }, [updateAndPersistPlayerState, setGameMessage, addJournalEntry]);
 
     return {
         activeDialogue, setActiveDialogue,
@@ -514,11 +570,12 @@ export const useInteractionManager = (
         handleGatherInteractable,
         handleDestroyInteractable,
         handleViewInfoInteractable,
-        handleInitiateTrade,
         handleStartChat,
         handleSendMessage,
         handleCloseChat,
         handleGiftItem,
         handleGiftLinhThach,
+        handleInitiateTrade,
+        handlePlantSeed,
     };
 };

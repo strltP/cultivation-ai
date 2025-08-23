@@ -207,10 +207,32 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         const lastCheck = playerState.lastNpcProgressionCheck || playerState.time;
         const monthsPassed = (playerState.time.year - lastCheck.year) * 12 + (playerState.time.month - lastCheck.month);
         
+        const isMajorWorldEvent = (entry: JournalEntry): boolean => {
+            if (entry.type !== 'world') return false;
+            if (entry.message.includes('đột phá đến')) return true;
+            const skillMasteryRegex = /đã lĩnh ngộ "(.+?)" đến tầng thứ (\d+)/;
+            const match = entry.message.match(skillMasteryRegex);
+            if (match) {
+                const skillName = match[1];
+                const level = parseInt(match[2], 10);
+                const skillDef = ALL_SKILLS.find(s => s.name === skillName);
+                if (skillDef && level === skillDef.maxLevel) return true;
+            }
+            return false;
+        };
+
+        const originalJournal = playerState.journal || [];
+        const currentTimeInMonths = playerState.time.year * 12 + playerState.time.month;
+        const journalNeedsCleaning = originalJournal.some(entry => {
+            if ((entry.type || 'player') !== 'world' || isMajorWorldEvent(entry)) return false;
+            const entryTimeInMonths = entry.time.year * 12 + entry.time.month;
+            return (currentTimeInMonths - entryTimeInMonths) > 24;
+        });
+        
         if (monthsPassed >= 1) {
             const { updatedNpcs, newJournalEntries, harvestedInteractables } = processNpcActionsForTimeSkip(playerState, monthsPassed);
             
-            if (newJournalEntries.length > 0 || harvestedInteractables.length > 0 || JSON.stringify(updatedNpcs) !== JSON.stringify(playerState.generatedNpcs)) {
+            if (newJournalEntries.length > 0 || harvestedInteractables.length > 0 || JSON.stringify(updatedNpcs) !== JSON.stringify(playerState.generatedNpcs) || journalNeedsCleaning) {
                   updateAndPersistPlayerState((p: PlayerState) => {
                     if (!p) return p;
                     
@@ -234,10 +256,21 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                         }
                     }
 
+                    const currentJournalTimeInMonths = p.time.year * 12 + p.time.month;
+                    const cleanedOldJournal = (p.journal || []).filter(entry => {
+                        if ((entry.type || 'player') === 'player') return true;
+                        if (isMajorWorldEvent(entry)) return true;
+                        
+                        const entryTimeInMonths = entry.time.year * 12 + entry.time.month;
+                        return (currentJournalTimeInMonths - entryTimeInMonths) <= 24;
+                    });
+                    
+                    const finalJournal = [...cleanedOldJournal, ...newJournalEntries];
+
                     return {
                         ...p,
                         generatedNpcs: updatedNpcs,
-                        journal: [...(p.journal || []), ...newJournalEntries],
+                        journal: finalJournal,
                         lastNpcProgressionCheck: p.time,
                         respawningInteractables: newRespawningInteractables,
                     };
@@ -629,8 +662,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         pendingInteraction,
         ...interactionManager,
         setTargetPosition,
-        handlePlantSeed,
-    }), [interactionManager, setTargetPosition, handlePlantSeed]);
+    }), [interactionManager, setTargetPosition]);
 
     return (
         <UIContext.Provider value={uiContextValue}>

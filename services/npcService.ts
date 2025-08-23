@@ -3,9 +3,10 @@ import type { MapID, PointOfInterest } from '../types/map';
 import type { LearnedSkill, SkillTier } from '../types/skill';
 import type { InventorySlot } from '../types/item';
 import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
+import { MONSTER_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/monster_spawns';
 import { ALL_STATIC_NPCS } from '../data/npcs/static_npcs';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
-import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, ProceduralMonsterRule, MonsterDefinition, RoleSpawnDefinition, AgeCategory } from '../data/npcs/npc_types';
+import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, ProceduralMonsterRule, MonsterDefinition, RoleSpawnDefinition, AgeCategory, FactionRole } from '../data/npcs/npc_types';
 import { generateNpcs, GeneratedNpcData, GeminiServiceResponse } from './geminiService';
 import { REALM_PROGRESSION } from '../constants';
 import { MAPS, MAP_AREAS_BY_MAP, POIS_BY_MAP } from '../mapdata';
@@ -17,11 +18,14 @@ import { EquipmentSlot, ITEM_TIER_NAMES } from '../types/equipment';
 import type { LinhCan, LinhCanType, NpcBehavior } from '../types/linhcan';
 import { LINH_CAN_TYPES, NPC_BEHAVIOR_TAGS } from '../types/linhcan';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
-import { FACTIONS, type FactionRole } from '../data/factions';
+import { FACTIONS } from '../data/factions';
 import { generateRandomLinhCan } from '../hooks/usePlayerPersistence';
 import { FAMILY_NAMES, MALE_GIVEN_NAMES, FEMALE_GIVEN_NAMES } from '../data/names';
 import { CHINH_TAGS, TRUNG_LAP_TAGS, TA_TAGS } from '../data/personality_tags';
 
+type Mutable<T> = {
+  -readonly [P in keyof T]: T[P];
+};
 
 const MAX_NAME_USAGE = 3;
 
@@ -497,43 +501,85 @@ export function createNpcFromData(
     };
 }
 
+const getEquivalentCultivationForMonster = (monsterLevel: number): { realmIndex: number, level: number } => {
+    switch (monsterLevel) {
+        case 1: return { realmIndex: 0, level: Math.floor(Math.random() * 9) }; // Luyện Khí 1-9
+        case 2: return { realmIndex: 0, level: 9 + Math.floor(Math.random() * 4) }; // Luyện Khí 10-13
+        case 3: return { realmIndex: 1, level: Math.floor(Math.random() * 2) }; // Trúc Cơ Sơ-Trung
+        case 4: return { realmIndex: 1, level: 2 + Math.floor(Math.random() * 2) }; // Trúc Cơ Hậu-Đỉnh
+        case 5: return { realmIndex: 2, level: Math.floor(Math.random() * 2) }; // Kết Tinh Sơ-Trung
+        case 6: return { realmIndex: 2, level: 2 + Math.floor(Math.random() * 2) }; // Kết Tinh Hậu-Đỉnh
+        case 7: return { realmIndex: 3, level: Math.floor(Math.random() * 4) }; // Kim Đan
+        case 8: return { realmIndex: 4, level: Math.floor(Math.random() * 4) }; // Nguyên Anh
+        case 9: return { realmIndex: 5, level: Math.floor(Math.random() * 3) }; // Hóa Thần Sơ-Hậu
+        case 10: return { realmIndex: 5, level: 3 }; // Hóa Thần Đỉnh Phong
+        default: return { realmIndex: 0, level: 0 };
+    }
+}
+
 export function createMonsterFromData(template: MonsterDefinition, level: number, id: string, position: {x:number, y:number}, spawnRuleId: string | undefined, gameTime: GameTime, currentMap: MapID): NPC {
-    const levelMultiplier = Math.pow(1.15, level - 1);
+    const equivalentCultivation = getEquivalentCultivationForMonster(level);
+    const { realmIndex, level: cultivationLevel } = equivalentCultivation;
 
-    const baseAttributes: CharacterAttributes = template.attributes;
-    const finalAttributes: CharacterAttributes = {
-        canCot: Math.round(template.attributes.canCot * levelMultiplier),
-        thanPhap: Math.round(template.attributes.thanPhap * levelMultiplier),
-        thanThuc: Math.round(template.attributes.thanThuc * levelMultiplier),
-        ngoTinh: Math.round(template.attributes.ngoTinh * levelMultiplier),
-        coDuyen: Math.round(template.attributes.coDuyen * levelMultiplier),
-        tamCanh: Math.round(template.attributes.tamCanh * levelMultiplier),
-    };
+    const baseAttributes: CharacterAttributes = { ...template.attributes };
+    const finalStats: Mutable<Partial<CombatStats>> = { ...template.baseStats };
 
-    const finalStats: CombatStats = {
-        maxHp: Math.round(template.baseStats.maxHp * levelMultiplier),
-        attackPower: Math.round(template.baseStats.attackPower * levelMultiplier),
-        defensePower: Math.round(template.baseStats.defensePower * levelMultiplier),
-        speed: Math.round(template.baseStats.speed * levelMultiplier),
-        critRate: template.baseStats.critRate + (level - 1) * 0.005,
-        critDamage: template.baseStats.critDamage + (level - 1) * 0.05,
-        armorPenetration: template.baseStats.armorPenetration + (level - 1) * 0.001,
-        maxQi: 0,
-        maxMana: 0,
-        maxThoNguyen: 0,
-        kimDamageBonus: 0,
-        mocDamageBonus: 0,
-        thuyDamageBonus: 0,
-        hoaDamageBonus: 0,
-        thoDamageBonus: 0,
-        phongDamageBonus: 0,
-        loiDamageBonus: 0,
-        bangDamageBonus: 0,
-        quangDamageBonus: 0,
-        amDamageBonus: 0,
-    };
+    for (let r_idx = 0; r_idx <= realmIndex; r_idx++) {
+        const currentRealm = REALM_PROGRESSION[r_idx];
+        if (!currentRealm) continue;
+
+        const maxLevelInThisRealm = (r_idx === realmIndex) ? cultivationLevel : currentRealm.levels.length - 1;
+        
+        for (let l_idx = 0; l_idx <= maxLevelInThisRealm; l_idx++) {
+            const levelData = currentRealm.levels[l_idx];
+            if (levelData?.bonuses) {
+                for (const key in levelData.bonuses) {
+                    const statKey = key as keyof (CombatStats & CharacterAttributes);
+                    if (statKey in baseAttributes) continue; 
+                    
+                    const value = levelData.bonuses[statKey];
+                    let rolledValue = 0;
+
+                    if (typeof value === 'number') {
+                        rolledValue = value;
+                    } else if (Array.isArray(value)) {
+                        rolledValue = Math.floor(Math.random() * (value[1] - value[0] + 1)) + value[0];
+                    }
+
+                    if (rolledValue !== 0) {
+                       (finalStats as any)[statKey] = ((finalStats as any)[statKey] || 0) + rolledValue;
+                    }
+                }
+            }
+        }
+    }
+
+    const finalAttributes = baseAttributes;
+    finalStats.maxHp = (finalStats.maxHp || 0) + finalAttributes.canCot * 5;
+    finalStats.attackPower = (finalStats.attackPower || 0) + finalAttributes.thanThuc * 1;
+    finalStats.defensePower = (finalStats.defensePower || 0) + Math.round(finalAttributes.canCot * 0.5);
+    finalStats.speed = (finalStats.speed || 0) + finalAttributes.thanPhap * 0.5;
+    finalStats.critRate = (finalStats.critRate || 0) + finalAttributes.thanThuc / 3000 + finalAttributes.coDuyen / 6000;
+    finalStats.critDamage = (finalStats.critDamage || 0) + finalAttributes.coDuyen / 500;
+    finalStats.armorPenetration = (finalStats.armorPenetration || 0) + (finalAttributes.thanThuc / 3000) + (finalAttributes.coDuyen / 6000);
+
+    const allStatKeys: (keyof CombatStats)[] = ['maxQi', 'maxMana', 'maxThoNguyen', 'kimDamageBonus', 'mocDamageBonus', 'thuyDamageBonus', 'hoaDamageBonus', 'thoDamageBonus', 'phongDamageBonus', 'loiDamageBonus', 'bangDamageBonus', 'quangDamageBonus', 'amDamageBonus'];
+    for(const key of allStatKeys) {
+        if(!(key in finalStats)) {
+            (finalStats as any)[key] = 0;
+        }
+    }
     
-    const age = Math.floor(Math.random() * 10) + 1; // a random age for monsters
+    Object.keys(finalStats).forEach(key => {
+        const statKey = key as keyof CombatStats;
+        if (statKey !== 'critRate' && statKey !== 'critDamage' && statKey !== 'armorPenetration') {
+             if (typeof (finalStats as any)[statKey] === 'number') {
+                (finalStats as any)[statKey] = Math.round((finalStats as any)[statKey]);
+            }
+        }
+    });
+
+    const age = Math.floor(Math.random() * 10) + 1;
     const birthTime: GameTime = {
         year: gameTime.year - age,
         season: 'Xuân',
@@ -547,7 +593,7 @@ export function createMonsterFromData(template: MonsterDefinition, level: number
         id,
         baseId: template.baseId,
         name: `${template.name} (Cấp ${level})`,
-        gender: 'Nam', // Monsters don't have a meaningful gender in this context
+        gender: 'Nam',
         npcType: 'monster',
         spawnRuleId,
         role: 'Yêu Thú',
@@ -557,8 +603,8 @@ export function createMonsterFromData(template: MonsterDefinition, level: number
         level,
         baseAttributes,
         attributes: finalAttributes,
-        stats: finalStats,
-        hp: finalStats.maxHp,
+        stats: finalStats as CombatStats,
+        hp: finalStats.maxHp!,
         qi: 0,
         mana: 0,
         camNgo: 0,
@@ -619,9 +665,10 @@ const generatePersonalityTags = (): string[] => {
 
 export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, PointOfInterest[]>, playerState: PlayerState): Promise<{ npcs: NPC[], totalTokenCount: number, updatedNameCounts: PlayerState['nameUsageCounts'] }> => {
     const spawnDefinitions = NPC_SPAWN_DEFINITIONS_BY_MAP[mapId] || [];
+    const monsterRules = MONSTER_SPAWN_DEFINITIONS_BY_MAP[mapId] || [];
     const nameCountsCopy = JSON.parse(JSON.stringify(playerState.nameUsageCounts || { male: {}, female: {} }));
 
-    if (!spawnDefinitions.length) return { npcs: [], totalTokenCount: 0, updatedNameCounts: nameCountsCopy };
+    if (!spawnDefinitions.length && !monsterRules.length) return { npcs: [], totalTokenCount: 0, updatedNameCounts: nameCountsCopy };
 
     const finalNpcs: NPC[] = [];
     const staticNpcTemplates = new Map(ALL_STATIC_NPCS.map(npc => [npc.baseId, npc]));
@@ -661,7 +708,6 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
     }
 
     // Handle procedural monster spawns
-    const monsterRules = spawnDefinitions.filter((def): def is ProceduralMonsterRule => def.type === 'procedural_monster');
     for (const rule of monsterRules) {
         const area = (MAPS[mapId] && MAP_AREAS_BY_MAP[mapId] || []).find(a => a.id === rule.areaId);
         if (!area) continue;
@@ -671,7 +717,7 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
             const template = monsterTemplates.get(baseId);
             if (!template) continue;
 
-            const level = Math.floor(Math.random() * (rule.levelRange[1] - rule.levelRange[0] + 1)) + rule.levelRange[0];
+            const level = Math.floor(Math.random() * (template.levelRange[1] - template.levelRange[0] + 1)) + template.levelRange[0];
             const x = area.position.x - area.size.width / 2 + Math.random() * area.size.width;
             const y = area.position.y - area.size.height / 2 + Math.random() * area.size.height;
             const id = `proc-monster-${mapId}-${baseId}-${Date.now()}-${i}`;

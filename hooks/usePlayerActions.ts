@@ -20,7 +20,7 @@ const STAT_ATTRIBUTE_NAMES: Record<string, string> = {
     tamCanh: 'Tâm Cảnh',
     // Combat Stats
     maxHp: 'Sinh Lực Tối đa',
-    maxQi: 'Chân Khí Tối đa',
+    maxQi: 'Tu Vi Tối đa',
     maxMana: 'Linh Lực Tối đa',
     maxThoNguyen: 'Thọ Nguyên Tối đa',
     attackPower: 'Lực Công',
@@ -73,7 +73,7 @@ export const usePlayerActions = (
                 // Advance time first to use it for Qi calculation
                 const newTime = advanceTime(prev.time, MINUTES_PER_TICK);
 
-                // Calculate Qi gain: 1 Qi every 6 hours
+                // Calculate Tu Vi gain: 1 Tu Vi every 6 hours
                 let qiGained = 0;
                 if (!isQiFull) {
                     // Check if the hour has changed and if the new hour is a multiple of 6
@@ -239,7 +239,7 @@ export const usePlayerActions = (
         const newQi = Math.min(playerState.stats.maxQi, playerState.qi + totalQiGained);
         const newCamNgo = playerState.camNgo + totalCamNgoGained;
 
-        const message = `Bế quan kết thúc. Chân khí tăng ${totalQiGained.toLocaleString()}, Cảm ngộ tăng ${totalCamNgoGained.toLocaleString()}.`;
+        const message = `Bế quan kết thúc. Tu vi tăng ${totalQiGained.toLocaleString()}, Cảm ngộ tăng ${totalCamNgoGained.toLocaleString()}.`;
         setGameMessage(message);
         
         const playerJournalEntry: JournalEntry = {

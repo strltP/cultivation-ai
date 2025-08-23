@@ -18,6 +18,14 @@ export const EFFECT_TYPE_NAMES: Record<EffectType, string> = {
     ENVIRONMENTAL_DEBUFF: 'Linh Khí Áp Chế',
 };
 
+export interface SkillOrigin {
+  type: 'BASIC' | 'UNKNOWN' | 'FACTION';
+  description?: string;     // Dùng cho type: 'UNKNOWN'
+  factionId?: string;       // Dùng cho type: 'FACTION'
+  factionName?: string;     // Dùng cho type: 'FACTION' (để hiển thị cho tiện)
+  requiredRole?: string;    // Dùng cho type: 'FACTION' (vai trò yêu cầu, ví dụ: "Trưởng lão")
+}
+
 export interface SkillEffect {
     type: EffectType;
     chance: number; // 0 to 1
@@ -78,6 +86,7 @@ export interface Skill {
     description: string;
     type: SkillType;
     tier: SkillTier;
+    origin: SkillOrigin;
     weaponType?: WeaponType;
     requiredLinhCan?: LinhCanType[];
     maxLevel: number;

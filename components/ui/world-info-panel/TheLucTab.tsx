@@ -3,6 +3,7 @@ import type { PlayerState, NPC } from '../../../types/character';
 import { FACTIONS } from '../../../data/factions';
 import { FaChevronDown } from 'react-icons/fa';
 import { GiFamilyTree, GiScrollQuill } from 'react-icons/gi';
+import TuyethocTab from './TuyethocTab';
 
 interface FactionHierarchyLevel {
     roleName: string;
@@ -145,13 +146,7 @@ const TheLucTab: React.FC<{ playerState: PlayerState }> = ({ playerState }) => {
                     </div>
                 )}
                  {activeSubTab === 'tuyethoc' && (
-                    <div className="flex items-center justify-center h-full text-center text-gray-500">
-                        <div>
-                            <GiScrollQuill className="text-7xl mx-auto mb-4" />
-                            <h3 className="text-2xl font-bold text-gray-300">Tính Năng Sắp Ra Mắt</h3>
-                            <p className="mt-2">Tuyệt học của các thế lực sẽ được cập nhật trong tương lai.</p>
-                        </div>
-                    </div>
+                    <TuyethocTab />
                 )}
             </div>
         </div>

@@ -86,7 +86,11 @@ export const processNpcTimeSkip = (
                 const upgradableSkills = npc.learnedSkills
                     .map(ls => ({ def: ALL_SKILLS.find(s => s.id === ls.skillId), learned: ls }))
                     .filter(s => s.def && s.learned.currentLevel < s.def.maxLevel)
-                    .map(s => ({ ...s, cost: s.def!.enlightenmentBaseCost + s.learned.currentLevel * s.def!.enlightenmentCostPerLevel }));
+                    .map(s => {
+                        const exponent = s.def!.enlightenmentCostExponent || 1;
+                        const cost = Math.round(s.def!.enlightenmentBaseCost + s.def!.enlightenmentCostPerLevel * Math.pow(s.learned.currentLevel, exponent));
+                        return { ...s, cost };
+                    });
                 
                 if (upgradableSkills.length > 0) {
                     upgradableSkills.sort((a, b) => a.cost - b.cost);

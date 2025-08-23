@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
-import type { PlayerState } from '../types/character';
-import type { InventorySlot } from '../types/item';
-import { ALL_ITEMS } from '../data/items/index';
-import { INVENTORY_SIZE } from '../constants';
-import { LINH_CAN_DATA } from '../data/linhcan';
+import type { PlayerState } from '../../types/character';
+import type { InventorySlot } from '../../types/item';
+import { ALL_ITEMS } from '../../data/items/index';
+import { INVENTORY_SIZE } from '../../constants';
+import { LINH_CAN_DATA } from '../../data/linhcan';
 
 export const useInventoryManager = (
     playerState: PlayerState,
@@ -117,7 +117,7 @@ export const useInventoryManager = (
                         case 'RESTORE_QI':
                             const qiRestored = Math.min(updatedPlayer.stats.maxQi, updatedPlayer.qi + effect.value) - updatedPlayer.qi;
                             updatedPlayer.qi += qiRestored;
-                            if (qiRestored > 0) messages.push(`hồi phục ${qiRestored} Chân Khí`);
+                            if (qiRestored > 0) messages.push(`hồi phục ${qiRestored} Tu Vi`);
                             break;
                         case 'RESTORE_MANA':
                              const manaRestored = Math.min(updatedPlayer.stats.maxMana, updatedPlayer.mana + effect.value) - updatedPlayer.mana;

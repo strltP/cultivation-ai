@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import type { PlayerState, NPC, ApiUsageStats, JournalEntry } from '../types/character';
-import type { Interactable } from '../types/interaction';
+import type { Interactable, InteractableTemplate } from '../types/interaction';
 import type { TeleportLocation, PointOfInterest, MapArea, MapID } from '../types/map';
 import type { Position } from '../types/common';
 import { loadNpcsForMap, createMonsterFromData } from '../services/npcService';
@@ -10,6 +11,8 @@ import { ALL_ITEMS } from '../data/items/index';
 import { ALL_INTERACTABLES } from '../data/interactables';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
 import { SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/interactable_spawns';
+import type { ProceduralSpawnRule } from '../mapdata/interactable_spawns';
+import { MONSTER_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/monster_spawns';
 import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
 import type { ProceduralMonsterRule, ProceduralNpcRule } from '../data/npcs/npc_types';
 import { FACTIONS } from '../data/factions';
@@ -24,26 +27,13 @@ const generateInteractablesForMap = (mapId: MapID, allPois: Record<MapID, PointO
     const definitions = SPAWN_DEFINITIONS_BY_MAP[mapId];
     if (!definitions) return [];
 
-    const interactableTemplatesById = new Map(ALL_INTERACTABLES.map(t => [t.baseId, t]));
+    const interactableTemplatesById = new Map<string, InteractableTemplate>(ALL_INTERACTABLES.map(t => [t.baseId, t]));
     const mapAreas = allMapAreas[mapId] || [];
     const poisForCurrentMap = allPois[mapId] || [];
     const finalInteractables: Interactable[] = [];
 
     for (const def of definitions) {
-        if (!('type' in def)) { // Manual spawn
-            const spawn = def;
-            const template = interactableTemplatesById.get(spawn.baseId);
-            if (template) {
-                finalInteractables.push({
-                    id: spawn.id,
-                    baseId: spawn.baseId,
-                    name: template.name,
-                    type: template.type,
-                    prompt: template.prompt,
-                    position: spawn.position,
-                });
-            }
-        } else { // Procedural spawn
+        if ('type' in def && def.type === 'procedural') { // Procedural spawn
             const rule = def;
             const area = mapAreas.find(a => a.id === rule.areaId);
             if (!area) continue;
@@ -89,6 +79,19 @@ const generateInteractablesForMap = (mapId: MapID, allPois: Record<MapID, PointO
                     position: { x, y },
                 });
                 generatedCount++;
+            }
+        } else if ('baseId' in def) { // Manual spawn
+            const spawn = def;
+            const template = interactableTemplatesById.get(spawn.baseId);
+            if (template) {
+                finalInteractables.push({
+                    id: spawn.id,
+                    baseId: spawn.baseId,
+                    name: template.name,
+                    type: template.type,
+                    prompt: template.prompt,
+                    position: spawn.position,
+                });
             }
         }
     }
@@ -254,7 +257,7 @@ export const useWorldManager = (
         setCurrentMapAreas(dataSource.mapAreas[currentMapId] || []);
 
         const loadAndSetNpcs = async () => {
-            const spawnDefinitionsExist = (NPC_SPAWN_DEFINITIONS_BY_MAP[currentMapId] || []).length > 0;
+            const spawnDefinitionsExist = (NPC_SPAWN_DEFINITIONS_BY_MAP[currentMapId] || []).length > 0 || (MONSTER_SPAWN_DEFINITIONS_BY_MAP[currentMapId] || []).length > 0;
             const mapAlreadyInitialized = playerState.initializedMaps?.includes(currentMapId);
             const needsGeneration = spawnDefinitionsExist && !mapAlreadyInitialized;
             
@@ -286,7 +289,7 @@ export const useWorldManager = (
         loadAndSetNpcs();
 
         // --- New Monster Population Check Logic ---
-        const monsterRulesForMap = NPC_SPAWN_DEFINITIONS_BY_MAP[currentMapId]?.filter(def => def.type === 'procedural_monster') as ProceduralMonsterRule[];
+        const monsterRulesForMap = MONSTER_SPAWN_DEFINITIONS_BY_MAP[currentMapId] || [];
         if (monsterRulesForMap && monsterRulesForMap.length > 0) {
             updateAndPersistPlayerState(p => {
                 if (!p) return null as any;
@@ -316,7 +319,7 @@ export const useWorldManager = (
                                 const baseId = rule.monsterBaseIds[Math.floor(Math.random() * rule.monsterBaseIds.length)];
                                 const template = ALL_MONSTERS.find(m => m.baseId === baseId);
                                 if (template) {
-                                    const level = Math.floor(Math.random() * (rule.levelRange[1] - rule.levelRange[0] + 1)) + rule.levelRange[0];
+                                    const level = Math.floor(Math.random() * (template.levelRange[1] - template.levelRange[0] + 1)) + template.levelRange[0];
                                     const x = area.position.x - area.size.width / 2 + Math.random() * area.size.width;
                                     const y = area.position.y - area.size.height / 2 + Math.random() * area.size.height;
                                     const id = `proc-monster-${currentMapId}-${baseId}-${Date.now()}-${Math.random()}`;
