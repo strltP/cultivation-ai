@@ -263,9 +263,10 @@ export const usePlayerActions = (
 
         setIsSimulating(false);
         setSimulationProgress(null);
-        if (collectedReportEntries.length > 0) {
-            setSeclusionReport(collectedReportEntries);
-        }
+        // User request: Do not show the seclusion report modal after finishing.
+        // if (collectedReportEntries.length > 0) {
+        //     setSeclusionReport(collectedReportEntries);
+        // }
 
     }, [updateAndPersistPlayerState, setGameMessage, stopAllActions, playerState, setIsSimulating, setSimulationProgress, setSeclusionReport]);
 

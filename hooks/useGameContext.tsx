@@ -10,12 +10,12 @@ import { useCombatManager } from './useCombatManager';
 import { useInteractionManager } from './useInteractionManager';
 import { MAPS, POIS_BY_MAP, TELEPORT_GATES_BY_MAP, MAP_AREAS_BY_MAP } from '../mapdata';
 import { advanceTime, gameTimeToMinutes } from '../services/timeService';
+import { REALM_PROGRESSION } from '../constants';
 import { ALL_ITEMS } from '../data/items/index';
 import { ALL_INTERACTABLES } from '../data/interactables/index';
 import { ALL_RECIPES } from '../../data/alchemy_recipes';
 import type { CombatState, PlayerAction } from '../types/combat';
 import { processNpcActionsForTimeSkip } from '../services/npcActionService';
-import { DAYS_PER_MONTH, REALM_PROGRESSION } from '../constants';
 import { getNextCultivationLevel, getRealmLevelInfo, calculateAllStats, getCultivationInfo } from '../services/cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
@@ -248,15 +248,40 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         
         const isMajorWorldEvent = (entry: JournalEntry): boolean => {
             if (entry.type !== 'world') return false;
-            if (entry.message.includes('đột phá đến')) return true;
-            const skillMasteryRegex = /đã lĩnh ngộ "(.+?)" đến tầng thứ (\d+)/;
-            const match = entry.message.match(skillMasteryRegex);
-            if (match) {
-                const skillName = match[1];
-                const level = parseInt(match[2], 10);
-                const skillDef = ALL_SKILLS.find(s => s.name === skillName);
-                if (skillDef && level === skillDef.maxLevel) return true;
+
+            // Criterion 1: Breakthroughs to major realms or peak minor realms
+            const breakthroughRegex = /đã thành công đột phá đến (.+?)!/;
+            const breakthroughMatch = entry.message.match(breakthroughRegex);
+            if (breakthroughMatch) {
+                const cultivationName = breakthroughMatch[1];
+                const parts = cultivationName.split(' - ');
+                if (parts.length === 2) {
+                    const realmName = parts[0].trim();
+                    const levelName = parts[1].trim();
+                    
+                    const realm = REALM_PROGRESSION.find(r => r.name === realmName);
+                    if (realm) {
+                        const levelIndex = realm.levels.findIndex(l => l.levelName === levelName);
+                        // Major event if it's the first level (new realm) or last level (peak)
+                        if (levelIndex === 0 || levelIndex === realm.levels.length - 1) {
+                            return true;
+                        }
+                    }
+                }
             }
+
+            // Criterion 2: Skill mastered to its final level
+            const skillMasteryRegex = /đã lĩnh ngộ "(.+?)" đến tầng thứ (\d+)/;
+            const skillMatch = entry.message.match(skillMasteryRegex);
+            if (skillMatch) {
+                const skillName = skillMatch[1];
+                const level = parseInt(skillMatch[2], 10);
+                const skillDef = ALL_SKILLS.find(s => s.name === skillName);
+                if (skillDef && level === skillDef.maxLevel) {
+                    return true;
+                }
+            }
+
             return false;
         };
 
@@ -265,7 +290,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         const journalNeedsCleaning = originalJournal.some(entry => {
             if ((entry.type || 'player') !== 'world' || isMajorWorldEvent(entry)) return false;
             const entryTimeInMonths = entry.time.year * 12 + entry.time.month;
-            return (currentTimeInMonths - entryTimeInMonths) > 24;
+            return (currentTimeInMonths - entryTimeInMonths) > 6;
         });
         
         if (monthsPassed >= 1) {
@@ -301,7 +326,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                         if (isMajorWorldEvent(entry)) return true;
                         
                         const entryTimeInMonths = entry.time.year * 12 + entry.time.month;
-                        return (currentJournalTimeInMonths - entryTimeInMonths) <= 24;
+                        return (currentJournalTimeInMonths - entryTimeInMonths) <= 6;
                     });
                     
                     const finalJournal = [...cleanedOldJournal, ...newJournalEntries];
