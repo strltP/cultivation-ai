@@ -4,6 +4,8 @@ export const mapDefinition: GameMap = {
     id: 'THANH_VAN_MON',
     name: 'Thanh Vân Môn',
     type: 'sect_map',
+    parentMapId: 'THIEN_NAM',
+    controllingFactionId: 'THANH_VAN_MON',
     size: { width: 3000, height: 4000 },
     backgroundStyle: { 
         background: 'linear-gradient(to bottom, #4a6a8a, #7a9aa9)',

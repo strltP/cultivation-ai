@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import type { PlayerState } from '../../types/character';
 import type { GameMap } from '../../types/map';
 import { getCultivationInfo } from '../../services/cultivationService';
-import { FaMapMarkedAlt, FaCompass, FaYinYang, FaEye, FaEyeSlash, FaBookOpen, FaGem, FaIdCard, FaHourglassHalf, FaRadiationAlt, FaTrophy } from 'react-icons/fa';
+import { FaMapMarkedAlt, FaCompass, FaYinYang, FaEye, FaEyeSlash, FaBookOpen, FaGem, FaIdCard, FaHourglassHalf, FaRadiationAlt, FaTrophy, FaUsers } from 'react-icons/fa';
 import { GiGalaxy, GiBrain, GiScrollQuill, GiCaveEntrance } from 'react-icons/gi';
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
 import TimeDisplay from './TimeDisplay';
 import { EFFECT_TYPE_NAMES } from '../../types/skill';
+import { getControllingFaction } from '../../services/mapService';
 
 interface HudProps {
   playerState: PlayerState;
@@ -50,6 +51,10 @@ const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoadi
   const agePercentage = (age / playerState.stats.maxThoNguyen) * 100;
   const ageColorClass = agePercentage > 90 ? 'text-red-400 animate-pulse' : agePercentage > 75 ? 'text-yellow-400' : 'text-gray-400';
   const isDebuffed = playerState.activeEffects.some(e => e.type === 'ENVIRONMENTAL_DEBUFF');
+  
+  const controllingFaction = useMemo(() => {
+      return getControllingFaction(playerState.currentMap);
+  }, [playerState.currentMap]);
 
   let locationDisplay = currentMap.name;
     if (currentArea) {
@@ -146,6 +151,12 @@ const Hud: React.FC<HudProps> = ({ playerState, currentMap, gameMessage, isLoadi
             <FaCompass />
             <span className="font-semibold text-sm">{locationDisplay}</span>
         </div>
+        {controllingFaction && (
+            <div className="flex items-center gap-x-2 text-amber-300" title={`Khu vực này được kiểm soát bởi ${controllingFaction.name}`}>
+                <FaUsers />
+                <span className="font-semibold text-sm">{controllingFaction.name}</span>
+            </div>
+        )}
         <div className="flex items-center gap-x-2 text-yellow-300" title="Linh Thạch">
             <FaGem />
             <span className="font-semibold text-sm">{playerState.linhThach.toLocaleString()}</span>

@@ -4,6 +4,7 @@ export const mapDefinition: GameMap = {
     id: 'DONG_HAI',
     name: 'Đông Phương Hải Vực',
     type: 'continent',
+    parentMapId: undefined,
     size: { width: 8000, height: 8000 },
     backgroundStyle: { background: 'radial-gradient(ellipse at center, rgba(118, 255, 239, 0.1) 0%, rgba(118, 255, 239, 0) 70%), linear-gradient(to bottom, #1a3a3a, #0a2a2a)' }
 };

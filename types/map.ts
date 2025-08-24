@@ -38,6 +38,8 @@ export interface GameMap {
     type: GameMapType;
     size: { width: number; height: number };
     backgroundStyle: CSSProperties;
+    parentMapId?: MapID;
+    controllingFactionId?: string;
 }
 
 export interface TeleportLocation {

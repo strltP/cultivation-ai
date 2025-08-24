@@ -4,6 +4,8 @@ export const mapDefinition: GameMap = {
     id: 'LUU_LY_TONG',
     name: 'Lưu Ly Tông',
     type: 'sect_map',
+    parentMapId: 'THAT_HUYEN_THANH',
+    controllingFactionId: 'LUU_LY_TONG',
     size: { width: 3200, height: 2400 },
     backgroundStyle: { background: 'linear-gradient(to bottom, #2c3e50, #34495e)' }
 };

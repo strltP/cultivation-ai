@@ -4,6 +4,7 @@ export const mapDefinition: GameMap = {
     id: 'HUYEN_NGOC_THANH',
     name: 'Huyền Ngọc Thành',
     type: 'city_map',
+    parentMapId: 'BAC_VUC',
     size: { width: 4000, height: 3500 },
     backgroundStyle: { 
         backgroundColor: '#2d3748',

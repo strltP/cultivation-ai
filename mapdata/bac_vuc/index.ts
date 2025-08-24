@@ -4,6 +4,7 @@ export const mapDefinition: GameMap = {
     id: 'BAC_VUC',
     name: 'Bắc Vực Băng Giá',
     type: 'continent',
+    parentMapId: undefined,
     size: { width: 5000, height: 4000 },
     backgroundStyle: { background: 'radial-gradient(ellipse at center, rgba(118, 169, 255, 0.15) 0%, rgba(118, 169, 255, 0) 70%), linear-gradient(to bottom, #1a2a3a, #0a1a2a)' }
 };

@@ -14,6 +14,7 @@ import { MAPS, POIS_BY_MAP, MAP_AREAS_BY_MAP } from "../mapdata";
 import type { PointOfInterest } from '../types/map';
 import { gameTimeToMinutes } from "./timeService";
 import { getAffinityLevel } from './affinityService';
+import { getMapHierarchyBreadcrumbs } from './mapService';
 
 
 let ai: GoogleGenAI | null = null;
@@ -91,8 +92,9 @@ export const createChatSession = (playerState: PlayerState, npc: NPC, history?: 
     let locationParts: string[] = [];
     if (npcPoi) locationParts.push(npcPoi.name);
     if (npcArea) locationParts.push(npcArea.name);
-    locationParts.push(currentMap.name);
-    const npcLocationString = [...new Set(locationParts)].join(', ');
+    // locationParts.push(currentMap.name); // Breadcrumbs will handle the map name
+    const npcLocationString = [...new Set(locationParts)].join(', ') || 'không xác định';
+    const mapHierarchyString = getMapHierarchyBreadcrumbs(playerState.currentMap);
 
     // 2. Cultivation Realms
     const realmNames = REALM_PROGRESSION.map(r => r.name).join(', ');
@@ -228,6 +230,7 @@ THÔNG TIN VỀ BẢN THÂN BẠN (${npc.name})
 - Vật phẩm đang bán: ${forSaleString}.
 ${currentStateString ? `\n${currentStateString}\n` : ''}
 BỐI CẢNH TRÒ CHUYỆN
+- Vị trí: ${mapHierarchyString} (Cụ thể: ${npcLocationString}).
 - Bạn đang nói chuyện với một tu sĩ (${playerState.gender}) tên là '${playerState.name}', hiện đang ở cảnh giới ${playerCultivationInfo.name}.
 - Mối quan hệ của bạn với người này: Mức độ thiện cảm hiện tại là ${affinityScore} (trên thang điểm từ -100 đến 100), được đánh giá là '${affinityInfo.level}'. **QUAN TRỌNG:** Hãy điều chỉnh thái độ và lời nói của bạn cho phù hợp với mức độ thiện cảm này. Ví dụ: nếu là 'Thù Địch', hãy nói chuyện cộc lốc, khinh miệt. Nếu là 'Tri Kỷ', hãy nói chuyện thân mật, cởi mở.
 - Bây giờ là ${timeOfDay} vào mùa ${season}.

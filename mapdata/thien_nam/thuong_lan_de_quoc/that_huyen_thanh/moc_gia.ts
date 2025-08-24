@@ -4,6 +4,8 @@ export const mapDefinition: GameMap = {
     id: 'MOC_GIA',
     name: 'Mộc Gia',
     type: 'sect_map',
+    parentMapId: 'THAT_HUYEN_THANH',
+    controllingFactionId: 'MOC_GIA',
     size: { width: 2500, height: 2000 },
     backgroundStyle: { background: 'linear-gradient(to bottom, #2b4d3c, #1a3a2b)' }
 };

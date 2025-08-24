@@ -4,6 +4,7 @@ export const mapDefinition: GameMap = {
     id: 'DAI_HOANG',
     name: 'Đại Hoang Cổ Lão',
     type: 'continent',
+    parentMapId: undefined,
     size: { width: 8000, height: 6000 },
     backgroundStyle: { background: 'radial-gradient(ellipse at center, rgba(255, 169, 118, 0.1) 0%, rgba(255, 169, 118, 0) 70%), linear-gradient(to bottom, #3a2a1a, #2a1a0a)' }
 };

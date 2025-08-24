@@ -4,6 +4,7 @@ export const mapDefinition: GameMap = {
     id: 'VAN_BAO_LAU',
     name: 'Vạn Bảo Lâu',
     type: 'building_interior',
+    parentMapId: 'THAT_HUYEN_THANH',
     size: { width: 2400, height: 2000 },
     backgroundStyle: { background: 'linear-gradient(to bottom, #4a2c50, #6d345b)' }
 };

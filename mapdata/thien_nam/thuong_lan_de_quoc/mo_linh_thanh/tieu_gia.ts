@@ -4,6 +4,8 @@ export const mapDefinition: GameMap = {
     id: 'TIEU_GIA',
     name: 'Tiêu Gia',
     type: 'sect_map',
+    parentMapId: 'MO_LINH_THANH',
+    controllingFactionId: 'TIEU_GIA',
     size: { width: 2800, height: 2200 },
     backgroundStyle: { background: 'linear-gradient(to bottom, #4a2c2c, #3a1c1c)' }
 };

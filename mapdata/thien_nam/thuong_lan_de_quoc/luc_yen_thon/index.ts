@@ -4,6 +4,8 @@ export const mapDefinition: GameMap = {
     id: 'LUC_YEN_THON',
     name: 'Lục Yên Thôn',
     type: 'village_map',
+    parentMapId: 'THIEN_NAM',
+    controllingFactionId: 'LUC_YEN_THON',
     size: { width: 2500, height: 2000 },
     backgroundStyle: {
         background: 'linear-gradient(to bottom, #3a5a40, #2a4a30)',

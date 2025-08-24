@@ -4,6 +4,7 @@ export const mapDefinition: GameMap = {
     id: 'HAC_AM_SAM_LAM',
     name: 'Hắc Ám Sâm Lâm',
     type: 'dungeon_map',
+    parentMapId: 'THIEN_NAM',
     size: { width: 3000, height: 4000 },
     backgroundStyle: {
         background: 'radial-gradient(ellipse at center, rgba(49, 28, 64, 0.2) 0%, rgba(12, 28, 64, 0) 70%), linear-gradient(to bottom, #1a2a1b, #0a1a0b)',

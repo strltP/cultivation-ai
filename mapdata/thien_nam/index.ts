@@ -5,7 +5,8 @@ export const mapDefinition: GameMap = {
     name: 'Thiên Nam Đại Lục',
     type: 'continent',
     size: { width: 10000, height: 8000 }, // Expanded map size
-    backgroundStyle: { background: 'radial-gradient(ellipse at center, rgba(34,197,94,0.15) 0%, rgba(34,197,94,0) 70%), linear-gradient(to bottom, #2a3a2b, #1a2a1b)' }
+    backgroundStyle: { background: 'radial-gradient(ellipse at center, rgba(34,197,94,0.15) 0%, rgba(34,197,94,0) 70%), linear-gradient(to bottom, #2a3a2b, #1a2a1b)' },
+    parentMapId: undefined,
 };
 
 export const mapAreas: MapArea[] = [

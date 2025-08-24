@@ -4,6 +4,7 @@ export const mapDefinition: GameMap = {
     id: 'DUOC_VIEN',
     name: 'Dược Viên',
     type: 'zone_map',
+    parentMapId: 'THANH_VAN_MON',
     size: { width: 2000, height: 1500 },
     backgroundStyle: { 
         background: 'linear-gradient(to bottom, #2b4d3c, #1a3a2b)',
