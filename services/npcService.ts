@@ -7,7 +7,8 @@ import { MONSTER_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/monster_spawns';
 import { ALL_STATIC_NPCS } from '../data/npcs/static_npcs';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
 import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, ProceduralMonsterRule, MonsterDefinition, RoleSpawnDefinition, AgeCategory, FactionRole } from '../data/npcs/npc_types';
-import { generateNpcs, GeneratedNpcData, GeminiServiceResponse } from './geminiService';
+import { getAIClient, GeminiServiceResponse } from './geminiService';
+import { Type } from '@google/genai';
 import { REALM_PROGRESSION } from '../constants';
 import { MAPS, MAP_AREAS_BY_MAP, POIS_BY_MAP } from '../mapdata';
 import { calculateAllStats, getCultivationInfo } from './cultivationService';
@@ -22,6 +23,14 @@ import { FACTIONS } from '../data/factions';
 import { generateRandomLinhCan } from '../hooks/usePlayerPersistence';
 import { FAMILY_NAMES, MALE_GIVEN_NAMES, FEMALE_GIVEN_NAMES } from '../data/names';
 import { CHINH_TAGS, TRUNG_LAP_TAGS, TA_TAGS } from '../data/personality_tags';
+
+const SYSTEM_INSTRUCTION_ONESHOT = `Bạn là một người quản trò (game master) sáng tạo và am hiểu cho một trò chơi nhập vai 'Tu Tiên'. Phản hồi của bạn phải có không khí, huyền bí và đúng với nhân vật. Hãy mô tả các sự kiện và đối thoại một cách sống động. Giữ cho câu trả lời ngắn gọn, thường là 2-3 câu. Luôn luôn nhập vai và sử dụng ngôn ngữ tiếng Việt phù hợp với bối cảnh tu tiên (ví dụ: lão phu, tại hạ, đạo hữu, linh khí...). Hãy xem xét thời gian trong ngày và mùa trong năm để điều chỉnh không khí của lời thoại.`;
+
+interface GeneratedNpcData {
+    title?: string | null;
+    personalityTags: string[];
+}
+
 
 type Mutable<T> = {
   -readonly [P in keyof T]: T[P];
@@ -132,6 +141,7 @@ const generateAttributesForRole = (roleDef: FactionRole): CharacterAttributes =>
 
 export function createNpcFromData(
     data: (GeneratedNpcData | StaticNpcDefinition) & { 
+        role: string;
         name?: string;
         power?: number; 
         gender?: 'Nam' | 'Nữ';
@@ -208,7 +218,7 @@ export function createNpcFromData(
 
         // 5. Generate Assets (PHASE 2 FORMULAS)
         data.linhThach = Math.floor((Math.random() * 50 + 20) * Math.pow(realmIndex + 1, 4) * (level + 1));
-        data.camNgo = Math.floor((Math.random() * 200 + 100) * Math.pow(realmIndex + 1, 2.5) * (level + 1));
+        data.camNgo = Math.floor((Math.random() * 100 + 50) * Math.pow(realmIndex + 1, 1.5) * (level + 1));
         
         // 6. NEW: Generate attributes from code
         data.attributes = generateAttributesForRole(roleDef);
@@ -665,6 +675,72 @@ const generatePersonalityTags = (): string[] => {
     return tags;
 };
 
+export const generateNpcs = async (
+    generationPrompt: string, 
+    count: number
+): Promise<GeminiServiceResponse<{ title?: string | null; personalityTags: string[] }[]>> => {
+    try {
+        const client = getAIClient();
+        
+        // Generate personality tags programmatically before calling the API
+        const allPersonalityTags: string[][] = [];
+        for (let i = 0; i < count; i++) {
+            allPersonalityTags.push(generatePersonalityTags());
+        }
+
+        const prompt = `${generationPrompt}
+Dựa trên bối cảnh và vai trò đã cho, hãy tạo ra ${count} danh hiệu (title) tu tiên độc đáo cho các NPC.
+Mỗi danh hiệu phải phù hợp với chủ đề và các thẻ tính cách (personalityTags) được cung cấp dưới đây.
+Nếu không có danh hiệu nào hay, hãy để trống hoặc null.
+
+**QUAN TRỌNG:** Dưới đây là danh sách các thẻ tính cách đã được xác định trước cho mỗi NPC.
+${allPersonalityTags.map((tags, index) => `NPC ${index + 1} có các tính cách: [${tags.join(', ')}]`).join('\n')}
+`;
+        
+        const response = await client.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                systemInstruction: SYSTEM_INSTRUCTION_ONESHOT,
+                temperature: 0.9,
+                topP: 0.95,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            title: { type: Type.STRING, description: "Danh hiệu tu tiên của NPC. Có thể là chuỗi rỗng hoặc null.", nullable: true },
+                        },
+                        required: []
+                    }
+                }
+            },
+        });
+        
+        const tokenCount = response.usageMetadata?.totalTokenCount || 0;
+        if (!response.text) {
+            throw new Error("Gemini response for generateNpcs is empty.");
+        }
+        const jsonStr = response.text.trim();
+        const result = JSON.parse(jsonStr) as { title?: string | null }[];
+
+        if (Array.isArray(result) && result.length === count) {
+             // Combine the generated titles with the pre-generated personality tags
+            const data = result.map((npcData, index) => ({
+                title: npcData.title,
+                personalityTags: allPersonalityTags[index]
+            }));
+            return { data, tokenCount };
+        }
+        console.error("Gemini response is not a valid array or count mismatch:", result);
+        return { data: [], tokenCount };
+    } catch (error) {
+        console.error("Error generating NPCs from Gemini:", error);
+        return { data: [], tokenCount: 0 };
+    }
+};
+
 
 export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, PointOfInterest[]>, playerState: PlayerState): Promise<{ npcs: NPC[], totalTokenCount: number, updatedNameCounts: PlayerState['nameUsageCounts'] }> => {
     const spawnDefinitions = NPC_SPAWN_DEFINITIONS_BY_MAP[mapId] || [];
@@ -804,11 +880,11 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
                     .then(({ data: generatedData, tokenCount }) => {
                         totalTokenCount += tokenCount;
                         // Reconstruct the full NPC data here
-                        const fullNpcData: GeneratedNpcData[] = generatedData.map(d => ({
-                            role: role.name,
-                            power: role.name === 'Tán tu' ? undefined : (role.power),
+                        const fullNpcData: (GeneratedNpcData & { role: string; power?: number; })[] = generatedData.map(d => ({
                             title: d.title,
                             personalityTags: d.personalityTags,
+                            role: role.name,
+                            power: role.name === 'Tán tu' ? undefined : (role.power),
                         }));
                         
                         return fullNpcData.map((npcData, index) => {

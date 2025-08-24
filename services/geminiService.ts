@@ -13,13 +13,12 @@ import { REALM_PROGRESSION } from "../constants";
 import { MAPS, POIS_BY_MAP, MAP_AREAS_BY_MAP } from "../mapdata";
 import type { PointOfInterest } from '../types/map';
 import { gameTimeToMinutes } from "./timeService";
-import { CHINH_TAGS, TRUNG_LAP_TAGS, TA_TAGS } from '../data/personality_tags';
 import { getAffinityLevel } from './affinityService';
 
 
 let ai: GoogleGenAI | null = null;
 
-const getAIClient = (): GoogleGenAI => {
+export const getAIClient = (): GoogleGenAI => {
     if (!ai) {
         if (!process.env.API_KEY) {
             throw new Error("API_KEY environment variable not set");
@@ -379,120 +378,5 @@ Sau đó, đưa ra một lời thoại ngắn gọn (1-2 câu) để NPC nói v�
             },
             tokenCount: 0
         };
-    }
-};
-
-export interface GeneratedNpcData {
-    role: string;
-    power?: number;
-    personalityTags: string[];
-    title?: string;
-}
-
-// Helper function to pick random unique elements from an array
-const pickRandom = (arr: string[], num: number): string[] => {
-    const shuffled = [...arr].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, num);
-};
-
-const generatePersonalityTags = (): string[] => {
-    const combinations = [
-        { weights: [3, 0, 0], weight: 15 }, // 3 Chính
-        { weights: [0, 0, 3], weight: 15 }, // 3 Tà
-        { weights: [0, 3, 0], weight: 10 }, // 3 Trung Lập
-        { weights: [2, 1, 0], weight: 15 }, // 2 Chính, 1 Trung Lập
-        { weights: [2, 0, 1], weight: 10 }, // 2 Chính, 1 Tà
-        { weights: [1, 2, 0], weight: 10 }, // 1 Chính, 2 Trung Lập
-        { weights: [0, 2, 1], weight: 10 }, // 2 Trung Lập, 1 Tà
-        { weights: [1, 0, 2], weight: 5 },  // 1 Chính, 2 Tà
-        { weights: [0, 1, 2], weight: 5 },  // 1 Trung Lập, 2 Tà
-        { weights: [1, 1, 1], weight: 15 }, // 1 của mỗi loại
-    ];
-
-    const totalWeight = combinations.reduce((sum, combo) => sum + combo.weight, 0);
-    let random = Math.random() * totalWeight;
-    let chosenCombination = combinations[0].weights;
-
-    for (const combo of combinations) {
-        if (random < combo.weight) {
-            chosenCombination = combo.weights;
-            break;
-        }
-        random -= combo.weight;
-    }
-
-    const [numChinh, numTrungLap, numTa] = chosenCombination;
-    
-    const tags: string[] = [];
-    tags.push(...pickRandom(CHINH_TAGS, numChinh));
-    tags.push(...pickRandom(TRUNG_LAP_TAGS, numTrungLap));
-    tags.push(...pickRandom(TA_TAGS, numTa));
-
-    return tags;
-};
-
-export const generateNpcs = async (
-    generationPrompt: string, 
-    count: number
-): Promise<GeminiServiceResponse<{ title?: string | null; personalityTags: string[] }[]>> => {
-    try {
-        const client = getAIClient();
-        
-        // Generate personality tags programmatically before calling the API
-        const allPersonalityTags: string[][] = [];
-        for (let i = 0; i < count; i++) {
-            allPersonalityTags.push(generatePersonalityTags());
-        }
-
-        const prompt = `${generationPrompt}
-Dựa trên bối cảnh và vai trò đã cho, hãy tạo ra ${count} danh hiệu (title) tu tiên độc đáo cho các NPC.
-Mỗi danh hiệu phải phù hợp với chủ đề và các thẻ tính cách (personalityTags) được cung cấp dưới đây.
-Nếu không có danh hiệu nào hay, hãy để trống hoặc null.
-
-**QUAN TRỌNG:** Dưới đây là danh sách các thẻ tính cách đã được xác định trước cho mỗi NPC.
-${allPersonalityTags.map((tags, index) => `NPC ${index + 1} có các tính cách: [${tags.join(', ')}]`).join('\n')}
-`;
-        
-        const response = await client.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                systemInstruction: SYSTEM_INSTRUCTION_ONESHOT,
-                temperature: 0.9,
-                topP: 0.95,
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            title: { type: Type.STRING, description: "Danh hiệu tu tiên của NPC. Có thể là chuỗi rỗng hoặc null.", nullable: true },
-                        },
-                        required: []
-                    }
-                }
-            },
-        });
-        
-        const tokenCount = response.usageMetadata?.totalTokenCount || 0;
-        if (!response.text) {
-            throw new Error("Gemini response for generateNpcs is empty.");
-        }
-        const jsonStr = response.text.trim();
-        const result = JSON.parse(jsonStr) as { title?: string | null }[];
-
-        if (Array.isArray(result) && result.length === count) {
-             // Combine the generated titles with the pre-generated personality tags
-            const data = result.map((npcData, index) => ({
-                title: npcData.title,
-                personalityTags: allPersonalityTags[index]
-            }));
-            return { data, tokenCount };
-        }
-        console.error("Gemini response is not a valid array or count mismatch:", result);
-        return { data: [], tokenCount };
-    } catch (error) {
-        console.error("Error generating NPCs from Gemini:", error);
-        return { data: [], tokenCount: 0 };
     }
 };
