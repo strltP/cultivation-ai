@@ -417,67 +417,6 @@ export const processSocialInteractionsForTimeSkip = (
     currentState: PlayerState,
     monthsToSkip: number
 ): { updatedNpcs: Record<string, NPC[]>, newJournalEntries: JournalEntry[] } => {
-    if (!currentState.npcAffinityStore) {
-        currentState.npcAffinityStore = {};
-    }
-
-    const allLivingNpcs = Object.values(currentState.generatedNpcs).flat().filter((npc: NPC) => 
-        npc.npcType === 'cultivator' && !currentState.defeatedNpcIds.includes(npc.id)
-    );
-    const allMapIds = Object.keys(currentState.generatedNpcs) as MapID[];
-
-    for (const mapId of allMapIds) {
-        const npcsOnMap = allLivingNpcs.filter(n => n.currentMap === mapId);
-        if (npcsOnMap.length < 2) continue;
-
-        for (let i = 0; i < npcsOnMap.length; i++) {
-            for (let j = i + 1; j < npcsOnMap.length; j++) {
-                const npcA = npcsOnMap[i];
-                const npcB = npcsOnMap[j];
-
-                const BASE_INTERACTION_CHANCE_PER_MONTH = 0.15; // Increased chance
-                let interactionChance = BASE_INTERACTION_CHANCE_PER_MONTH;
-
-                if (npcA.personalityTags?.some(t => ['Hào sảng', 'Tốt bụng'].includes(t))) interactionChance *= 1.5;
-                if (npcB.personalityTags?.some(t => ['Hào sảng', 'Tốt bụng'].includes(t))) interactionChance *= 1.5;
-                if (npcA.personalityTags?.some(t => ['Âm trầm', 'Thích yên tĩnh'].includes(t))) interactionChance *= 0.5;
-                if (npcB.personalityTags?.some(t => ['Âm trầm', 'Thích yên tĩnh'].includes(t))) interactionChance *= 0.5;
-
-                const totalInteractionChance = 1 - Math.pow(1 - interactionChance, monthsToSkip);
-
-                if (Math.random() < totalInteractionChance) {
-                    const key = [npcA.id, npcB.id].sort().join('_');
-                    const currentAffinity = currentState.npcAffinityStore[key] || 0;
-
-                    let isPositive = true;
-                    if (currentAffinity < -20) isPositive = false;
-                    
-                    const hasConflictPersonalityA = npcA.personalityTags?.some(t => ['Nóng nảy', 'Kiêu ngạo', 'Tà ác', 'Tàn nhẫn'].includes(t));
-                    const hasConflictPersonalityB = npcB.personalityTags?.some(t => ['Nóng nảy', 'Kiêu ngạo', 'Tà ác', 'Tàn nhẫn'].includes(t));
-                    const hasGoodPersonalityA = npcA.personalityTags?.some(t => ['Nhân từ', 'Hào sảng', 'Khiêm tốn'].includes(t));
-                    const hasGoodPersonalityB = npcB.personalityTags?.some(t => ['Nhân từ', 'Hào sảng', 'Khiêm tốn'].includes(t));
-
-                    if (hasConflictPersonalityA && hasConflictPersonalityB) {
-                         isPositive = Math.random() < 0.1; // 10% chance to be positive
-                    } else if (hasConflictPersonalityA || hasConflictPersonalityB) {
-                        isPositive = Math.random() < 0.4; // 40% chance
-                    } else if (hasGoodPersonalityA && hasGoodPersonalityB) {
-                         isPositive = Math.random() < 0.9; // 90% chance
-                    } else if (hasGoodPersonalityA || hasGoodPersonalityB) {
-                         isPositive = Math.random() < 0.7; // 70% chance
-                    }
-
-                    let affinityChange = isPositive
-                        ? Math.floor(Math.random() * 5) + 2  // +2 to +6
-                        : -(Math.floor(Math.random() * 8) + 3); // -3 to -10
-                    
-                    const newAffinity = Math.max(-100, Math.min(100, currentAffinity + affinityChange));
-
-                    currentState.npcAffinityStore[key] = newAffinity;
-                }
-            }
-        }
-    }
-    
+    // Hoàn toàn vô hiệu hóa hệ thống thiện cảm NPC-NPC
     return { updatedNpcs: currentState.generatedNpcs, newJournalEntries: [] };
 };

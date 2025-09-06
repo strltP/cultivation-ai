@@ -12,7 +12,8 @@ import { ALL_MONSTERS } from '../data/npcs/monsters';
 import { SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/interactable_spawns';
 import type { ProceduralSpawnRule } from '../mapdata/interactable_spawns';
 import { MONSTER_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/monster_spawns';
-import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
+// FIX: Corrected import path from deprecated file to the correct module.
+import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns/index';
 import type { ProceduralMonsterRule, ProceduralNpcRule } from '../data/npcs/npc_types';
 import { FACTIONS } from '../data/factions';
 

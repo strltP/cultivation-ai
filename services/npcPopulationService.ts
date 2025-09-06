@@ -1,5 +1,6 @@
 import type { PlayerState, NPC, GameTime, JournalEntry } from '../types/character';
-import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
+// FIX: Corrected import path from deprecated file to the correct module.
+import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns/index';
 import type { ProceduralNpcRule, AgeCategory, RoleSpawnDefinition } from '../data/npcs/npc_types';
 import { FACTIONS } from '../data/factions';
 import { createNpcFromData } from './npcService';

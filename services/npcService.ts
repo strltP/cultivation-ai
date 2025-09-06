@@ -2,7 +2,8 @@ import type { NPC, GameTime, PlayerState } from '../types/character';
 import type { MapID, PointOfInterest } from '../types/map';
 import type { LearnedSkill, SkillTier } from '../types/skill';
 import type { InventorySlot } from '../types/item';
-import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
+// FIX: Corrected import path from deprecated file to the correct module.
+import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns/index';
 import { MONSTER_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/monster_spawns';
 import { ALL_STATIC_NPCS } from '../data/npcs/static_npcs';
 import { ALL_MONSTERS } from '../data/npcs/monsters';

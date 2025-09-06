@@ -19,7 +19,6 @@ import { FACTIONS } from '../../data/factions';
 interface ProcessedRelationship {
     targetNpc: NPC;
     type: RelationshipType;
-    score: number;
 }
 
 const RELATIONSHIP_MAP: Partial<Record<RelationshipType, RelationshipType>> = {
@@ -72,11 +71,10 @@ interface NpcInfoPanelProps {
 }
 
 const PersonalRelationshipCard: React.FC<{ relationship: ProcessedRelationship; playerState: PlayerState; viewedNpcName: string }> = ({ relationship, playerState, viewedNpcName }) => {
-    const { targetNpc, type, score } = relationship;
+    const { targetNpc, type } = relationship;
     const cultivationInfo = getCultivationInfo(targetNpc.cultivation!);
     const affinityWithPlayer = playerState.affinity?.[targetNpc.id] || 0;
     const affinityWithPlayerInfo = getAffinityLevel(affinityWithPlayer);
-    const npcToNpcAffinityInfo = getAffinityLevel(score);
 
     return (
         <div className="bg-gray-800/60 p-3 rounded-lg border border-gray-700 flex flex-col gap-2 transition-colors hover:bg-gray-700/50">
@@ -92,13 +90,6 @@ const PersonalRelationshipCard: React.FC<{ relationship: ProcessedRelationship; 
                 </div>
             </div>
              <div className="mt-1 pt-2 border-t border-gray-700/50 space-y-1 text-xs">
-                 <div className="flex justify-between" title={`Thiện cảm giữa ${viewedNpcName} và ${targetNpc.name}: ${score}`}>
-                    <span className="text-gray-400">Quan hệ với nhau:</span>
-                    <div className="flex items-center gap-1.5">
-                        <FaUsers className={npcToNpcAffinityInfo.color} />
-                        <span className={`font-semibold ${npcToNpcAffinityInfo.color}`}>{npcToNpcAffinityInfo.level} ({score})</span>
-                    </div>
-                 </div>
                  <div className="flex justify-between" title={`Thiện cảm của bạn với ${targetNpc.name}: ${affinityWithPlayer}`}>
                     <span className="text-gray-400">Quan hệ với bạn:</span>
                     <div className="flex items-center gap-1.5">
@@ -112,16 +103,13 @@ const PersonalRelationshipCard: React.FC<{ relationship: ProcessedRelationship; 
 };
 
 const SocialRelationshipCard: React.FC<{ relationship: ProcessedRelationship }> = ({ relationship }) => {
-    const { targetNpc, score } = relationship;
-    const npcToNpcAffinityInfo = getAffinityLevel(score);
+    const { targetNpc, type } = relationship;
+    const relationshipName = RELATIONSHIP_TEXT_MAP_CARD[type] || type;
 
     return (
         <div className="bg-gray-800/60 p-2 rounded-lg border border-gray-700 flex items-center justify-between transition-colors hover:bg-gray-700/50">
             <p className="text-sm font-semibold text-white truncate" title={targetNpc.name}>{targetNpc.name}</p>
-            <div className="flex items-center gap-1.5" title={`Mối quan hệ: ${npcToNpcAffinityInfo.level}`}>
-                <FaHeart className={npcToNpcAffinityInfo.color} />
-                <span className={`font-semibold text-sm ${npcToNpcAffinityInfo.color}`}>{score}</span>
-            </div>
+            <span className={`font-semibold text-sm text-gray-300`}>{relationshipName}</span>
         </div>
     );
 };
@@ -206,14 +194,14 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState, 
         const allNpcs = Object.values(playerState.generatedNpcs).flat();
         const npcMap = new Map(allNpcs.map(n => [n.id, n]));
     
-        const relationshipsMap = new Map<string, { types: Set<RelationshipType>, score: number | null }>();
+        const relationshipsMap = new Map<string, { types: Set<RelationshipType> }>();
     
         // 1. Get all formal relationships (from `npc.relationships`)
         (npc.relationships || []).forEach(rel => {
             const targetNpc = npcMap.get(rel.targetNpcId);
             if (targetNpc && !playerState.defeatedNpcIds.includes(targetNpc.id)) {
                 if (!relationshipsMap.has(rel.targetNpcId)) {
-                    relationshipsMap.set(rel.targetNpcId, { types: new Set(), score: null });
+                    relationshipsMap.set(rel.targetNpcId, { types: new Set() });
                 }
                 relationshipsMap.get(rel.targetNpcId)!.types.add(rel.type);
             }
@@ -231,7 +219,7 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState, 
                         
                         if (!playerState.defeatedNpcIds.includes(otherNpc.id)) {
                              if (!relationshipsMap.has(otherNpc.id)) {
-                                relationshipsMap.set(otherNpc.id, { types: new Set(), score: null });
+                                relationshipsMap.set(otherNpc.id, { types: new Set() });
                             }
                             relationshipsMap.get(otherNpc.id)!.types.add(reciprocalType);
                         }
@@ -240,36 +228,16 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState, 
             });
         });
     
-        // 3. Get all affinity scores from the central store
-        for (const key in playerState.npcAffinityStore) {
-            if (key.includes(npc.id)) {
-                const ids = key.split('_');
-                const targetNpcId = ids[0] === npc.id ? ids[1] : ids[0];
-                const targetNpc = npcMap.get(targetNpcId);
-                 if (targetNpc && !playerState.defeatedNpcIds.includes(targetNpcId)) {
-                    if (!relationshipsMap.has(targetNpcId)) {
-                         relationshipsMap.set(targetNpcId, { types: new Set(), score: null });
-                    }
-                    relationshipsMap.get(targetNpcId)!.score = playerState.npcAffinityStore[key];
-                 }
-            }
-        }
-    
-        // 4. Convert map to ProcessedRelationship array
+        // 3. Convert map to ProcessedRelationship array
         const finalRelationships: ProcessedRelationship[] = [];
         relationshipsMap.forEach((data, targetNpcId) => {
             const targetNpc = npcMap.get(targetNpcId);
             if (!targetNpc) return;
     
-            const key = [npc.id, targetNpcId].sort().join('_');
-            const finalScore = playerState.npcAffinityStore?.[key] ?? 0;
-            
             if (data.types.size > 0) {
                  data.types.forEach(type => {
-                    finalRelationships.push({ targetNpc, type, score: finalScore });
+                    finalRelationships.push({ targetNpc, type });
                  });
-            } else if (finalScore !== 0) { // Only add if there's affinity but no formal relationship
-                 finalRelationships.push({ targetNpc, type: 'peer_same_role', score: finalScore });
             }
         });
         
@@ -613,7 +581,7 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState, 
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {otherRelationships
-                                    .sort((a,b) => b.score - a.score)
+                                    .sort((a,b) => (b.targetNpc.power || 0) - (a.targetNpc.power || 0))
                                     .map((rel, index) => (
                                     <SocialRelationshipCard key={index} relationship={rel} />
                                 ))}

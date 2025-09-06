@@ -202,7 +202,6 @@ export const createChatSession = (playerState: PlayerState, npc: NPC, history?: 
         master: 'Sư Phụ', disciple: 'Đệ Tử',
         superior: 'Cấp Trên', subordinate: 'Cấp Dưới',
         peer_same_role: 'Đồng Môn', peer_different_role: 'Đồng Cấp',
-        // FIX: Add missing relationship types to satisfy Record<RelationshipType, string>
         sworn_sibling: 'Huynh Đệ/Tỷ Muội Kết Nghĩa',
         adopted_father: 'Nghĩa Phụ', adopted_mother: 'Nghĩa Mẫu',
         adopted_son: 'Nghĩa Tử', adopted_daughter: 'Nghĩa Nữ',
@@ -214,12 +213,8 @@ export const createChatSession = (playerState: PlayerState, npc: NPC, history?: 
             if (!targetNpc) return null;
             const relationshipName = RELATIONSHIP_TEXT_MAP[rel.type] || rel.type;
             
-            // NEW: Get score from central store, which is the single source of truth.
-            const key = [npc.id, rel.targetNpcId].sort().join('_');
-            const score = playerState.npcAffinityStore?.[key] ?? 0;
-
-            const affinityLevel = getAffinityLevel(score);
-            return `- ${relationshipName}: ${targetNpc.name} (mối quan hệ: ${affinityLevel.level}, điểm: ${score})`;
+            // Hoàn toàn loại bỏ điểm thiện cảm và cấp độ quan hệ NPC-NPC khỏi context của AI
+            return `- ${relationshipName}: ${targetNpc.name}`;
         })
         .filter(Boolean)
         .join('\n');

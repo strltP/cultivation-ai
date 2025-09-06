@@ -205,7 +205,6 @@ export interface PlayerState {
   factionRecruitmentTimers?: Record<string, GameTime>; // Key: ruleId, Value: next check time
   journal: JournalEntry[];
   affinity: { [npcId: string]: number };
-  npcAffinityStore?: Record<string, number>; // Key is sorted 'npcId1_npc2Id', value is score
   leaderboards: {
       CHIEN_THAN_BANG?: LeaderboardEntry[];
       THIEN_NAM_TINH_TU?: LeaderboardEntry[];

@@ -10,7 +10,8 @@ import { LINH_CAN_TYPES } from '../types/linhcan';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
 import { MAPS, POIS_BY_MAP } from '../mapdata';
 import { loadNpcsForMap } from '../services/npcService';
-import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
+// FIX: Corrected import path from deprecated file to the correct module.
+import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns/index';
 import type { MapID } from '../types/map';
 import { initializeFactionAssets } from '../services/factionService';
 import { ALL_STATIC_NPCS } from '../data/npcs/static_npcs';
@@ -44,7 +45,6 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
         }
     },
     affinity: {},
-    npcAffinityStore: {},
     nameUsageCounts: { male: {}, female: {} },
     leaderboards: {},
     lastLeaderboardUpdateYear: 0,
@@ -192,7 +192,7 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         if (!parsed.nextInteractableSpawnCheck) parsed.nextInteractableSpawnCheck = {};
         if (!parsed.factionRecruitmentTimers) parsed.factionRecruitmentTimers = {};
         if (!parsed.affinity) parsed.affinity = {};
-        if (!parsed.npcAffinityStore) parsed.npcAffinityStore = {};
+        if (parsed.npcAffinityStore) delete parsed.npcAffinityStore; // Xóa bỏ hoàn toàn hệ thống điểm thiện cảm NPC-NPC.
         if (!parsed.apiUsageStats) {
             parsed.apiUsageStats = {
                 totalTokens: 0,
@@ -283,26 +283,6 @@ const processLoadedState = (parsed: any): PlayerState | null => {
                 }
             }
         }
-
-        // --- 5. MIGRATE to npcAffinityStore ---
-        // Populate store from existing relationships for faster lookups, handling old saves.
-        const allNpcIds = new Set(Object.values(parsed.generatedNpcs).flat().map((npc: any) => npc.id));
-        for (const mapId in parsed.generatedNpcs) {
-            for (const npc of parsed.generatedNpcs[mapId]) {
-                if (npc.relationships && Array.isArray(npc.relationships)) {
-                    for (const rel of npc.relationships) {
-                        if (rel.score !== undefined && allNpcIds.has(rel.targetNpcId)) {
-                            const key = [npc.id, rel.targetNpcId].sort().join('_');
-                            // Prioritize the score from the first NPC found in the pair to avoid conflicts
-                            if (parsed.npcAffinityStore[key] === undefined) {
-                                parsed.npcAffinityStore[key] = rel.score;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
 
         // Always recalculate stats on load to apply balancing changes and new properties.
         const { finalStats, finalAttributes } = calculateAllStats(
@@ -421,32 +401,6 @@ export const initializeNewWorld = async (playerState: PlayerState): Promise<Play
             }
         };
     }
-
-    // Populate initial affinities for static NPCs.
-    const allSpawnedNpcs = Object.values(stateWithNpcs.generatedNpcs).flat();
-    const initialAffinityStore = { ...(stateWithNpcs.npcAffinityStore || {}) };
-
-    for (const staticDef of ALL_STATIC_NPCS) {
-        if (staticDef.initialAffinities) {
-            // Find the spawned instance of this static NPC. Note: This assumes only one instance per baseId.
-            const sourceNpc = allSpawnedNpcs.find(npc => npc.baseId === staticDef.baseId);
-            if (!sourceNpc) continue;
-
-            for (const targetNpcId in staticDef.initialAffinities) {
-                const score = staticDef.initialAffinities[targetNpcId];
-                // Check if target NPC exists. The ID is hardcoded in the static def.
-                const targetNpc = allSpawnedNpcs.find(npc => npc.id === targetNpcId);
-                if (targetNpc) {
-                    const key = [sourceNpc.id, targetNpc.id].sort().join('_');
-                    // Only set if not already present, to respect any previous logic
-                    if (initialAffinityStore[key] === undefined) {
-                        initialAffinityStore[key] = score;
-                    }
-                }
-            }
-        }
-    }
-    stateWithNpcs.npcAffinityStore = initialAffinityStore;
 
     // Initialize faction assets
     stateWithNpcs.factionAssets = initializeFactionAssets();

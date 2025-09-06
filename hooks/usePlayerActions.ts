@@ -275,7 +275,7 @@ export const usePlayerActions = (
             hp: prev.stats.maxHp,
             mana: prev.stats.maxMana,
             generatedNpcs: tempState.generatedNpcs,
-            npcAffinityStore: tempState.npcAffinityStore, // FIX: Ensure the affinity store is saved.
+// FIX: Remove obsolete 'npcAffinityStore' property which does not exist on PlayerState.
             journal: [...(prev.journal || []), ...collectedReportEntries, playerJournalEntry],
             nameUsageCounts: tempState.nameUsageCounts,
         }));
