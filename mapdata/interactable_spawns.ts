@@ -209,6 +209,56 @@ export const SPAWN_DEFINITIONS_BY_MAP: Record<MapID, SpawnDefinition[]> = {
         }
     ],
     HUYEN_NGOC_THANH: [],
+    HUYEN_THIEN_KIEM_TONG: [
+        {
+            type: 'procedural',
+            areaId: 'htkt-area-1',
+            itemWeights: {
+                'herb_han_bang_thao_node': 10,
+                'herb_tuyet_ngoc_chi_node': 8,
+                'herb_bach_linh_sam_node': 5,
+            },
+            initialCount: 20,
+            maxCount: 20
+        },
+        {
+            type: 'procedural',
+            areaId: 'htkt-area-2',
+            itemWeights: {
+                'stone_han_ngoc_node': 5,
+                'stone_tinh_ngan_khoang_node': 3,
+                'stone_co_bia': 1,
+            },
+            initialCount: 15,
+            maxCount: 15
+        }
+    ],
+    CUU_TUYET_MON: [
+        {
+            type: 'procedural',
+            areaId: 'ctm-area-1',
+            itemWeights: {
+                'herb_han_bang_thao_node': 10,
+                'herb_tuyet_ngoc_chi_node': 8,
+                'stone_han_ngoc_node': 4,
+            },
+            initialCount: 30,
+            maxCount: 30,
+        }
+    ],
+    THAN_THUONG_MON: [
+        {
+            type: 'procedural',
+            areaId: 'ttm-area-1',
+            itemWeights: {
+                'stone_huyen_thiet': 10,
+                'stone_tinh_thiet_node': 8,
+                'stone_xich_dong': 3,
+            },
+            initialCount: 25,
+            maxCount: 25,
+        }
+    ],
 
     // ---- OTHER CONTINENTS ----
     DAI_HOANG: [

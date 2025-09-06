@@ -16,7 +16,7 @@ import { advanceTime } from './services/timeService';
 
 const App: React.FC = () => {
     const [playerState, setPlayerState] = usePlayerPersistence();
-    const debouncedPlayerState = useDebounce(playerState, 500);
+    const debouncedPlayerState = useDebounce(playerState, 2000);
 
     useEffect(() => {
         if (debouncedPlayerState) {

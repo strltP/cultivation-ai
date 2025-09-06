@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'TIEU_GIA',
     name: 'Tiêu Gia',
+    description: 'Một gia tộc tu tiên hùng mạnh ở Mộ Linh Thành, nổi tiếng với thương pháp bá đạo và tính cách cương trực.',
     type: 'sect_map',
     parentMapId: 'MO_LINH_THANH',
     controllingFactionId: 'TIEU_GIA',

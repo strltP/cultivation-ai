@@ -7,7 +7,7 @@ import { MONSTER_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/monster_spawns';
 import { ALL_STATIC_NPCS } from '../data/npcs/static_npcs';
 import { ALL_MONSTERS } from '../data/npcs/monsters';
 import type { StaticNpcSpawn, ProceduralNpcRule, StaticNpcDefinition, ProceduralMonsterRule, MonsterDefinition, RoleSpawnDefinition, AgeCategory, FactionRole } from '../data/npcs/npc_types';
-import { getAIClient, GeminiServiceResponse } from './geminiService';
+import { getAIClient } from './geminiService';
 import { Type } from '@google/genai';
 import { REALM_PROGRESSION } from '../constants';
 import { MAPS, MAP_AREAS_BY_MAP, POIS_BY_MAP } from '../mapdata';
@@ -39,7 +39,7 @@ type Mutable<T> = {
 const MAX_NAME_USAGE = 3;
 
 // Phân bổ tuổi mặc định cho các NPC được tạo ngẫu nhiên.
-const DEFAULT_AGE_DISTRIBUTION = { young: 0.6, middle: 0.3, old: 0.1 };
+const DEFAULT_AGE_DISTRIBUTION = { young: 0.6, middle: 0.2, old: 0.2 };
 
 const getEstimatedLifespan = (realmIndex: number, level: number): number => {
     let totalLifespan = 80; // Mortal base from INITIAL_PLAYER_STATE
@@ -162,7 +162,8 @@ export function createNpcFromData(
     factionId?: string, 
     homePoiId?: string, 
     ageCategory?: AgeCategory,
-    roleDef?: FactionRole
+    roleDef?: FactionRole,
+    spawnRuleId?: string,
 ): NPC {
     // --- NEW LOGIC FOR PROCEDURAL NPCS ---
     if (roleDef && !('realmName' in data)) {
@@ -226,7 +227,11 @@ export function createNpcFromData(
 
     // --- Name Generation ---
     const gender = data.gender || 'Nam';
-    const familyName = FAMILY_NAMES[Math.floor(Math.random() * FAMILY_NAMES.length)];
+
+    // Find faction to check for familyName
+    const faction = FACTIONS.find(f => f.id === factionId);
+    
+    const familyName = faction?.familyName || FAMILY_NAMES[Math.floor(Math.random() * FAMILY_NAMES.length)];
     
     // NEW Name Generation with Usage Counter
     let givenName = '';
@@ -454,7 +459,7 @@ export function createNpcFromData(
         // Add some slight randomness
         calculatedAge *= (1 + (Math.random() * 0.1 - 0.05)); // +/- 5%
 
-        age = Math.floor(Math.max(16, calculatedAge));
+        age = Math.floor(Math.max(7, calculatedAge));
         
         // Final check to ensure age does not exceed max lifespan
         age = Math.min(age, Math.floor(finalStats.maxThoNguyen * 0.98));
@@ -471,12 +476,7 @@ export function createNpcFromData(
     
     const behaviors = ('behaviors' in data && data.behaviors && data.behaviors.length > 0) ? data.behaviors : ['WANDERER'];
 
-    // --- PHASE 2 DYNAMIC TITLE LOGIC ---
-    let finalTitle = data.title; // Default for static NPCs
-    if (roleDef && 'base' in roleDef.titleChance) {
-        const finalTitleChance = roleDef.titleChance.base + (cultivation.realmIndex * roleDef.titleChance.perRealm);
-        finalTitle = (Math.random() < finalTitleChance) ? data.title : undefined;
-    }
+    const finalTitle = data.title;
 
     return {
         name: npcName,
@@ -489,6 +489,7 @@ export function createNpcFromData(
         behaviors: behaviors as NpcBehavior[],
         personalityTags: 'personalityTags' in data ? data.personalityTags : [],
         id,
+        spawnRuleId,
         position,
         currentMap: homeMapId,
         homeMapId,
@@ -675,28 +676,14 @@ const generatePersonalityTags = (): string[] => {
     return tags;
 };
 
-export const generateNpcs = async (
-    generationPrompt: string, 
-    count: number
-): Promise<GeminiServiceResponse<{ title?: string | null; personalityTags: string[] }[]>> => {
+const generateSingleNpcTitle = async (generationPrompt: string, personalityTags: string[]): Promise<{ title: string | null, tokenCount: number }> => {
     try {
         const client = getAIClient();
-        
-        // Generate personality tags programmatically before calling the API
-        const allPersonalityTags: string[][] = [];
-        for (let i = 0; i < count; i++) {
-            allPersonalityTags.push(generatePersonalityTags());
-        }
-
         const prompt = `${generationPrompt}
-Dựa trên bối cảnh và vai trò đã cho, hãy tạo ra ${count} danh hiệu (title) tu tiên độc đáo cho các NPC.
-Mỗi danh hiệu phải phù hợp với chủ đề và các thẻ tính cách (personalityTags) được cung cấp dưới đây.
-Nếu không có danh hiệu nào hay, hãy để trống hoặc null.
+Dựa trên bối cảnh và vai trò đã cho, hãy tạo ra MỘT danh hiệu (title) tu tiên độc đáo.
+Danh hiệu phải phù hợp với chủ đề và các thẻ tính cách sau: [${personalityTags.join(', ')}].
+Nếu không có danh hiệu nào hay, hãy để trống hoặc null.`;
 
-**QUAN TRỌNG:** Dưới đây là danh sách các thẻ tính cách đã được xác định trước cho mỗi NPC.
-${allPersonalityTags.map((tags, index) => `NPC ${index + 1} có các tính cách: [${tags.join(', ')}]`).join('\n')}
-`;
-        
         const response = await client.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
@@ -706,38 +693,21 @@ ${allPersonalityTags.map((tags, index) => `NPC ${index + 1} có các tính cách
                 topP: 0.95,
                 responseMimeType: "application/json",
                 responseSchema: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            title: { type: Type.STRING, description: "Danh hiệu tu tiên của NPC. Có thể là chuỗi rỗng hoặc null.", nullable: true },
-                        },
-                        required: []
-                    }
+                    type: Type.OBJECT,
+                    properties: {
+                        title: { type: Type.STRING, description: "Danh hiệu tu tiên của NPC. Có thể là chuỗi rỗng hoặc null.", nullable: true },
+                    },
+                    required: []
                 }
-            },
+            }
         });
-        
         const tokenCount = response.usageMetadata?.totalTokenCount || 0;
-        if (!response.text) {
-            throw new Error("Gemini response for generateNpcs is empty.");
-        }
-        const jsonStr = response.text.trim();
-        const result = JSON.parse(jsonStr) as { title?: string | null }[];
-
-        if (Array.isArray(result) && result.length === count) {
-             // Combine the generated titles with the pre-generated personality tags
-            const data = result.map((npcData, index) => ({
-                title: npcData.title,
-                personalityTags: allPersonalityTags[index]
-            }));
-            return { data, tokenCount };
-        }
-        console.error("Gemini response is not a valid array or count mismatch:", result);
-        return { data: [], tokenCount };
+        if (!response.text) { throw new Error("Empty response"); }
+        const data = JSON.parse(response.text.trim()) as { title?: string | null };
+        return { title: data.title || null, tokenCount };
     } catch (error) {
-        console.error("Error generating NPCs from Gemini:", error);
-        return { data: [], tokenCount: 0 };
+        console.error("Error generating single NPC title from Gemini:", error);
+        return { title: null, tokenCount: 0 };
     }
 };
 
@@ -808,12 +778,11 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
 
     // Handle procedural cultivator spawns
     const proceduralRules = spawnDefinitions.filter((def): def is ProceduralNpcRule => def.type === 'procedural');
-    const generationPromises: Promise<NPC[]>[] = [];
-
+    
     let ruleIndex = -1;
     for (const rule of proceduralRules) {
         ruleIndex++;
-        const ruleId = `${mapId}-${ruleIndex}`; // Assign a simple, consistent ID for this rule
+        const ruleId = `${mapId}-${ruleIndex}`;
         for (const roleDef of rule.roles) {
             const faction = FACTIONS.find(f => f.id === roleDef.factionId);
             if (!faction) {
@@ -831,7 +800,6 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
                 const count = distribution.count;
                 if (count <= 0) continue;
 
-                // --- NEW AGE DISTRIBUTION LOGIC ---
                 const ageCategories: (AgeCategory | undefined)[] = [];
                 const ageDistribution = roleDef.ageDistribution || DEFAULT_AGE_DISTRIBUTION;
                 
@@ -843,67 +811,63 @@ export const loadNpcsForMap = async (mapId: MapID, poisByMap: Record<MapID, Poin
                 for (let i = 0; i < numMiddle; i++) ageCategories.push('Middle');
                 for (let i = 0; i < numOld; i++) ageCategories.push('Old');
                 
-                while (ageCategories.length < count) ageCategories.push('Middle'); // Fill remaining with middle-aged
+                while (ageCategories.length < count) ageCategories.push('Middle');
 
                 ageCategories.sort(() => 0.5 - Math.random());
-                
-                const maxRealmIndex = Math.max(...role.realmDistribution.map(d => d.realmIndex));
-                const maxTitleChance = role.titleChance.base + (maxRealmIndex * role.titleChance.perRealm);
 
-                let generationPromise: Promise<GeminiServiceResponse<{ title?: string | null; personalityTags: string[] }[]>>;
-
-                if (maxTitleChance > 0) {
-                    const isUnaffiliated = role.name === 'Tán tu';
-                    const powerInstruction = role.power && !isUnaffiliated ? `và cấp độ quyền lực (power level) là ${role.power}` : 'và không có cấp độ quyền lực';
-
-                    const promptParts = [
-                        `Bối cảnh: ${faction.name}.`,
-                        `Vai trò NPC: "${role.name}" ${powerInstruction}.`,
-                        `Chủ đề gợi ý cho danh hiệu: ${role.titleThemes.join(', ')}.`,
-                    ];
+                for (let i = 0; i < count; i++) {
+                    const personalityTags = generatePersonalityTags();
                     
-                    const generationPrompt = promptParts.join('\n');
-                    generationPromise = generateNpcs(generationPrompt, count);
-                } else {
-                    // Skip Gemini call, just generate tags locally
-                    const npcDataWithoutTitles: { title?: string | null; personalityTags: string[] }[] = [];
-                    for (let i = 0; i < count; i++) {
-                        npcDataWithoutTitles.push({
-                            title: null,
-                            personalityTags: generatePersonalityTags()
-                        });
-                    }
-                    generationPromise = Promise.resolve({ data: npcDataWithoutTitles, tokenCount: 0 });
-                }
-                
-                const promise = generationPromise
-                    .then(({ data: generatedData, tokenCount }) => {
-                        totalTokenCount += tokenCount;
-                        // Reconstruct the full NPC data here
-                        const fullNpcData: (GeneratedNpcData & { role: string; power?: number; })[] = generatedData.map(d => ({
-                            title: d.title,
-                            personalityTags: d.personalityTags,
-                            role: role.name,
-                            power: role.name === 'Tán tu' ? undefined : (role.power),
-                        }));
-                        
-                        return fullNpcData.map((npcData, index) => {
-                            const homePoiId = roleDef.poiIds.length > 0 ? roleDef.poiIds[0] : undefined;
-                            const initialPosition = getInitialPosition(mapId, homePoiId);
+                    const npcDataForCreation = {
+                        role: role.name,
+                        power: role.name === 'Tán tu' ? undefined : (role.power),
+                        title: null,
+                        personalityTags: personalityTags,
+                    };
 
-                            const id = `proc-npc-${mapId}-${role.name.replace(/\s/g, '')}-${Date.now()}-${index}`;
-                            const newNpc = createNpcFromData(npcData, id, initialPosition, playerState.time, mapId, nameCountsCopy, roleDef.factionId, homePoiId, ageCategories[index], role);
-                            newNpc.spawnRuleId = ruleId;
-                            return newNpc;
-                        });
-                    });
-                generationPromises.push(promise);
+                    const id = `proc-npc-${mapId}-${role.name.replace(/\s/g, '')}-${Date.now()}-${i}`;
+                    const homePoiId = roleDef.poiIds.length > 0 ? roleDef.poiIds[0] : undefined;
+                    const initialPosition = getInitialPosition(mapId, homePoiId);
+
+                    let newNpc = createNpcFromData(
+                        npcDataForCreation,
+                        id,
+                        initialPosition,
+                        playerState.time,
+                        mapId,
+                        nameCountsCopy,
+                        roleDef.factionId,
+                        homePoiId,
+                        ageCategories[i],
+                        role,
+                        ruleId
+                    );
+
+                    const titleChance = role.titleChance.base + ((newNpc.cultivation?.realmIndex || 0) * role.titleChance.perRealm);
+                    
+                    if (Math.random() < titleChance) {
+                        const isUnaffiliated = role.name === 'Tán tu';
+                        const powerInstruction = role.power && !isUnaffiliated ? `và cấp độ quyền lực (power level) là ${role.power}` : 'và không có cấp độ quyền lực';
+                        const promptParts = [
+                            `Bối cảnh: ${faction.name}.`,
+                            `Vai trò NPC: "${role.name}" ${powerInstruction}.`,
+                            `Chủ đề gợi ý cho danh hiệu: ${role.titleThemes.join(', ')}.`,
+                        ];
+                        const generationPrompt = promptParts.join('\n');
+                        
+                        const { title, tokenCount } = await generateSingleNpcTitle(generationPrompt, personalityTags);
+                        totalTokenCount += tokenCount;
+                        if (title) {
+                            newNpc.title = title;
+                        }
+                    }
+
+                    newNpc.spawnRuleId = ruleId;
+                    finalNpcs.push(newNpc);
+                }
             }
         }
     }
-
-    const proceduralNpcGroups = await Promise.all(generationPromises);
-    proceduralNpcGroups.forEach(group => finalNpcs.push(...group));
 
     return { npcs: finalNpcs, totalTokenCount, updatedNameCounts: nameCountsCopy };
 };

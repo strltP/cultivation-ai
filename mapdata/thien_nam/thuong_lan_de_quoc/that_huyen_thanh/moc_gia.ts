@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'MOC_GIA',
     name: 'Mộc Gia',
+    description: 'Gia tộc có truyền thống luyện đan lâu đời, sở hữu nhiều đan phương quý giá và một dược viên rộng lớn.',
     type: 'sect_map',
     parentMapId: 'THAT_HUYEN_THANH',
     controllingFactionId: 'MOC_GIA',

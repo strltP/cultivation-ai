@@ -6,6 +6,7 @@ import { SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/interactable_spawns';
 import { ALL_INTERACTABLES } from '../data/interactables/index';
 import type { ProceduralSpawnRule } from '../mapdata/interactable_spawns';
 
+const SOCIAL_RADIUS = 200; // Pixels
 
 // Hàm trợ giúp để chọn một mục ngẫu nhiên dựa trên trọng số
 const weightedRandom = <T>(items: { item: T; weight: number }[]): T | null => {

@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Position } from './common';
 
-export type MapID = 'THIEN_NAM' | 'BAC_VUC' | 'DAI_HOANG' | 'DONG_HAI' | 'THAT_HUYEN_THANH' | 'LUU_LY_TONG' | 'VAN_BAO_LAU' | 'THIEN_MA_TUU_LAU' | 'MO_LINH_THANH' | 'HUYEN_NGOC_THANH' | 'THANH_VAN_MON' | 'DUOC_VIEN' | 'LUC_YEN_THON' | 'HAC_AM_SAM_LAM' | 'MOC_GIA' | 'TIEU_GIA';
+export type MapID = 'THIEN_NAM' | 'BAC_VUC' | 'DAI_HOANG' | 'DONG_HAI' | 'THAT_HUYEN_THANH' | 'LUU_LY_TONG' | 'VAN_BAO_LAU' | 'THIEN_MA_TUU_LAU' | 'MO_LINH_THANH' | 'HUYEN_NGOC_THANH' | 'HUYEN_THIEN_KIEM_TONG' | 'THANH_VAN_MON' | 'DUOC_VIEN' | 'LUC_YEN_THON' | 'HAC_AM_SAM_LAM' | 'MOC_GIA' | 'TIEU_GIA' | 'CUU_TUYET_MON' | 'THAN_THUONG_MON';
 
 export type GameMapType = 'continent' | 'city_map' | 'village_map' | 'dungeon_map' | 'sect_map' | 'zone_map' | 'building_interior';
 export type MapAreaType = 'nation' | 'province' | 'region' | 'zone';
@@ -35,6 +35,7 @@ export interface PointOfInterest {
 export interface GameMap {
     id: MapID;
     name: string;
+    description?: string;
     type: GameMapType;
     size: { width: number; height: number };
     backgroundStyle: CSSProperties;

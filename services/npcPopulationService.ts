@@ -1,151 +1,246 @@
 import type { PlayerState, NPC, GameTime, JournalEntry } from '../types/character';
 import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
-import type { ProceduralNpcRule } from '../data/npcs/npc_types';
+import type { ProceduralNpcRule, AgeCategory, RoleSpawnDefinition } from '../data/npcs/npc_types';
 import { FACTIONS } from '../data/factions';
 import { createNpcFromData } from './npcService';
 import { gameTimeToMinutes, advanceTime } from './timeService';
 import { MAPS, POIS_BY_MAP } from '../mapdata';
 import type { MapID } from '../types/map';
+import type { Position } from '../types/common';
+
+const DEFAULT_AGE_DISTRIBUTION = { young: 0.9, middle: 0.1, old: 0.0 };
+
+const selectAgeCategory = (distribution: { young: number; middle: number; old: number } | undefined): AgeCategory => {
+    const dist = distribution || DEFAULT_AGE_DISTRIBUTION;
+    const totalWeight = dist.young + dist.middle + dist.old;
+    if (totalWeight <= 0) return 'Young'; // Fallback
+
+    let random = Math.random() * totalWeight;
+
+    if (random < dist.young) {
+        return 'Young';
+    }
+    random -= dist.young;
+
+    if (random < dist.middle) {
+        return 'Middle';
+    }
+    
+    return 'Old';
+};
+
+// Helper to pick a random item based on weight
+const weightedRandom = <T>(items: { item: T; weight: number }[]): T | null => {
+    const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+    if (totalWeight <= 0) return items.length > 0 ? items[Math.floor(Math.random() * items.length)].item : null;
+
+    let random = Math.random() * totalWeight;
+    for (const { item, weight } of items) {
+        if (random < weight) {
+            return item;
+        }
+        random -= weight;
+    }
+    return null; // Should not be reached if totalWeight > 0
+};
 
 export const processNpcPopulationChanges = (
-    currentState: PlayerState
+    currentState: PlayerState,
+    monthsToSkip: number
 ): { 
     updatedNpcs: Record<string, NPC[]>, 
-    updatedNextNpcSpawnCheck: Record<string, GameTime>, 
-    newJournalEntries: JournalEntry[] 
+    newJournalEntries: JournalEntry[],
+    updatedNameUsageCounts: PlayerState['nameUsageCounts'],
+    updatedFactionRecruitmentTimers: PlayerState['factionRecruitmentTimers']
 } => {
     const updatedNpcs: Record<string, NPC[]> = JSON.parse(JSON.stringify(currentState.generatedNpcs));
-    const updatedNextNpcSpawnCheck = JSON.parse(JSON.stringify(currentState.nextNpcSpawnCheck || {}));
+    const updatedNameUsageCounts = JSON.parse(JSON.stringify(currentState.nameUsageCounts || { male: {}, female: {} }));
     const newJournalEntries: JournalEntry[] = [];
+    const updatedFactionRecruitmentTimers = JSON.parse(JSON.stringify(currentState.factionRecruitmentTimers || {}));
     
-    const nowMinutes = gameTimeToMinutes(currentState.time);
-    let hasChanges = false;
-    
-    const allLivingNpcs = Object.values(updatedNpcs).flat().filter((npc: NPC) => !currentState.defeatedNpcIds.includes(npc.id));
+    if (monthsToSkip <= 0) {
+        return { updatedNpcs, newJournalEntries, updatedNameUsageCounts, updatedFactionRecruitmentTimers };
+    }
 
-    // Iterate through all maps' spawn definitions
-    for (const mapIdStr in NPC_SPAWN_DEFINITIONS_BY_MAP) {
-        const mapId = mapIdStr as MapID;
-        const definitions = NPC_SPAWN_DEFINITIONS_BY_MAP[mapId];
+    for (let month = 0; month < monthsToSkip; month++) {
+        const allLivingNpcsForThisMonth = Object.values(updatedNpcs).flat().filter((npc: NPC) => !currentState.defeatedNpcIds.includes(npc.id));
+        const currentTimeForThisMonth = advanceTime(currentState.time, month * 30 * 24 * 60);
 
-        let ruleIndex = -1;
-        for (const rule of definitions) {
-            ruleIndex++;
-            if (rule.type !== 'procedural' || !rule.stableCount || !rule.respawnTimeYears) continue;
+        for (const mapIdStr in NPC_SPAWN_DEFINITIONS_BY_MAP) {
+            const mapId = mapIdStr as MapID;
+            const definitions = NPC_SPAWN_DEFINITIONS_BY_MAP[mapId];
 
-            const ruleId = `${mapId}-${ruleIndex}`;
+            definitions.forEach((rule, index) => {
+                if (rule.type !== 'procedural') return;
 
-            let nextCheckTime = updatedNextNpcSpawnCheck[ruleId];
-            if (!nextCheckTime) {
-                nextCheckTime = currentState.time;
-                updatedNextNpcSpawnCheck[ruleId] = nextCheckTime;
-            }
-            
-            const nextCheckMinutes = gameTimeToMinutes(nextCheckTime);
+                const ruleId = `${mapId}-${index}`;
 
-            if (nowMinutes >= nextCheckMinutes) {
-                const livingNpcsForRule = allLivingNpcs.filter((npc: NPC) => npc.spawnRuleId === ruleId);
-                const count = livingNpcsForRule.length;
+                // --- Recruitment Logic ---
+                if (rule.recruitment) {
+                    const lastRecruitmentTime = updatedFactionRecruitmentTimers[ruleId] || { year: 1, month: 1, day: 1, season: 'Xuân', hour: 0, minute: 0 };
+                    let shouldRecruit = false;
+                    let isGuaranteed = false;
 
-                if (count < rule.stableCount) {
-                    hasChanges = true;
-                    const npcsToSpawn = rule.stableCount - count;
-                    const numToCreate = Math.min(npcsToSpawn, Math.floor(Math.random() * 3) + 1);
+                    // Check for guaranteed recruitment based on years passed
+                    if (rule.recruitment.guaranteedIntervalYears) {
+                        if (currentTimeForThisMonth.year >= lastRecruitmentTime.year + rule.recruitment.guaranteedIntervalYears) {
+                            shouldRecruit = true;
+                            isGuaranteed = true;
+                        }
+                    }
 
-                    const neededRolesPool: { roleName: string; factionId: string; poiIds: string[] }[] = [];
-                    const currentRoleCounts: Record<string, number> = {};
-                    livingNpcsForRule.forEach(npc => {
-                        currentRoleCounts[npc.role] = (currentRoleCounts[npc.role] || 0) + 1;
-                    });
-                    
-                    rule.roles.forEach(roleGroup => {
-                        roleGroup.roleDistribution.forEach(dist => {
-                            const deficit = dist.count - (currentRoleCounts[dist.roleName] || 0);
-                            for (let i = 0; i < deficit; i++) {
-                                neededRolesPool.push({ roleName: dist.roleName, factionId: roleGroup.factionId, poiIds: roleGroup.poiIds });
-                            }
-                        });
-                    });
-
-                    // If specific roles are missing, prioritize them. Otherwise, add from the most common role (usually 'Thường dân').
-                    if (neededRolesPool.length === 0 && rule.roles.length > 0 && rule.roles[0].roleDistribution.length > 0) {
-                        const mostCommonRole = rule.roles.flatMap(rg => rg.roleDistribution).sort((a,b) => b.count - a.count)[0];
-                        const roleGroup = rule.roles.find(rg => rg.roleDistribution.some(rd => rd.roleName === mostCommonRole.roleName))!;
-                        for (let i = 0; i < numToCreate; i++) {
-                            neededRolesPool.push({ roleName: mostCommonRole.roleName, factionId: roleGroup.factionId, poiIds: roleGroup.poiIds });
+                    // If not guaranteed, check for monthly random chance
+                    if (!shouldRecruit && rule.recruitment.monthlyChance) {
+                        if (Math.random() < rule.recruitment.monthlyChance) {
+                            shouldRecruit = true;
                         }
                     }
                     
-                    if (neededRolesPool.length > 0) {
-                        for (let i = 0; i < numToCreate; i++) {
-                            const roleToSpawn = neededRolesPool[Math.floor(Math.random() * neededRolesPool.length)];
-                            const faction = FACTIONS.find(f => f.id === roleToSpawn.factionId);
-                            const roleDef = faction?.roles.find(r => r.name === roleToSpawn.roleName);
+                    if (shouldRecruit) {
+                        const livingNpcsForRule = allLivingNpcsForThisMonth.filter((npc: NPC) => npc.spawnRuleId === ruleId);
+                        const currentCount = livingNpcsForRule.length;
+                        const targetCount = rule.stableCount || 0;
+                        let recruitmentChance = 1.0;
+                        let [minBatch, maxBatch] = rule.recruitment.batchSize;
 
-                            if (!roleDef) continue;
+                        if (targetCount > 0) {
+                            const ratio = currentCount / targetCount;
+                            if (ratio < 0.8) recruitmentChance = 0.95;
+                            else if (ratio < 1.0) recruitmentChance = 0.60;
+                            else if (ratio < 1.1) { recruitmentChance = 0.25; maxBatch = Math.max(1, Math.floor(minBatch / 2)); }
+                            else if (ratio < 1.25) { recruitmentChance = 0.10; minBatch = 1; maxBatch = 1; }
+                            else { recruitmentChance = 0.03; minBatch = 1; maxBatch = 1; }
+                        }
+
+                        if (Math.random() < recruitmentChance) {
+                            const { roleToRecruit } = rule.recruitment;
+                            const numToRecruit = Math.floor(Math.random() * (maxBatch - minBatch + 1)) + minBatch;
+                            const roleGroup = rule.roles.find(rg => rg.roleDistribution.some(rd => rd.roleName === roleToRecruit));
                             
-                            const homePoiId = roleToSpawn.poiIds.length > 0 ? roleToSpawn.poiIds[Math.floor(Math.random() * roleToSpawn.poiIds.length)] : undefined;
-                            
-                            const newNpc = createNpcFromData(
-                                {
-                                    role: roleDef.name,
-                                    power: roleDef.power,
-                                    attributes: {
-                                        canCot: 5 + Math.floor(Math.random() * 11),
-                                        thanPhap: 5 + Math.floor(Math.random() * 11),
-                                        thanThuc: 5 + Math.floor(Math.random() * 11),
-                                        ngoTinh: 5 + Math.floor(Math.random() * 11),
-                                        coDuyen: 5 + Math.floor(Math.random() * 11),
-                                        tamCanh: 5 + Math.floor(Math.random() * 11),
-                                    },
-                                    personalityTags: [],
-                                },
-                                `respawn-npc-${mapId}-${Date.now()}-${i}`,
-                                { x: 0, y: 0 },
-                                currentState.time,
-                                mapId,
-                                currentState.nameUsageCounts,
-                                roleToSpawn.factionId,
-                                homePoiId,
-                                undefined,
-                                roleDef
-                            );
-                            newNpc.spawnRuleId = ruleId;
-                            
-                             if (!updatedNpcs[mapId]) {
-                                updatedNpcs[mapId] = [];
+                            if (roleGroup) {
+                                const faction = FACTIONS.find(f => f.id === roleGroup.factionId);
+                                const roleDef = faction?.roles.find(r => r.name === roleToRecruit);
+                                if (faction && roleDef) {
+                                    let recruitedCount = 0;
+                                    for (let i = 0; i < numToRecruit; i++) {
+                                        const ageCategory = selectAgeCategory(roleGroup.ageDistribution);
+                                        const poiId = roleGroup.poiIds.length > 0 ? roleGroup.poiIds[0] : undefined;
+                                        const poi = poiId ? POIS_BY_MAP[mapId as MapID]?.find(p => p.id === poiId) : null;
+                                        let newNpcPosition: Position;
+                                        if (poi) {
+                                            newNpcPosition = {
+                                                x: poi.position.x - poi.size.width / 2 + Math.random() * poi.size.width,
+                                                y: poi.position.y - poi.size.height / 2 + Math.random() * poi.size.height
+                                            };
+                                        } else {
+                                            const mapData = MAPS[mapId as MapID];
+                                            newNpcPosition = { x: Math.random() * mapData.size.width, y: Math.random() * mapData.size.height };
+                                        }
+
+                                        const newNpc = createNpcFromData(
+                                            { role: roleDef.name, personalityTags: [] },
+                                            `recruit-npc-${mapId}-${Date.now()}-${i}`,
+                                            newNpcPosition,
+                                            currentTimeForThisMonth,
+                                            mapId,
+                                            updatedNameUsageCounts,
+                                            roleGroup.factionId,
+                                            poiId,
+                                            ageCategory,
+                                            roleDef,
+                                            ruleId
+                                        );
+                                        
+                                        if (!updatedNpcs[mapId]) updatedNpcs[mapId] = [];
+                                        updatedNpcs[mapId].push(newNpc);
+                                        allLivingNpcsForThisMonth.push(newNpc);
+                                        recruitedCount++;
+                                    }
+
+                                    if (recruitedCount > 0) {
+                                        updatedFactionRecruitmentTimers[ruleId] = currentTimeForThisMonth;
+                                        const journalMessage = isGuaranteed
+                                            ? `${faction.name} đã mở đại hội thu nhận đệ tử, có ${recruitedCount} tài năng trẻ gia nhập.`
+                                            : `${faction.name} đã thu nhận ${recruitedCount} đệ tử mới.`;
+
+                                        const journalEntry: JournalEntry = {
+                                            time: currentTimeForThisMonth,
+                                            message: journalMessage,
+                                            type: 'world'
+                                        };
+                                        newJournalEntries.push(journalEntry);
+                                    }
+                                }
                             }
-                            updatedNpcs[mapId].push(newNpc);
-                            
-                            const poi = homePoiId ? POIS_BY_MAP[mapId as MapID]?.find(p => p.id === homePoiId) : null;
-                            const locationName = poi ? poi.name : MAPS[mapId as MapID].name;
-
-                            const journalEntry: JournalEntry = {
-                                time: currentState.time,
-                                message: `Một người mới, ${newNpc.name}, đã đến định cư tại ${locationName}.`,
-                                type: 'world'
-                            };
-                            newJournalEntries.push(journalEntry);
                         }
                     }
                 }
                 
-                // Set next check time
-                const [minYears, maxYears] = rule.respawnTimeYears;
-                const yearsToAdd = Math.floor(Math.random() * (maxYears - minYears + 1)) + minYears;
-                const minutesToAdd = yearsToAdd * 12 * 30 * 24 * 60;
-                updatedNextNpcSpawnCheck[ruleId] = advanceTime(currentState.time, minutesToAdd);
-            }
+                // --- Population Stability Logic ---
+                if (rule.stableCount) {
+                    const STABILITY_CHECK_CHANCE_PER_MONTH = 0.04; // Check roughly every 2 years
+                    if (Math.random() < STABILITY_CHECK_CHANCE_PER_MONTH) {
+                        const livingNpcsForRule = allLivingNpcsForThisMonth.filter((npc: NPC) => npc.spawnRuleId === ruleId);
+                        if (livingNpcsForRule.length < rule.stableCount) {
+                            const numToSpawn = rule.stableCount - livingNpcsForRule.length;
+                            
+                            const weightedRoles: { item: { roleDef: RoleSpawnDefinition, roleName: string }, weight: number }[] = [];
+                            rule.roles.forEach(roleGroup => {
+                                roleGroup.roleDistribution.forEach(dist => {
+                                    weightedRoles.push({ item: { roleDef: roleGroup, roleName: dist.roleName }, weight: dist.count });
+                                });
+                            });
+
+                            if (weightedRoles.length > 0) {
+                                for (let i = 0; i < numToSpawn; i++) {
+                                    const selectedRoleInfo = weightedRandom(weightedRoles);
+                                    if (selectedRoleInfo) {
+                                        const { roleDef: roleGroup, roleName } = selectedRoleInfo;
+                                        const faction = FACTIONS.find(f => f.id === roleGroup.factionId);
+                                        const roleDefinition = faction?.roles.find(r => r.name === roleName);
+
+                                        if (faction && roleDefinition) {
+                                            const ageCategory = selectAgeCategory(roleGroup.ageDistribution);
+                                            const poiId = roleGroup.poiIds.length > 0 ? roleGroup.poiIds[Math.floor(Math.random() * roleGroup.poiIds.length)] : undefined;
+                                            const poi = poiId ? POIS_BY_MAP[mapId as MapID]?.find(p => p.id === poiId) : null;
+                                            let newNpcPosition: Position;
+                                            if (poi) {
+                                                newNpcPosition = {
+                                                    x: poi.position.x - poi.size.width / 2 + Math.random() * poi.size.width,
+                                                    y: poi.position.y - poi.size.height / 2 + Math.random() * poi.size.height
+                                                };
+                                            } else {
+                                                const mapData = MAPS[mapId as MapID];
+                                                newNpcPosition = { x: Math.random() * mapData.size.width, y: Math.random() * mapData.size.height };
+                                            }
+
+                                            const newNpc = createNpcFromData(
+                                                { role: roleDefinition.name, personalityTags: [] },
+                                                `respawn-npc-${mapId}-${Date.now()}-${i}`,
+                                                newNpcPosition,
+                                                currentTimeForThisMonth,
+                                                mapId,
+                                                updatedNameUsageCounts,
+                                                roleGroup.factionId,
+                                                poiId,
+                                                ageCategory,
+                                                roleDefinition,
+                                                ruleId
+                                            );
+                                            
+                                            if (!updatedNpcs[mapId]) updatedNpcs[mapId] = [];
+                                            updatedNpcs[mapId].push(newNpc);
+                                            allLivingNpcsForThisMonth.push(newNpc);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
     }
-
-    if (!hasChanges) {
-        return {
-            updatedNpcs: currentState.generatedNpcs,
-            updatedNextNpcSpawnCheck: currentState.nextNpcSpawnCheck || {},
-            newJournalEntries: [],
-        }
-    }
-
-    return { updatedNpcs, updatedNextNpcSpawnCheck, newJournalEntries };
-}
+    
+    return { updatedNpcs, newJournalEntries, updatedNameUsageCounts, updatedFactionRecruitmentTimers };
+};

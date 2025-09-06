@@ -1,7 +1,72 @@
-import type { PlayerState, NPC } from '../types/character';
-import type { Item } from '../types/item';
+import type { PlayerState, NPC, FactionAssets } from '../types/character';
+import type { Item, InventorySlot } from '../types/item';
 import { calculateGiftAffinityChange } from './affinityService';
 import { FACTIONS } from '../data/factions';
+
+/**
+ * Initializes the starting assets for all factions in the game world.
+ * This should be called once when a new game is created.
+ */
+export const initializeFactionAssets = (): Record<string, FactionAssets> => {
+    const allFactionAssets: Record<string, FactionAssets> = {};
+
+    for (const faction of FACTIONS) {
+        if (faction.id === 'UNAFFILIATED') continue;
+
+        const assets: FactionAssets = {
+            linhThach: 0,
+            inventory: [],
+        };
+        
+        // --- 1. Linh Thach ---
+        const highestPower = faction.roles.reduce((max, role) => Math.max(max, role.power), 0);
+        assets.linhThach = Math.floor(
+            (Math.random() * 5000 + 1000) * (1 + highestPower / 20)
+        );
+
+        // --- 2. Items ---
+        const add = (itemId: string, quantity: number) => assets.inventory.push({ itemId, quantity });
+
+        // Add items based on faction theme
+        switch (faction.id) {
+            case 'MOC_GIA':
+                add('recipe_item_hoi_xuan_dan', 3);
+                add('material_linh_thao', 100);
+                add('material_bach_linh_sam', 10);
+                break;
+            case 'TIEU_GIA':
+                add('weapon_han_phong_dao', 2);
+                add('armor_huyen_thiet_giap', 2);
+                add('material_huyen_thiet', 50);
+                break;
+            case 'THANH_VAN_MON':
+                add('book_phong_nhan_kiem', 1);
+                add('book_ngu_phong_quyet', 2);
+                add('consumable_tu_khi_dan', 20);
+                break;
+            case 'LUC_YEN_THON':
+                add('material_linh_thao', 50);
+                add('material_huyen_thiet', 20);
+                add('weapon_thiet_kiem', 5);
+                break;
+            case 'LUU_LY_TONG':
+                 add('book_lac_anh_kiem_phap', 1);
+                 add('weapon_bach_vu_phien', 3);
+                 break;
+        }
+        
+        // Add some generic valuable items
+        if (highestPower > 70) {
+            add('material_tinh_ngan_khoang', Math.floor(Math.random() * 5) + 1);
+            add('material_han_ngoc', Math.floor(Math.random() * 3) + 1);
+        }
+
+        allFactionAssets[faction.id] = assets;
+    }
+
+    return allFactionAssets;
+};
+
 
 /**
  * Applies an affinity change to a target NPC and cascades a portion of that change

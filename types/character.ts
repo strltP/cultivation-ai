@@ -19,9 +19,10 @@ export interface JournalEntry {
     time: GameTime;
     message: string;
     type: 'player' | 'world';
+    npcId?: string;
 }
 
-export type NpcIntentType = 'GATHER' | 'HUNT' | 'TRADE' | 'MEDITATE' | 'CHALLENGE' | 'WANDERER';
+export type NpcIntentType = 'GATHER' | 'HUNT' | 'TRADE' | 'MEDITATE' | 'CHALLENGE' | 'WANDERER' | 'SOCIALIZE';
 
 export interface NpcIntent {
   type: NpcIntentType;
@@ -48,7 +49,9 @@ export type RelationshipType =
     // Master/Disciple
     'master' | 'disciple' |
     // Organizational
-    'superior' | 'subordinate' | 'peer_same_role' | 'peer_different_role';
+    'superior' | 'subordinate' | 'peer_same_role' | 'peer_different_role' |
+    // Social / Adopted
+    'sworn_sibling' | 'adopted_father' | 'adopted_mother' | 'adopted_son' | 'adopted_daughter';
 
 export interface NpcRelationship {
     targetNpcId: string; // The ID of the NPC this relationship points to
@@ -110,7 +113,6 @@ export interface NPC {
       timeAtDestination?: number; // Thời gian còn lại ở đích (tính bằng phút)
   };
   lastDecisionTime?: GameTime; // Lần cuối NPC "suy nghĩ" để ra quyết định mới
-  actionHistory?: JournalEntry[]; // Lịch sử các hành động đã hoàn thành
 }
 
 export type Season = 'Xuân' | 'Hạ' | 'Thu' | 'Đông';
@@ -147,6 +149,11 @@ export interface LeaderboardEntry {
     age: number;
 }
 
+export interface FactionAssets {
+    linhThach: number;
+    inventory: InventorySlot[];
+}
+
 export interface PlayerState {
   saveVersion: string;
   name: string;
@@ -158,7 +165,8 @@ export interface PlayerState {
   mana: number;
   camNgo: number; // Enlightenment points
   
-  attributes: CharacterAttributes;
+  baseAttributes: CharacterAttributes; // Thuộc tính gốc (thiên phú) không thay đổi
+  attributes: CharacterAttributes; // Thuộc tính đã tính toán (bao gồm trang bị, tâm pháp, v.v.)
   stats: CombatStats;
   cultivationStats: Partial<CombatStats & CharacterAttributes>;
   linhCan: LinhCan[];
@@ -192,17 +200,20 @@ export interface PlayerState {
   }[];
   chatHistories?: Record<string, ChatMessage[]>;
   nextMonsterSpawnCheck?: Record<string, GameTime>; // Key: mapId-areaId for monster population, Value: next check time
-  nextNpcSpawnCheck?: Record<string, GameTime>; // Key: mapId-ruleId for procedural NPC population
-  nextInteractableSpawnCheck?: Record<string, GameTime>; // Key: mapId-areaId for interactable population
+  nextInteractableSpawnCheck?: Record<string, GameTime>;
   lastNpcProgressionCheck?: GameTime; // The last time NPC cultivation was processed
+  factionRecruitmentTimers?: Record<string, GameTime>; // Key: ruleId, Value: next check time
   journal: JournalEntry[];
   affinity: { [npcId: string]: number };
+  npcAffinityStore?: Record<string, number>; // Key is sorted 'npcId1_npc2Id', value is score
   leaderboards: {
       CHIEN_THAN_BANG?: LeaderboardEntry[];
       THIEN_NAM_TINH_TU?: LeaderboardEntry[];
   };
   lastLeaderboardUpdateYear: number;
   lastYoungStarsLeaderboardUpdateYear: number;
+  markedNpcIds?: string[];
+  factionAssets?: Record<string, FactionAssets>;
   
   // Game Time
   time: GameTime;

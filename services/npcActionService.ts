@@ -1,4 +1,4 @@
-import type { NPC, GameTime, JournalEntry, NpcIntent, PathStep, PlayerState } from '../types/character';
+import type { NPC, GameTime, JournalEntry, NpcIntent, PathStep, PlayerState, NpcRelationship, RelationshipType } from '../types/character';
 import type { MapID, PointOfInterest } from '../types/map';
 import { ALL_ITEMS } from '../data/items/index';
 import type { InventorySlot } from '../types/item';
@@ -25,6 +25,7 @@ export const formatIntentDescriptionForJournal = (npcName: string, intent: NpcIn
         case 'TRADE': actionText = `bắt đầu đi giao thương tại`; break;
         case 'CHALLENGE': actionText = `bắt đầu đi khiêu chiến tại`; break;
         case 'WANDERER': actionText = `bắt đầu di chuyển đến`; break;
+        case 'SOCIALIZE': actionText = intent.description; return actionText;
         default: actionText = `bắt đầu hành trình đến`;
     }
     
@@ -53,6 +54,7 @@ export const formatCurrentIntentStatus = (npc: NPC): string => {
         case 'TRADE': actionText = `giao thương tại`; break;
         case 'CHALLENGE': actionText = `khiêu chiến tại`; break;
         case 'WANDERER': actionText = `di chuyển đến`; break;
+        case 'SOCIALIZE': actionText = intent.description; return actionText;
         default: actionText = `làm nhiệm vụ tại`;
     }
     
@@ -62,7 +64,7 @@ export const formatCurrentIntentStatus = (npc: NPC): string => {
         timeText = ` (Còn khoảng ${Math.ceil(monthsLeft)} tháng)`;
     }
 
-    return `${statusText.charAt(0).toUpperCase() + statusText.slice(1)} ${actionText} ${destinationName}${timeText}.`;
+    return `${statusText.charAt(0).toUpperCase() + statusText.slice(1)} ${statusText.slice(1)} ${actionText} ${destinationName}${timeText}.`;
 };
 
 
@@ -89,28 +91,29 @@ const addItemToNpcInventory = (inventory: InventorySlot[], itemId: string, quant
 
     // Add to new stacks
     while (remainingQuantity > 0) {
-        const amountForNewStack = Math.min(remainingQuantity, itemDef.stackable);
         // Assuming NPCs have infinite inventory space for this simulation
-        newInventory.push({ itemId, quantity: amountForNewStack });
-        remainingQuantity -= amountForNewStack;
+        newInventory.push({ itemId, quantity: remainingQuantity });
+        remainingQuantity = 0; // Simplified for NPCs
     }
 
     return newInventory;
 };
 
 export const handleNpcActionCompletion = (
-    npc: NPC, 
+    npc: NPC,
+    intentToComplete: NpcIntent,
     currentTime: GameTime,
     allPoisByMap: Record<MapID, PointOfInterest[]>,
-    generatedInteractablesForMap: Interactable[]
-): { updatedNpc: Partial<NPC>, journalEntry: JournalEntry, harvestedInteractable?: Interactable } | null => {
-    if (!npc.currentIntent || npc.npcType === 'monster') return null;
+    generatedInteractablesForMap: Interactable[],
+    allNpcsOnMap: NPC[]
+): { npcUpdates: { npcId: string, updates: Partial<NPC> }[], journalEntry?: JournalEntry, harvestedInteractable?: Interactable } | null => {
+    if (npc.npcType === 'monster') return null;
 
-    const updatedNpc: Partial<NPC> = {};
+    const npcUpdates: { npcId: string, updates: Partial<NPC> }[] = [];
     let actionCompletionMessage = '';
     let harvestedInteractable: Interactable | undefined = undefined;
 
-    const intent = npc.currentIntent;
+    const intent = intentToComplete;
     const duration = intent.durationMonths;
 
     const destinationPoi = allPoisByMap[intent.destinationMapId]?.find(p => p.id === intent.destinationPoiId);
@@ -156,7 +159,7 @@ export const handleNpcActionCompletion = (
                 }
             }
 
-            updatedNpc.inventory = newInventory;
+            npcUpdates.push({ npcId: npc.id, updates: { inventory: newInventory } });
             const foundItemsStr = Object.keys(itemsFound).map(id => `${itemsFound[id]}x ${ALL_ITEMS.find(i => i.id === id)?.name || 'Vật phẩm'}`).join(', ');
             actionCompletionMessage = foundItemsStr ? `${npc.name} đã đi thu thập tài nguyên tại ${destinationName} trong ${duration} tháng và tìm thấy: ${foundItemsStr}.` : `${npc.name} đã đi thu thập tài nguyên tại ${destinationName} trong ${duration} tháng nhưng không có thu hoạch gì.`;
             break;
@@ -173,14 +176,14 @@ export const handleNpcActionCompletion = (
                     itemsFound[itemId] = (itemsFound[itemId] || 0) + 1;
                 }
             }
-            updatedNpc.inventory = newInventory;
+            npcUpdates.push({ npcId: npc.id, updates: { inventory: newInventory } });
             const foundItemsStr = Object.keys(itemsFound).map(id => `${itemsFound[id]}x ${ALL_ITEMS.find(i => i.id === id)?.name || 'Vật phẩm'}`).join(', ');
             actionCompletionMessage = foundItemsStr ? `${npc.name} đã đi săn yêu thú tại ${destinationName} trong ${duration} tháng và thu được: ${foundItemsStr}.` : `${npc.name} đã đi săn yêu thú tại ${destinationName} trong ${duration} tháng nhưng không thành công.`;
             break;
         }
         case 'TRADE': {
             const earnings = Math.round(duration * 500 * (1 + npc.attributes.coDuyen / 30));
-            updatedNpc.linhThach = (npc.linhThach || 0) + earnings;
+            npcUpdates.push({ npcId: npc.id, updates: { linhThach: (npc.linhThach || 0) + earnings } });
             actionCompletionMessage = `${npc.name} đã đi giao thương tại ${destinationName} trong ${duration} tháng, kiếm được ${earnings.toLocaleString()} linh thạch.`;
             break;
         }
@@ -196,7 +199,6 @@ export const handleNpcActionCompletion = (
 
     if (!actionCompletionMessage) return null;
 
-    // Step 2: Set up the return trip OR go idle
     let restMonths = Math.floor(Math.random() * 3) + 1;
     let restAndReturnMessage = '';
 
@@ -211,6 +213,8 @@ export const handleNpcActionCompletion = (
     const homeMapData = MAPS[npc.homeMapId];
     const needsToReturnHome = homeMapData && (npc.currentMap !== npc.homeMapId);
     
+    let finalUpdatesForActor: Partial<NPC> = {};
+
     if (needsToReturnHome) {
         restAndReturnMessage = `Sau đó, ${npc.name} quyết định trở về nhà và nghỉ ngơi ${restMonths} tháng.`;
         const mapPath = getMapPath(npc.currentMap, npc.homeMapId!);
@@ -232,8 +236,10 @@ export const handleNpcActionCompletion = (
                 const currentMapId = mapPath[i];
                 if (i < mapPath.length - 1) {
                     const nextMapId = mapPath[i + 1];
-                    const entryPoi = allPoisByMap[currentMapId]?.find(p => p.targetMap === nextMapId);
-                    const entryGate = TELEPORT_GATES_BY_MAP[currentMapId]?.find(g => g.targetMap === nextMapId);
+                    const poisForMap = allPoisByMap[currentMapId];
+                    const gatesForMap = TELEPORT_GATES_BY_MAP[currentMapId];
+                    const entryPoi = Array.isArray(poisForMap) ? poisForMap.find(p => p.targetMap === nextMapId) : undefined;
+                    const entryGate = Array.isArray(gatesForMap) ? gatesForMap.find(g => g.targetMap === nextMapId) : undefined;
                     const exitPoint = entryPoi || entryGate;
                     if (exitPoint) {
                         pathSteps.push({ mapId: currentMapId, targetPosition: exitPoint.position });
@@ -255,29 +261,31 @@ export const handleNpcActionCompletion = (
                     durationMonths: 0,
                     path: pathSteps
                 };
-                updatedNpc.currentIntent = returnIntent;
-                updatedNpc.path = returnIntent.path;
-                updatedNpc.currentPathStepIndex = 0;
-                updatedNpc.intentProgress = { startTime: currentTime, isTraveling: true };
+                finalUpdatesForActor.currentIntent = returnIntent;
+                finalUpdatesForActor.path = returnIntent.path;
+                finalUpdatesForActor.currentPathStepIndex = 0;
+                finalUpdatesForActor.intentProgress = { startTime: currentTime, isTraveling: true };
             } else {
-                updatedNpc.currentIntent = undefined; updatedNpc.path = undefined; updatedNpc.currentPathStepIndex = undefined; updatedNpc.intentProgress = undefined;
+                finalUpdatesForActor = { currentIntent: undefined, path: undefined, currentPathStepIndex: undefined, intentProgress: undefined };
             }
         } else {
-            updatedNpc.currentIntent = undefined; updatedNpc.path = undefined; updatedNpc.currentPathStepIndex = undefined; updatedNpc.intentProgress = undefined;
+            finalUpdatesForActor = { currentIntent: undefined, path: undefined, currentPathStepIndex: undefined, intentProgress: undefined };
         }
     } else {
-        updatedNpc.currentIntent = undefined; updatedNpc.path = undefined; updatedNpc.currentPathStepIndex = undefined; updatedNpc.intentProgress = undefined;
+        finalUpdatesForActor = { currentIntent: undefined, path: undefined, currentPathStepIndex: undefined, intentProgress: undefined };
         restAndReturnMessage = `Sau đó, ${npc.name} quyết định nghỉ ngơi tại chỗ ${restMonths} tháng.`;
     }
     
     const restMinutes = restMonths * DAYS_PER_MONTH * 24 * 60;
-    updatedNpc.cannotActUntil = advanceTime(currentTime, restMinutes);
-    updatedNpc.lastDecisionTime = currentTime;
+    finalUpdatesForActor.cannotActUntil = advanceTime(currentTime, restMinutes);
+    finalUpdatesForActor.lastDecisionTime = currentTime;
     
-    const finalJournalMessage = `${actionCompletionMessage} ${restAndReturnMessage}`.trim();
-    const journalEntry: JournalEntry = { time: currentTime, message: finalJournalMessage, type: 'world' };
+    npcUpdates.push({ npcId: npc.id, updates: finalUpdatesForActor });
 
-    return { updatedNpc, journalEntry, harvestedInteractable };
+    const finalJournalMessage = `${actionCompletionMessage} ${restAndReturnMessage}`.trim();
+    const journalEntry: JournalEntry = { time: currentTime, message: finalJournalMessage, type: 'world', npcId: npc.id };
+
+    return { npcUpdates, journalEntry, harvestedInteractable };
 };
 
 export const processNpcActionsForTimeSkip = (
@@ -295,7 +303,9 @@ export const processNpcActionsForTimeSkip = (
 
     for (const mapId_str in newGeneratedNpcs) {
         const mapId = mapId_str as MapID;
-        for (const npc of newGeneratedNpcs[mapId]) {
+        const allNpcsOnMap = newGeneratedNpcs[mapId];
+
+        for (const npc of allNpcsOnMap) {
             if (npc.npcType !== 'cultivator' || !npc.cultivation) continue;
             if (currentState.defeatedNpcIds.includes(npc.id)) continue;
 
@@ -336,14 +346,19 @@ export const processNpcActionsForTimeSkip = (
                 npc.intentProgress.timeAtDestination = (npc.intentProgress.timeAtDestination || 0) - timeSpent;
                 if (npc.intentProgress.timeAtDestination <= 0) {
                     const interactablesForMap = currentState.generatedInteractables[npc.currentMap] || [];
-                    const result = handleNpcActionCompletion(npc, currentState.time, POIS_BY_MAP, interactablesForMap);
+                    const result = handleNpcActionCompletion(npc, npc.currentIntent!, currentState.time, POIS_BY_MAP, interactablesForMap, allNpcsOnMap);
                     if (result) {
-                        Object.assign(npc, result.updatedNpc);
-                        if (!npc.actionHistory) npc.actionHistory = [];
-                        npc.actionHistory.push(result.journalEntry);
-                        newGlobalJournalEntries.push(result.journalEntry);
+                        if (result.journalEntry) {
+                            newGlobalJournalEntries.push(result.journalEntry);
+                        }
                         if (result.harvestedInteractable) {
                              harvestedInteractables.push({ ...result.harvestedInteractable, mapId: npc.currentMap });
+                        }
+                        for (const update of result.npcUpdates) {
+                            const npcToUpdate = allNpcsOnMap.find((n: NPC) => n.id === update.npcId);
+                            if (npcToUpdate) {
+                                Object.assign(npcToUpdate, update.updates);
+                            }
                         }
                     }
                 }
@@ -374,9 +389,7 @@ export const processNpcActionsForTimeSkip = (
                     npc.intentProgress = { startTime: currentState.time, isTraveling: true, };
                 }
                 const journalMessage = formatIntentDescriptionForJournal(npc.name, newIntent);
-                const journalEntry: JournalEntry = { time: currentState.time, message: journalMessage, type: 'world' };
-                if (!npc.actionHistory) npc.actionHistory = [];
-                npc.actionHistory.push(journalEntry);
+                const journalEntry: JournalEntry = { time: currentState.time, message: journalMessage, type: 'world', npcId: npc.id };
                 newGlobalJournalEntries.push(journalEntry);
             }
         });
@@ -398,4 +411,73 @@ export const processNpcActionsForTimeSkip = (
     });
 
     return { updatedNpcs: newGeneratedNpcs, newJournalEntries: newGlobalJournalEntries, harvestedInteractables };
+};
+
+export const processSocialInteractionsForTimeSkip = (
+    currentState: PlayerState,
+    monthsToSkip: number
+): { updatedNpcs: Record<string, NPC[]>, newJournalEntries: JournalEntry[] } => {
+    if (!currentState.npcAffinityStore) {
+        currentState.npcAffinityStore = {};
+    }
+
+    const allLivingNpcs = Object.values(currentState.generatedNpcs).flat().filter((npc: NPC) => 
+        npc.npcType === 'cultivator' && !currentState.defeatedNpcIds.includes(npc.id)
+    );
+    const allMapIds = Object.keys(currentState.generatedNpcs) as MapID[];
+
+    for (const mapId of allMapIds) {
+        const npcsOnMap = allLivingNpcs.filter(n => n.currentMap === mapId);
+        if (npcsOnMap.length < 2) continue;
+
+        for (let i = 0; i < npcsOnMap.length; i++) {
+            for (let j = i + 1; j < npcsOnMap.length; j++) {
+                const npcA = npcsOnMap[i];
+                const npcB = npcsOnMap[j];
+
+                const BASE_INTERACTION_CHANCE_PER_MONTH = 0.15; // Increased chance
+                let interactionChance = BASE_INTERACTION_CHANCE_PER_MONTH;
+
+                if (npcA.personalityTags?.some(t => ['Hào sảng', 'Tốt bụng'].includes(t))) interactionChance *= 1.5;
+                if (npcB.personalityTags?.some(t => ['Hào sảng', 'Tốt bụng'].includes(t))) interactionChance *= 1.5;
+                if (npcA.personalityTags?.some(t => ['Âm trầm', 'Thích yên tĩnh'].includes(t))) interactionChance *= 0.5;
+                if (npcB.personalityTags?.some(t => ['Âm trầm', 'Thích yên tĩnh'].includes(t))) interactionChance *= 0.5;
+
+                const totalInteractionChance = 1 - Math.pow(1 - interactionChance, monthsToSkip);
+
+                if (Math.random() < totalInteractionChance) {
+                    const key = [npcA.id, npcB.id].sort().join('_');
+                    const currentAffinity = currentState.npcAffinityStore[key] || 0;
+
+                    let isPositive = true;
+                    if (currentAffinity < -20) isPositive = false;
+                    
+                    const hasConflictPersonalityA = npcA.personalityTags?.some(t => ['Nóng nảy', 'Kiêu ngạo', 'Tà ác', 'Tàn nhẫn'].includes(t));
+                    const hasConflictPersonalityB = npcB.personalityTags?.some(t => ['Nóng nảy', 'Kiêu ngạo', 'Tà ác', 'Tàn nhẫn'].includes(t));
+                    const hasGoodPersonalityA = npcA.personalityTags?.some(t => ['Nhân từ', 'Hào sảng', 'Khiêm tốn'].includes(t));
+                    const hasGoodPersonalityB = npcB.personalityTags?.some(t => ['Nhân từ', 'Hào sảng', 'Khiêm tốn'].includes(t));
+
+                    if (hasConflictPersonalityA && hasConflictPersonalityB) {
+                         isPositive = Math.random() < 0.1; // 10% chance to be positive
+                    } else if (hasConflictPersonalityA || hasConflictPersonalityB) {
+                        isPositive = Math.random() < 0.4; // 40% chance
+                    } else if (hasGoodPersonalityA && hasGoodPersonalityB) {
+                         isPositive = Math.random() < 0.9; // 90% chance
+                    } else if (hasGoodPersonalityA || hasGoodPersonalityB) {
+                         isPositive = Math.random() < 0.7; // 70% chance
+                    }
+
+                    let affinityChange = isPositive
+                        ? Math.floor(Math.random() * 5) + 2  // +2 to +6
+                        : -(Math.floor(Math.random() * 8) + 3); // -3 to -10
+                    
+                    const newAffinity = Math.max(-100, Math.min(100, currentAffinity + affinityChange));
+
+                    currentState.npcAffinityStore[key] = newAffinity;
+                }
+            }
+        }
+    }
+    
+    return { updatedNpcs: currentState.generatedNpcs, newJournalEntries: [] };
 };

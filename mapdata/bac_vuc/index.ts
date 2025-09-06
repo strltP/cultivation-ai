@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'BAC_VUC',
     name: 'Bắc Vực Băng Giá',
+    description: 'Vùng đất phương bắc lạnh giá, quanh năm tuyết phủ. Nơi đây linh khí thuộc tính băng và thủy cực kỳ nồng đậm, là thánh địa của các tu sĩ tu luyện công pháp hệ hàn.',
     type: 'continent',
     parentMapId: undefined,
     size: { width: 5000, height: 4000 },
@@ -16,9 +17,9 @@ export const mapAreas: MapArea[] = [
 
 export const pois: PointOfInterest[] = [
     // Vân Hàn Sơn (North)
-    { id: 'bv-poi-ctm', name: 'Cửu Tuyết Môn', type: 'sect', position: { x: 1500, y: 800 }, size: { width: 800, height: 700 } },
-    { id: 'bv-poi-htkt', name: 'Huyền Thiên Kiếm Tông', type: 'sect', position: { x: 3500, y: 1000 }, size: { width: 900, height: 800 } },
-    { id: 'bv-poi-ttm', name: 'Thần Thương Môn', type: 'sect', position: { x: 2500, y: 1600 }, size: { width: 700, height: 600 } },
+    { id: 'bv-poi-ctm', name: 'Cửu Tuyết Môn', type: 'sect', position: { x: 1500, y: 800 }, size: { width: 800, height: 700 }, targetMap: 'CUU_TUYET_MON', targetPosition: { x: 1500, y: 3850 } },
+    { id: 'bv-poi-htkt', name: 'Huyền Thiên Kiếm Tông', type: 'sect', position: { x: 3500, y: 1000 }, size: { width: 900, height: 800 }, targetMap: 'HUYEN_THIEN_KIEM_TONG', targetPosition: { x: 1750, y: 4300 } },
+    { id: 'bv-poi-ttm', name: 'Thần Thương Môn', type: 'sect', position: { x: 2500, y: 1600 }, size: { width: 700, height: 600 }, targetMap: 'THAN_THUONG_MON', targetPosition: { x: 1600, y: 2850 } },
     { id: 'bv-poi-tlt', name: 'Thiên Lam Trấn', type: 'village', position: { x: 800, y: 1500 }, size: { width: 500, height: 400 } },
     { id: 'bv-poi-dnt', name: 'Đại Ngọc Trấn', type: 'village', position: { x: 4200, y: 1600 }, size: { width: 500, height: 400 } },
 

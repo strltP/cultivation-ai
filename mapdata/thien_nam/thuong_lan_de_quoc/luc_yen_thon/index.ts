@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'LUC_YEN_THON',
     name: 'Lục Yên Thôn',
+    description: 'Một ngôi làng nhỏ yên bình nằm dưới chân núi, là nơi bắt đầu cho hành trình tu tiên của nhiều người. Dân làng sống chủ yếu bằng nghề săn bắn và trồng trọt.',
     type: 'village_map',
     parentMapId: 'THIEN_NAM',
     controllingFactionId: 'LUC_YEN_THON',

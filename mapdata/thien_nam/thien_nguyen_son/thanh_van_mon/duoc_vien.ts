@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'DUOC_VIEN',
     name: 'Dược Viên',
+    description: 'Khu vườn trồng linh dược của Thanh Vân Môn, được bố trí Tụ Linh Trận, khiến cho linh thảo ở đây phát triển cực tốt.',
     type: 'zone_map',
     parentMapId: 'THANH_VAN_MON',
     size: { width: 2000, height: 1500 },

@@ -49,6 +49,7 @@ export interface StaticNpcDefinition {
     initialInventory?: InventorySlot[];
     equipment?: Partial<Record<EquipmentSlot, { itemId: string }>>;
     relationships?: NpcRelationship[];
+    initialAffinities?: Record<string, number>;
     linhThach?: number;
     camNgo?: number;
     forSale?: { itemId: string; stock: number; priceModifier?: number }[];
@@ -74,6 +75,12 @@ export interface RoleSpawnDefinition {
     poiIds: string[]; // Spawns NPCs for this role within the bounds of these POIs. Can be an empty array to spawn anywhere on the map.
 }
 
+export interface RecruitmentRule {
+    guaranteedIntervalYears?: number; // E.g., 3 for a guaranteed recruitment every 3 years.
+    monthlyChance?: number; // E.g., 0.01 for a 1% chance each month.
+    batchSize: [number, number];
+    roleToRecruit: string;
+}
 
 // A single, unified rule for procedural NPC generation.
 export interface ProceduralNpcRule {
@@ -82,7 +89,7 @@ export interface ProceduralNpcRule {
     // with different prompts and in different locations within a single rule.
     roles: RoleSpawnDefinition[];
     stableCount?: number;
-    respawnTimeYears?: [number, number];
+    recruitment?: RecruitmentRule;
 }
 
 

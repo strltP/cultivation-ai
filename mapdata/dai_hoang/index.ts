@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'DAI_HOANG',
     name: 'Đại Hoang Cổ Lão',
+    description: 'Vùng đất hoang mạc cổ xưa, cằn cỗi và khắc nghiệt. Tương truyền nơi đây là chiến trường của Thần Ma thời cổ đại, ẩn chứa vô số bí mật và nguy hiểm.',
     type: 'continent',
     parentMapId: undefined,
     size: { width: 8000, height: 6000 },

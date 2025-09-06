@@ -1,7 +1,7 @@
 import React from 'react';
 import type { NPC, PlayerState } from '../types/character';
 import type { Interactable } from '../types/interaction';
-import { FaUserSecret, FaLeaf, FaCube, FaBoxOpen, FaMale, FaFemale } from 'react-icons/fa';
+import { FaUserSecret, FaLeaf, FaCube, FaBoxOpen, FaMale, FaFemale, FaEye } from 'react-icons/fa';
 import { GiSprout, GiPlantSeed, GiHerbsBundle, GiFireBowl, GiWyvern } from 'react-icons/gi';
 import { getCultivationInfo } from '../services/cultivationService';
 import { getAffinityLevel } from '../services/affinityService';
@@ -25,6 +25,7 @@ const GameEntity: React.FC<GameEntityProps> = ({ entity, onClick, playerState })
   if (isNpc(entity)) {
     const affinityScore = playerState.affinity?.[entity.id] || 0;
     const affinityInfo = getAffinityLevel(affinityScore);
+    const isMarked = playerState.markedNpcIds?.includes(entity.id);
 
     if (entity.npcType === 'monster') {
         entityStyle = "bg-red-700 border-2 border-red-400 npc-shadow";
@@ -41,6 +42,9 @@ const GameEntity: React.FC<GameEntityProps> = ({ entity, onClick, playerState })
         const faction = entity.factionId ? FACTIONS.find(f => f.id === entity.factionId) : null;
         const factionString = faction ? `${faction.name} - ` : '';
         title = `${entity.name}${entity.title ? ` «${entity.title}»` : ''}\nGiới tính: ${entity.gender}\nChức vụ: ${factionString}${entity.role}${powerString}\nCảnh giới: ${cultivationInfo.name}\nTuổi: ${age}\nThiện Cảm: ${affinityInfo.level} (${affinityScore})\nHP: ${entity.hp}/${entity.stats.maxHp}`;
+        if (isMarked) {
+          title += '\n(Đang tiêu kí)';
+        }
     }
   } else {
     const interactable = entity as Interactable;
@@ -96,6 +100,11 @@ const GameEntity: React.FC<GameEntityProps> = ({ entity, onClick, playerState })
       title={title}
     >
       {icon}
+       {isNpc(entity) && playerState.markedNpcIds?.includes(entity.id) && (
+            <div className="absolute -top-1 -right-1 bg-cyan-600 text-white rounded-full p-1 border-2 border-white shadow-lg animate-pulse" title="Đang Tiêu Kí">
+                <FaEye size={10} />
+            </div>
+        )}
     </div>
   );
 };

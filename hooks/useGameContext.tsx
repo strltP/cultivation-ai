@@ -21,6 +21,8 @@ import { ALL_SKILLS } from '../data/skills/skills';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
 import { FACTIONS } from '../data/factions';
 import { updatePowerLeaderboard, updateYoungStarsLeaderboard } from '../services/leaderboardService';
+import { isMajorWorldEvent } from '../components/ui/JournalPanel';
+import { processNpcPopulationChanges } from '../services/npcPopulationService';
 
 
 // --- TYPE DEFINITIONS FOR CONTEXTS ---
@@ -81,6 +83,7 @@ interface IPlayerActionsContext {
     handleTalismanTeleport: (targetMap: MapID) => void;
     handleCraftItem: (recipeId: string) => void;
     handleStartSeclusion: (days: number) => void;
+    handleMarkNpc: (npc: NPC) => void;
 }
 
 interface ICombatContext {
@@ -241,68 +244,73 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
             }));
         }
 
-
-        // --- NPC Progression & World Events ---
+        // --- NPC Progression & World Events & Journal Pruning ---
         const lastCheck = playerState.lastNpcProgressionCheck || playerState.time;
         const monthsPassed = (playerState.time.year - lastCheck.year) * 12 + (playerState.time.month - lastCheck.month);
         
-        const isMajorWorldEvent = (entry: JournalEntry): boolean => {
-            if (entry.type !== 'world') return false;
-
-            // Criterion 1: Breakthroughs to major realms or peak minor realms
-            const breakthroughRegex = /đã thành công đột phá đến (.+?)!/;
-            const breakthroughMatch = entry.message.match(breakthroughRegex);
-            if (breakthroughMatch) {
-                const cultivationName = breakthroughMatch[1];
-                const parts = cultivationName.split(' - ');
-                if (parts.length === 2) {
-                    const realmName = parts[0].trim();
-                    const levelName = parts[1].trim();
-                    
-                    const realm = REALM_PROGRESSION.find(r => r.name === realmName);
-                    if (realm) {
-                        const levelIndex = realm.levels.findIndex(l => l.levelName === levelName);
-                        // Major event if it's the first level (new realm) or last level (peak)
-                        if (levelIndex === 0 || levelIndex === realm.levels.length - 1) {
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            // Criterion 2: Skill mastered to its final level
-            const skillMasteryRegex = /đã lĩnh ngộ "(.+?)" đến tầng thứ (\d+)/;
-            const skillMatch = entry.message.match(skillMasteryRegex);
-            if (skillMatch) {
-                const skillName = skillMatch[1];
-                const level = parseInt(skillMatch[2], 10);
-                const skillDef = ALL_SKILLS.find(s => s.name === skillName);
-                if (skillDef && level === skillDef.maxLevel) {
-                    return true;
-                }
-            }
-
-            return false;
-        };
-
-        const originalJournal = playerState.journal || [];
         const currentTimeInMonths = playerState.time.year * 12 + playerState.time.month;
-        const journalNeedsCleaning = originalJournal.some(entry => {
+        
+        // Comprehensive check for cleaning needs
+        const journalNeedsCleaning = (playerState.journal || []).some(entry => {
             if ((entry.type || 'player') !== 'world' || isMajorWorldEvent(entry)) return false;
             const entryTimeInMonths = entry.time.year * 12 + entry.time.month;
-            return (currentTimeInMonths - entryTimeInMonths) > 6;
+            return (currentTimeInMonths - entryTimeInMonths) > 2;
         });
         
-        if (monthsPassed >= 1) {
-            const { updatedNpcs, newJournalEntries, harvestedInteractables } = processNpcActionsForTimeSkip(playerState, monthsPassed);
-            
-            if (newJournalEntries.length > 0 || harvestedInteractables.length > 0 || JSON.stringify(updatedNpcs) !== JSON.stringify(playerState.generatedNpcs) || journalNeedsCleaning) {
-                  updateAndPersistPlayerState((p: PlayerState) => {
-                    if (!p) return p;
+        const shouldSimulateNpcs = monthsPassed >= 1;
+
+        if (shouldSimulateNpcs || journalNeedsCleaning) {
+            updateAndPersistPlayerState((p: PlayerState) => {
+                if (!p) return p;
+
+                let stateChanges: Partial<PlayerState> = {};
+                let finalJournalEntries = [...(p.journal || [])];
+                let stateAfterPopulationCheck = { ...p };
+                const markedIds = new Set(p.markedNpcIds || []); // For filtering journal entries
+
+                // 1. Perform NPC population changes first
+                if (shouldSimulateNpcs) {
+                    const populationResult = processNpcPopulationChanges(p, monthsPassed);
+                    stateAfterPopulationCheck.generatedNpcs = populationResult.updatedNpcs;
+                    stateAfterPopulationCheck.nameUsageCounts = populationResult.updatedNameUsageCounts;
+                    stateAfterPopulationCheck.factionRecruitmentTimers = populationResult.updatedFactionRecruitmentTimers;
                     
+                    // Filter journal entries before adding
+                    const filteredPopulationEntries = populationResult.newJournalEntries.filter(entry =>
+                        (entry.type || 'player') !== 'world' || (entry.npcId && markedIds.has(entry.npcId))
+                    );
+                    finalJournalEntries.push(...filteredPopulationEntries);
+                }
+
+                // 2. Perform journal cleanup if it's needed
+                if (journalNeedsCleaning) {
+                    const currentTimeInMonthsForPruning = p.time.year * 12 + p.time.month;
+
+                    // Prune global journal
+                    finalJournalEntries = finalJournalEntries.filter(entry => {
+                        if ((entry.type || 'player') === 'player') return true;
+                        if (isMajorWorldEvent(entry)) return true;
+                        const entryTimeInMonths = entry.time.year * 12 + entry.time.month;
+                        return (currentTimeInMonthsForPruning - entryTimeInMonths) <= 2;
+                    });
+                }
+
+                // 3. Perform NPC action simulation if enough time has passed
+                if (shouldSimulateNpcs) {
+                    const simResults = processNpcActionsForTimeSkip(stateAfterPopulationCheck, monthsPassed);
+                    
+                    stateChanges.generatedNpcs = simResults.updatedNpcs;
+                     // Filter journal entries before adding
+                    const filteredActionEntries = simResults.newJournalEntries.filter(entry =>
+                        (entry.type || 'player') !== 'world' || (entry.npcId && markedIds.has(entry.npcId))
+                    );
+                    finalJournalEntries.push(...filteredActionEntries);
+                    stateChanges.lastNpcProgressionCheck = p.time;
+
+                    // Handle respawning interactables from simulation results
                     let newRespawningInteractables = [...p.respawningInteractables];
-                    if (harvestedInteractables.length > 0) {
-                        for (const interactable of harvestedInteractables) {
+                    if (simResults.harvestedInteractables.length > 0) {
+                        for (const interactable of simResults.harvestedInteractables) {
                             const template = ALL_INTERACTABLES.find(t => t.baseId === interactable.baseId);
                             if (template && template.repopulationTimeMinutes) {
                                 const [minTime, maxTime] = template.repopulationTimeMinutes;
@@ -319,29 +327,19 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                             }
                         }
                     }
-
-                    const currentJournalTimeInMonths = p.time.year * 12 + p.time.month;
-                    const cleanedOldJournal = (p.journal || []).filter(entry => {
-                        if ((entry.type || 'player') === 'player') return true;
-                        if (isMajorWorldEvent(entry)) return true;
-                        
-                        const entryTimeInMonths = entry.time.year * 12 + entry.time.month;
-                        return (currentJournalTimeInMonths - entryTimeInMonths) <= 6;
-                    });
-                    
-                    const finalJournal = [...cleanedOldJournal, ...newJournalEntries];
-
-                    return {
-                        ...p,
-                        generatedNpcs: updatedNpcs,
-                        journal: finalJournal,
-                        lastNpcProgressionCheck: p.time,
-                        respawningInteractables: newRespawningInteractables,
-                    };
-                });
-            }
+                    stateChanges.respawningInteractables = newRespawningInteractables;
+                }
+                
+                stateChanges.journal = finalJournalEntries;
+                
+                return { 
+                    ...p, 
+                    ...stateChanges,
+                    nameUsageCounts: stateAfterPopulationCheck.nameUsageCounts,
+                };
+            });
         }
-    }, [playerState.time.month, playerState.time.year, isGameReady, playerState, updateAndPersistPlayerState]);
+    }, [playerState.time.month, playerState.time.year, isGameReady, playerState.generatedNpcs, playerState.journal, playerState.markedNpcIds, updateAndPersistPlayerState]);
 
 
     const [gameMessageObject, setGameMessageObject] = useState<{ text: string; id: number } | null>(null);
@@ -543,6 +541,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
                     'THIEN_MA_TUU_LAU': { x: 1400, y: 1600 },
                     'MO_LINH_THANH': { x: 600, y: 850 },
                     'HUYEN_NGOC_THANH': { x: 2000, y: 1750 },
+                    'HUYEN_THIEN_KIEM_TONG': { x: 1750, y: 4300 },
+                    'CUU_TUYET_MON': { x: 1500, y: 3850 },
+                    'THAN_THUONG_MON': { x: 1600, y: 2850 },
                     'THANH_VAN_MON': { x: 1500, y: 3800 },
                     'DUOC_VIEN': { x: 1000, y: 1300 },
                     'HAC_AM_SAM_LAM': { x: 1500, y: 3800 },
@@ -713,6 +714,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children, playerStat
         handleTalismanTeleport,
         handleCraftItem,
         handleStartSeclusion: playerActions.handleStartSeclusion,
+        handleMarkNpc: playerActions.handleMarkNpc,
     }), [playerActions, inventoryManager, handleTalismanTeleport, handleCraftItem]);
 
     const combatContextValue: ICombatContext = useMemo(() => ({

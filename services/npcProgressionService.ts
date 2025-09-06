@@ -77,9 +77,7 @@ export const processNpcTimeSkip = (
                     npc.qi = 0;
                     
                     const newCultivationInfo = getCultivationInfo(nextLevel);
-                    const journalEntry: JournalEntry = { time: currentState.time, message: `${npc.name} bế quan khổ tu, cuối cùng đã thành công đột phá đến ${newCultivationInfo.name}!`, type: 'world' };
-                    if (!npc.actionHistory) npc.actionHistory = [];
-                    npc.actionHistory.push(journalEntry);
+                    const journalEntry: JournalEntry = { time: currentState.time, message: `${npc.name} bế quan khổ tu, cuối cùng đã thành công đột phá đến ${newCultivationInfo.name}!`, type: 'world', npcId: npc.id };
                     newJournalEntries.push(journalEntry);
                 }
             } else if (npc.camNgo > 0) {
@@ -103,9 +101,7 @@ export const processNpcTimeSkip = (
                              npc.stats = finalStats;
                              npc.attributes = finalAttributes;
                         }
-                        const journalEntry: JournalEntry = { time: currentState.time, message: `${npc.name} miệt mài nghiên cứu, đã lĩnh ngộ "${cheapestUpgrade.def!.name}" đến tầng thứ ${cheapestUpgrade.learned.currentLevel}.`, type: 'world' };
-                        if (!npc.actionHistory) npc.actionHistory = [];
-                        npc.actionHistory.push(journalEntry);
+                        const journalEntry: JournalEntry = { time: currentState.time, message: `${npc.name} miệt mài nghiên cứu, đã lĩnh ngộ "${cheapestUpgrade.def!.name}" đến tầng thứ ${cheapestUpgrade.learned.currentLevel}.`, type: 'world', npcId: npc.id };
                         newJournalEntries.push(journalEntry);
                     }
                 }

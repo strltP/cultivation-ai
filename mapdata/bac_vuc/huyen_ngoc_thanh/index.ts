@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'HUYEN_NGOC_THANH',
     name: 'Huyền Ngọc Thành',
+    description: 'Thành trì lớn nhất Bắc Vực, được xây dựng từ Huyền Ngọc Vạn Năm, quanh năm giá lạnh nhưng lại là trung tâm giao thương quan trọng của vùng đất băng giá này.',
     type: 'city_map',
     parentMapId: 'BAC_VUC',
     size: { width: 4000, height: 3500 },

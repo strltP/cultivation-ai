@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import type { PlayerState, NPC } from '../../../types/character';
 import { FACTIONS } from '../../../data/factions';
-import { FaChevronDown } from 'react-icons/fa';
-import { GiFamilyTree, GiScrollQuill } from 'react-icons/gi';
+import { FaChevronDown, FaGem } from 'react-icons/fa';
+import { GiFamilyTree, GiScrollQuill, GiTreasureMap } from 'react-icons/gi';
 import TuyethocTab from './TuyethocTab';
+import { ALL_ITEMS } from '../../../data/items';
 
 interface FactionHierarchyLevel {
     roleName: string;
@@ -21,7 +22,7 @@ const OrgChartNode: React.FC<{ member: NPC }> = ({ member }) => (
 
 
 const TheLucTab: React.FC<{ playerState: PlayerState }> = ({ playerState }) => {
-    const [activeSubTab, setActiveSubTab] = useState<'sodo' | 'tuyethoc'>('sodo');
+    const [activeSubTab, setActiveSubTab] = useState<'sodo' | 'khobau' | 'tuyethoc'>('sodo');
     const [expandedFactions, setExpandedFactions] = useState<Record<string, boolean>>({});
 
     const factionData = useMemo(() => {
@@ -82,72 +83,90 @@ const TheLucTab: React.FC<{ playerState: PlayerState }> = ({ playerState }) => {
 
     return (
         <div className="flex flex-col h-full -m-4">
-            <nav className="flex-shrink-0 flex border-b-2 border-gray-700 bg-black/20 px-4">
-                <button
-                    onClick={() => setActiveSubTab('sodo')}
-                    className={`flex items-center gap-2 px-6 py-3 text-lg font-semibold transition-colors duration-200 border-b-4 ${
-                        activeSubTab === 'sodo'
-                            ? 'text-yellow-300 border-yellow-400'
-                            : 'text-gray-400 border-transparent hover:text-white'
-                    }`}
-                >
-                    <GiFamilyTree /> Sơ Đồ Thế Lực
-                </button>
-                <button
-                    onClick={() => setActiveSubTab('tuyethoc')}
-                    className={`flex items-center gap-2 px-6 py-3 text-lg font-semibold transition-colors duration-200 border-b-4 ${
-                        activeSubTab === 'tuyethoc'
-                            ? 'text-yellow-300 border-yellow-400'
-                            : 'text-gray-400 border-transparent hover:text-white'
-                    }`}
-                >
-                    <GiScrollQuill /> Tuyệt Học
-                </button>
-            </nav>
-            <div className="flex-grow overflow-y-auto p-4 scrollbar-thin chat-history">
-                {activeSubTab === 'sodo' && (
-                     <div className="space-y-4">
-                        {sortedFactions.map(faction => {
-                            const data = factionData[faction.id];
-                            if (!data || data.memberCount === 0) return null;
+             <div className="flex-grow overflow-y-auto p-4 scrollbar-thin chat-history">
+                 <div className="space-y-4">
+                    {sortedFactions.map(faction => {
+                        const data = factionData[faction.id];
+                        if (!data || data.memberCount === 0) return null;
 
-                            const isExpanded = !!expandedFactions[faction.id];
+                        const isExpanded = !!expandedFactions[faction.id];
+                        const assets = playerState.factionAssets?.[faction.id];
 
-                            return (
-                                <div key={faction.id} className="bg-black/20 rounded-lg border border-gray-700">
-                                    <button
-                                        onClick={() => toggleFaction(faction.id)}
-                                        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-700/30 transition-colors rounded-t-lg"
-                                        aria-expanded={isExpanded}
-                                    >
-                                        <div className="flex flex-col">
-                                            <h2 className="text-2xl font-bold text-yellow-200">{faction.name}</h2>
-                                            <p className="text-sm text-gray-400">Tổng số thành viên: {data.memberCount}</p>
-                                        </div>
-                                        <FaChevronDown className={`text-2xl text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
-                                    </button>
+                        return (
+                            <div key={faction.id} className="bg-black/20 rounded-lg border border-gray-700">
+                                <button
+                                    onClick={() => toggleFaction(faction.id)}
+                                    className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-700/30 transition-colors rounded-t-lg"
+                                    aria-expanded={isExpanded}
+                                >
+                                    <div className="flex flex-col">
+                                        <h2 className="text-2xl font-bold text-yellow-200">{faction.name}</h2>
+                                        <p className="text-sm text-gray-400">Tổng số thành viên: {data.memberCount}</p>
+                                    </div>
+                                    <FaChevronDown className={`text-2xl text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
+                                </button>
 
-                                    {isExpanded && (
-                                        <div className="p-4 border-t border-gray-700 overflow-x-auto">
-                                            <div className="flex flex-col items-center gap-0 min-w-[600px]">
-                                                {data.hierarchy.map((level) => (
-                                                    <div key={level.roleName} className="org-chart-level">
-                                                        {level.members.map(member => (
-                                                            <OrgChartNode key={member.id} member={member} />
+                                {isExpanded && (
+                                    <div className="border-t border-gray-700">
+                                         <nav className="flex border-b-2 border-gray-600 bg-black/10">
+                                            <button onClick={() => setActiveSubTab('sodo')} className={`flex-1 py-2 text-center font-semibold flex items-center justify-center gap-2 ${activeSubTab === 'sodo' ? 'bg-yellow-600/30 text-yellow-200' : 'text-gray-400 hover:bg-gray-700/50'}`}><GiFamilyTree /> Sơ Đồ</button>
+                                            <button onClick={() => setActiveSubTab('khobau')} className={`flex-1 py-2 text-center font-semibold flex items-center justify-center gap-2 ${activeSubTab === 'khobau' ? 'bg-yellow-600/30 text-yellow-200' : 'text-gray-400 hover:bg-gray-700/50'}`}><GiTreasureMap /> Kho Báu</button>
+                                            <button onClick={() => setActiveSubTab('tuyethoc')} className={`flex-1 py-2 text-center font-semibold flex items-center justify-center gap-2 ${activeSubTab === 'tuyethoc' ? 'bg-yellow-600/30 text-yellow-200' : 'text-gray-400 hover:bg-gray-700/50'}`}><GiScrollQuill /> Tuyệt Học</button>
+                                        </nav>
+                                        <div className="p-4">
+                                            {activeSubTab === 'sodo' && (
+                                                <div className="overflow-x-auto">
+                                                    <div className="flex flex-col items-center gap-0 min-w-[600px]">
+                                                        {data.hierarchy.map((level) => (
+                                                            <div key={level.roleName} className="org-chart-level">
+                                                                {level.members.map(member => (
+                                                                    <OrgChartNode key={member.id} member={member} />
+                                                                ))}
+                                                            </div>
                                                         ))}
                                                     </div>
-                                                ))}
-                                            </div>
+                                                </div>
+                                            )}
+                                            {activeSubTab === 'khobau' && (
+                                                <div>
+                                                    {!assets || (assets.linhThach === 0 && assets.inventory.length === 0) ? (
+                                                         <p className="text-center text-gray-500 italic p-8">Kho báu của thế lực này trống rỗng.</p>
+                                                    ) : (
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center gap-4 p-3 bg-yellow-900/30 rounded-lg">
+                                                                <FaGem className="text-5xl text-yellow-300" />
+                                                                <div>
+                                                                    <p className="text-gray-400 text-sm">Tổng Linh Thạch</p>
+                                                                    <p className="text-2xl font-bold text-yellow-200">{assets.linhThach.toLocaleString()}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-semibold text-lg text-amber-200 mb-2">Trân Phẩm Dị Bảo</h4>
+                                                                 <div className="grid grid-cols-5 md:grid-cols-8 gap-2 p-2 bg-black/20 rounded-lg border border-gray-700 content-start">
+                                                                    {assets.inventory.map((slot, index) => {
+                                                                        const itemDef = ALL_ITEMS.find(i => i.id === slot.itemId);
+                                                                        if (!itemDef) return null;
+                                                                        return (
+                                                                            <div key={index} className="relative aspect-square bg-gray-900/50 rounded-md border border-gray-600" title={itemDef.name}>
+                                                                                <div className="flex items-center justify-center h-full text-3xl">{itemDef.icon}</div>
+                                                                                <span className="absolute bottom-1 right-1 text-xs font-bold text-white bg-gray-800/80 px-1.5 py-0.5 rounded">{slot.quantity}</span>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {activeSubTab === 'tuyethoc' && <TuyethocTab />}
                                         </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-                 {activeSubTab === 'tuyethoc' && (
-                    <TuyethocTab />
-                )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

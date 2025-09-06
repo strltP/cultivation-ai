@@ -72,6 +72,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
         handleTalismanTeleport,
         handleCraftItem,
         handleStartSeclusion,
+        handleMarkNpc,
     } = usePlayerActions();
 
     const {
@@ -175,10 +176,12 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                 <InteractionMenu
                     npc={activeInteractionNpc}
                     position={calculateMenuPosition(activeInteractionNpc.position)}
+                    playerState={playerState}
                     onStartChat={() => handleStartChat(activeInteractionNpc)}
                     onChallenge={() => handleChallenge(activeInteractionNpc)}
                     onViewInfo={() => handleViewInfo(activeInteractionNpc)}
                     onTrade={() => handleTrade(activeInteractionNpc)}
+                    onMark={() => handleMarkNpc(activeInteractionNpc)}
                     onClose={() => setActiveInteractionNpc(null)}
                 />
             )}
@@ -203,7 +206,7 @@ const UIManager: React.FC<UIManagerProps> = (props) => {
                 />
             )}
 
-            {viewingNpc && <NpcInfoPanel npc={viewingNpc} onClose={() => setViewingNpc(null)} playerState={playerState} />}
+            {viewingNpc && <NpcInfoPanel npc={viewingNpc} onClose={() => setViewingNpc(null)} playerState={playerState} onMarkNpc={handleMarkNpc} />}
             {isMapOpen && <WorldMap 
                 allMaps={allMaps} 
                 playerState={playerState} 

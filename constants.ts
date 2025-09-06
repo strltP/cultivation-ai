@@ -90,19 +90,11 @@ export const REALM_PROGRESSION: RealmProgression[] = [
   // Thêm các cảnh giới khác ở đây...
 ];
 
-export const INITIAL_PLAYER_STATE: Omit<PlayerState, 'saveVersion'> = {
+export const INITIAL_PLAYER_STATE: Omit<PlayerState, 'saveVersion' | 'baseAttributes' | 'attributes'> = {
   name: "Đạo Hữu",
   gender: 'Nam',
   cultivation: { realmIndex: 0, level: -1 }, // Bắt đầu từ cấp -1 (Phàm Nhân)
   
-  attributes: { // Thuộc tính cơ bản của phàm nhân
-      canCot: 10,
-      thanPhap: 10,
-      thanThuc: 10,
-      ngoTinh: 10,
-      coDuyen: 10,
-      tamCanh: 10,
-  },
   // Chỉ số của phàm nhân.
   stats: {
     maxHp: 50, maxQi: 0, maxMana: 10, maxThoNguyen: 80, attackPower: 5, defensePower: 2,
@@ -125,7 +117,7 @@ export const INITIAL_PLAYER_STATE: Omit<PlayerState, 'saveVersion'> = {
     { itemId: 'consumable_truyen_tong_phu', quantity: 50},
     { itemId: 'consumable_phuong_hoang_niet_ban_hoa', quantity: 10},
     { itemId: 'consumable_cuu_u_huyen_thuy_tinh', quantity: 10},
-    { itemId: 'consumable_bat_tu_than_moc_diep', quantity: 10},
+    { itemId: 'consumable_bat_tu_than_moc_diep', quantity: 30},
     { itemId: 'tool_dan_lo_mini', quantity: 1 },
   ],
   equipment: {},

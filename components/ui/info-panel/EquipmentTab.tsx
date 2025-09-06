@@ -67,7 +67,7 @@ const EquipmentTab: React.FC<EquipmentTabProps> = ({ playerState, setPlayerState
             // Place new item in equipment slot
             newEquipment[itemDef.slot!] = itemInInventory;
 
-            const { finalStats, finalAttributes } = calculateAllStats(prev.attributes, prev.cultivation, prev.cultivationStats, prev.learnedSkills, ALL_SKILLS, newEquipment, ALL_ITEMS, prev.linhCan);
+            const { finalStats, finalAttributes } = calculateAllStats(prev.baseAttributes, prev.cultivation, prev.cultivationStats, prev.learnedSkills, ALL_SKILLS, newEquipment, ALL_ITEMS, prev.linhCan);
 
             return { ...prev, inventory: newInventory, equipment: newEquipment, stats: finalStats, attributes: finalAttributes, hp: Math.min(prev.hp, finalStats.maxHp) };
         });
@@ -90,7 +90,7 @@ const EquipmentTab: React.FC<EquipmentTabProps> = ({ playerState, setPlayerState
             const newEquipment = { ...prev.equipment };
             delete newEquipment[slot];
 
-            const { finalStats, finalAttributes } = calculateAllStats(prev.attributes, prev.cultivation, prev.cultivationStats, prev.learnedSkills, ALL_SKILLS, newEquipment, ALL_ITEMS, prev.linhCan);
+            const { finalStats, finalAttributes } = calculateAllStats(prev.baseAttributes, prev.cultivation, prev.cultivationStats, prev.learnedSkills, ALL_SKILLS, newEquipment, ALL_ITEMS, prev.linhCan);
             
             return { ...prev, inventory: newInventory, equipment: newEquipment, stats: finalStats, attributes: finalAttributes, hp: Math.min(prev.hp, finalStats.maxHp) };
         });

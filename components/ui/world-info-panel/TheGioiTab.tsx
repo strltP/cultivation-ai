@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MAPS, MAP_AREAS_BY_MAP, POIS_BY_MAP } from '../../../../mapdata';
-import type { MapID, PointOfInterestType } from '../../../../types/map';
+import type { MapID, PointOfInterest, PointOfInterestType } from '../../../../types/map';
 import { FaGlobeAsia, FaMap, FaCity, FaLandmark, FaGopuram, FaHome, FaSkullCrossbones, FaUniversity, FaChevronRight, FaUsers } from 'react-icons/fa';
 
 const POI_ICONS: Record<PointOfInterestType, React.ReactNode> = {
@@ -12,6 +12,23 @@ const POI_ICONS: Record<PointOfInterestType, React.ReactNode> = {
     building: <FaUniversity className="inline-block text-purple-300" />,
     clan: <FaUsers className="inline-block text-orange-300" />,
 };
+
+const PoiListItem: React.FC<{ poi: PointOfInterest }> = ({ poi }) => {
+    const targetMap = poi.targetMap ? MAPS[poi.targetMap] : null;
+
+    return (
+        <li className="flex flex-col items-start gap-1">
+            <div className="flex items-center gap-3 text-gray-300">
+                {POI_ICONS[poi.type]}
+                <span>{poi.name}</span>
+            </div>
+            {targetMap?.description && (
+                <p className="pl-9 text-gray-400 italic text-sm">{targetMap.description}</p>
+            )}
+        </li>
+    );
+};
+
 
 const TheGioiTab: React.FC = () => {
     const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -61,6 +78,11 @@ const TheGioiTab: React.FC = () => {
                         
                         {isContinentExpanded && (
                             <div className="p-4 pl-8 space-y-4 border-t border-gray-700">
+                                {continent.description && (
+                                    <p className="text-gray-400 italic text-sm mb-4 -mt-2">
+                                        {continent.description}
+                                    </p>
+                                )}
                                 {areas.map(area => {
                                     const poisInThisArea = pois.filter(poi => 
                                         poi.position.x >= area.position.x - area.size.width / 2 &&
@@ -83,12 +105,9 @@ const TheGioiTab: React.FC = () => {
                                                  <FaChevronRight className={`text-lg text-gray-500 transition-transform duration-300 ${isAreaExpanded ? 'rotate-90' : 'rotate-0'}`} />
                                             </button>
                                             {isAreaExpanded && poisInThisArea.length > 0 && (
-                                                <ul className="pl-8 mt-2 space-y-2">
+                                                <ul className="pl-8 mt-2 space-y-3">
                                                     {poisInThisArea.map(poi => (
-                                                        <li key={poi.id} className="text-gray-300 flex items-center gap-3">
-                                                            {POI_ICONS[poi.type]}
-                                                            <span>{poi.name}</span>
-                                                        </li>
+                                                        <PoiListItem key={poi.id} poi={poi} />
                                                     ))}
                                                 </ul>
                                             )}
@@ -98,12 +117,9 @@ const TheGioiTab: React.FC = () => {
                                 {poisOutsideAreas.length > 0 && (
                                     <div className="pl-4 border-l-2 border-gray-600/50 border-dashed">
                                         <h3 className="text-xl font-semibold text-cyan-400/80 italic py-2">Địa điểm khác</h3>
-                                        <ul className="pl-8 mt-2 space-y-2">
+                                        <ul className="pl-8 mt-2 space-y-3">
                                             {poisOutsideAreas.map(poi => (
-                                                <li key={poi.id} className="text-gray-300 flex items-center gap-3">
-                                                    {POI_ICONS[poi.type]}
-                                                    <span>{poi.name}</span>
-                                                </li>
+                                                <PoiListItem key={poi.id} poi={poi} />
                                             ))}
                                         </ul>
                                     </div>

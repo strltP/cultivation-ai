@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'THIEN_NAM',
     name: 'Thiên Nam Đại Lục',
+    description: 'Một đại lục rộng lớn trù phú, nơi linh khí dồi dào, là cái nôi của vô số tông môn và cường giả. Đây là khởi đầu cho hành trình tu tiên của nhiều người.',
     type: 'continent',
     size: { width: 10000, height: 8000 }, // Expanded map size
     backgroundStyle: { background: 'radial-gradient(ellipse at center, rgba(34,197,94,0.15) 0%, rgba(34,197,94,0) 70%), linear-gradient(to bottom, #2a3a2b, #1a2a1b)' },

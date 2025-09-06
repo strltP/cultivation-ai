@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { PlayerState } from '../../../types/character';
 import { exportPlayerState, importPlayerState, INITIAL_PLAYER_STATE } from '../../../hooks/usePlayerPersistence';
-import { FaDownload, FaUpload, FaExclamationTriangle, FaPlus } from 'react-icons/fa';
+import { FaDownload, FaUpload, FaExclamationTriangle, FaPlus, FaClipboard } from 'react-icons/fa';
 import { GiScrollQuill, GiBrain, GiHeartPlus, GiGalaxy, GiArtificialIntelligence } from 'react-icons/gi';
 import { getNextCultivationLevel, getRealmLevelInfo, calculateAllStats } from '../../../services/cultivationService';
 import { ALL_SKILLS } from '../../../data/skills/skills';
@@ -98,6 +98,19 @@ const SystemTab: React.FC<SystemTabProps> = ({ playerState, setPlayerState }) =>
                 }
             }
         );
+    };
+
+    const handleCopyJson = async () => {
+        try {
+            const jsonString = JSON.stringify(playerState, null, 2);
+            await navigator.clipboard.writeText(jsonString);
+            setMessage({ text: 'Đã sao chép dữ liệu save vào clipboard!', type: 'success' });
+        } catch (error) {
+            console.error("Failed to copy save data:", error);
+            setMessage({ text: 'Không thể sao chép dữ liệu vào clipboard.', type: 'error' });
+        } finally {
+            setTimeout(() => setMessage(null), 4000);
+        }
     };
 
     // --- Cheat Menu Handlers ---
@@ -241,20 +254,28 @@ const SystemTab: React.FC<SystemTabProps> = ({ playerState, setPlayerState }) =>
                     <p className="text-gray-400 max-w-2xl text-lg">
                         Lưu giữ vận mệnh của đạo hữu vào một cuộn giấy (Xuất) để bảo toàn, hoặc đọc một cuộn giấy khác (Nhập) để bắt đầu một hành trình đã được định sẵn.
                     </p>
-                    <div className="flex flex-col md:flex-row gap-8 mt-6">
+                    <div className="flex flex-wrap items-center justify-center gap-4 mt-6">
                         <button
                             onClick={handleExport}
-                            className="flex items-center justify-center gap-4 p-6 bg-blue-800/40 border-2 border-blue-500 rounded-lg text-white hover:bg-blue-700/50 hover:border-blue-400 transition-all transform hover:scale-105 w-72 h-32"
+                            className="flex items-center justify-center gap-4 p-4 bg-blue-800/40 border-2 border-blue-500 rounded-lg text-white hover:bg-blue-700/50 hover:border-blue-400 transition-all transform hover:scale-105 min-w-[250px] h-24"
                         >
                             <FaUpload className="text-4xl text-blue-300" />
-                            <span className="text-2xl font-bold">Sao Chép Vận Mệnh</span>
+                            <span className="text-xl font-bold">Xuất File</span>
                         </button>
                         <button
                             onClick={handleInitiateImport}
-                            className="flex items-center justify-center gap-4 p-6 bg-green-800/40 border-2 border-green-500 rounded-lg text-white hover:bg-green-700/50 hover:border-green-400 transition-all transform hover:scale-105 w-72 h-32"
+                            className="flex items-center justify-center gap-4 p-4 bg-green-800/40 border-2 border-green-500 rounded-lg text-white hover:bg-green-700/50 hover:border-green-400 transition-all transform hover:scale-105 min-w-[250px] h-24"
                         >
                             <FaDownload className="text-4xl text-green-300" />
-                            <span className="text-2xl font-bold">Đọc Vận Mệnh</span>
+                            <span className="text-xl font-bold">Nhập File</span>
+                        </button>
+                         <button
+                            onClick={handleCopyJson}
+                            className="flex items-center justify-center gap-4 p-4 bg-purple-800/40 border-2 border-purple-500 rounded-lg text-white hover:bg-purple-700/50 hover:border-purple-400 transition-all transform hover:scale-105 min-w-[250px] h-24"
+                            title="Sao chép dữ liệu save (dạng JSON) vào clipboard để gỡ lỗi."
+                        >
+                            <FaClipboard className="text-4xl text-purple-300" />
+                            <span className="text-xl font-bold">Sao Chép Dữ Liệu</span>
                         </button>
                     </div>
                     {message && (

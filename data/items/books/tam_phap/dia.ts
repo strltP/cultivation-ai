@@ -1,0 +1,66 @@
+import React from 'react';
+import type { Item } from '../../../../types/item';
+import { GiBookCover } from 'react-icons/gi';
+
+export const TAM_PHAP_BOOKS_DIA: Item[] = [
+    {
+        id: 'book_van_kiem_quy_tong',
+        name: 'Vạn Kiếm Quy Tông - Toàn Quyển',
+        description: 'Tâm pháp kiếm tu thượng thừa, ghi lại tinh hoa của vạn loại kiếm pháp. Nghiên cứu có thể lĩnh ngộ tâm pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-slate-200" }),
+        stackable: 1,
+        value: 7500,
+        skillId: 'tam-phap-dia-1',
+    },
+    {
+        id: 'book_thai_cuc_tam_kinh',
+        name: 'Thái Cực Tâm Kinh - Đạo Quyển',
+        description: 'Tâm pháp đạo gia chú trọng cân bằng, tăng toàn bộ thuộc tính. Nghiên cứu có thể lĩnh ngộ tâm pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-white" }),
+        stackable: 1,
+        value: 9000,
+        skillId: 'tam-phap-dia-2',
+    },
+    {
+        id: 'book_pha_thien_kiem_y',
+        name: 'Phá Thiên Kiếm Ý - Đạo Quyển',
+        description: 'Tâm pháp ngưng tụ kiếm ý, tăng mạnh tỉ lệ bạo kích. Nghiên cứu có thể lĩnh ngộ tâm pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-sky-200" }),
+        stackable: 1,
+        value: 8200,
+        skillId: 'tam-phap-dia-3',
+    },
+    {
+        id: 'book_hai_vuong_kinh',
+        name: 'Hải Vương Kinh - Đạo Quyển',
+        description: 'Tâm pháp thượng cổ, tăng trữ lượng linh lực dồi dào như biển cả. Nghiên cứu có thể lĩnh ngộ tâm pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-cyan-300" }),
+        stackable: 1,
+        value: 10000,
+        skillId: 'tam-phap-dia-4',
+    },
+    {
+        id: 'book_long_tuong_than_cong',
+        name: 'Long Tượng Thần Công - Đạo Quyển',
+        description: 'Luyện thể công pháp mô phỏng sức mạnh Long và Tượng. Nghiên cứu có thể lĩnh ngộ tâm pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-amber-400" }),
+        stackable: 1,
+        value: 9500,
+        skillId: 'tam-phap-dia-5',
+    },
+    {
+        id: 'book_that_sat_ma_cong',
+        name: 'Thất Sát Ma Công - Ma Quyển',
+        description: 'Ma công bá đạo, kích phát sát khí để tăng sức mạnh hủy diệt. Nghiên cứu có thể lĩnh ngộ tâm pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-rose-700" }),
+        stackable: 1,
+        value: 11000,
+        skillId: 'tam-phap-dia-6',
+    },
+];

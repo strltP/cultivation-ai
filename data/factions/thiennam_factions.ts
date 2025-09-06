@@ -13,7 +13,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 5, level: 0, weight: 3 }, // Hoa Than So Ki
               { realmIndex: 5, level: 1, weight: 1 }, // Hoa Than Trung Ki
             ],
-            titleChance: { base: 0.7, perRealm: 0.05 },
+            titleChance: { base: 0.4, perRealm: 0.05 },
             titleThemes: ['cổ xưa', 'ẩn thế', 'huyền bí', 'tổ sư'],
             equipmentTierRange: ['DIA', 'THIEN'],
             attributeProfile: { canCot: 10, thanPhap: 8, thanThuc: 15, ngoTinh: 15, coDuyen: 5, tamCanh: 12 },
@@ -26,7 +26,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 4, level: 2, weight: 7 }, // Nguyen Anh Hau Ki
               { realmIndex: 4, level: 3, weight: 3 }, // Nguyen Anh Dinh Phong
             ],
-            titleChance: { base: 0.6, perRealm: 0.05 },
+            titleChance: { base: 0.1, perRealm: 0.01 },
             titleThemes: ['uy nghiêm', 'chưởng quản', 'tông môn', 'kiếm'],
             equipmentTierRange: ['DIA', 'THIEN'],
             attributeProfile: { canCot: 12, thanPhap: 10, thanThuc: 12, ngoTinh: 10, coDuyen: 6, tamCanh: 15 },
@@ -39,7 +39,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 4, level: 0, weight: 7 }, // Nguyen Anh So Ki
               { realmIndex: 4, level: 1, weight: 3 }, // Nguyen Anh Trung Ki
             ],
-            titleChance: { base: 0.5, perRealm: 0.05 },
+            titleChance: { base: 0.01, perRealm: 0.01 },
             titleThemes: ['phụ tá', 'quản lý', 'trí tuệ'],
             equipmentTierRange: ['DIA', 'DIA'],
             attributeProfile: { canCot: 10, thanPhap: 9, thanThuc: 13, ngoTinh: 14, coDuyen: 5, tamCanh: 12 },
@@ -52,7 +52,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 3, level: 3, weight: 8 }, // Kim Dan Dinh Phong
               { realmIndex: 4, level: 0, weight: 2 }, // Nguyen Anh So Ki
             ],
-            titleChance: { base: 0.45, perRealm: 0.05 },
+            titleChance: { base: 0.01, perRealm: 0.01 },
             titleThemes: ['chấp sự', 'thủ các', 'truyền công', 'luyện đan', 'luyện khí'],
             equipmentTierRange: ['HUYEN', 'DIA'],
             attributeProfile: { canCot: 10, thanPhap: 8, thanThuc: 11, ngoTinh: 12, coDuyen: 8, tamCanh: 11 },
@@ -68,7 +68,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 2, level: 2, weight: 4 },
               { realmIndex: 2, level: 3, weight: 2 }, // Ket Tinh Dinh Phong
             ],
-            titleChance: { base: 0.05, perRealm: 0.05 },
+            titleChance: { base: 0, perRealm: 0 },
             titleThemes: ['thiên tài', 'kiếm', 'tinh anh', 'hạt giống'],
             equipmentTierRange: ['HUYEN', 'HUYEN'],
             attributeProfile: { canCot: 9, thanPhap: 12, thanThuc: 11, ngoTinh: 13, coDuyen: 8, tamCanh: 7 },
@@ -82,7 +82,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 1, level: 2, weight: 10 },
               { realmIndex: 1, level: 3, weight: 5 }, // Truc Co Dinh Phong
             ],
-            titleChance: { base: 0, perRealm: 0.01 },
+            titleChance: { base: 0, perRealm: 0 },
             titleThemes: [],
             equipmentTierRange: ['HOANG', 'HUYEN'],
             attributeProfile: { canCot: 10, thanPhap: 10, thanThuc: 10, ngoTinh: 10, coDuyen: 10, tamCanh: 10 },
@@ -117,7 +117,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 3, level: 2, weight: 7 }, { realmIndex: 3, level: 3, weight: 3 }, // Kim Dan
               { realmIndex: 4, level: 0, weight: 1 }, // Nguyen Anh
             ],
-            titleChance: { base: 0.5, perRealm: 0.05 },
+            titleChance: { base: 0.1, perRealm: 0.05 },
             titleThemes: ['lưu ly', 'thanh tú', 'phiến', 'kiếm pháp'],
             equipmentTierRange: ['DIA', 'DIA'],
             attributeProfile: { canCot: 9, thanPhap: 14, thanThuc: 13, ngoTinh: 12, coDuyen: 7, tamCanh: 10 },
@@ -131,7 +131,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 3, level: 0, weight: 4 }, // Kim Dan So Ki
               { realmIndex: 3, level: 1, weight: 2 }, // Kim Dan Trung Ki
             ],
-            titleChance: { base: 0.4, perRealm: 0.05 },
+            titleChance: { base: 0, perRealm: 0 },
             titleThemes: ['chấp sự', 'truyền công', 'hộ pháp'],
             equipmentTierRange: ['HUYEN', 'DIA'],
             attributeProfile: { canCot: 10, thanPhap: 10, thanThuc: 12, ngoTinh: 11, coDuyen: 8, tamCanh: 9 },
@@ -145,7 +145,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 0, level: 11, weight: 4 }, { realmIndex: 0, level: 12, weight: 2 },
               { realmIndex: 1, level: 0, weight: 5 }, { realmIndex: 1, level: 1, weight: 4 }, { realmIndex: 1, level: 2, weight: 2 }, { realmIndex: 1, level: 3, weight: 1 },
             ],
-            titleChance: { base: 0, perRealm: 0.01 },
+            titleChance: { base: 0, perRealm: 0 },
             titleThemes: [],
             equipmentTierRange: ['HOANG', 'HUYEN'],
             attributeProfile: { canCot: 9, thanPhap: 12, thanThuc: 11, ngoTinh: 10, coDuyen: 9, tamCanh: 9 },
@@ -164,7 +164,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
                 { realmIndex: 1, level: 1, weight: 5 },
                 { realmIndex: 2, level: 0, weight: 1 },
             ],
-            titleChance: { base: 0.01, perRealm: 0.01 },
+            titleChance: { base: 0, perRealm: 0 },
             titleThemes: ['ẩn dật', 'lão nông'],
             equipmentTierRange: ['HOANG', 'HUYEN'],
             attributeProfile: { canCot: 10, thanPhap: 8, thanThuc: 10, ngoTinh: 12, coDuyen: 8, tamCanh: 12 },
@@ -179,7 +179,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 4, level: 2, weight: 2 },
               { realmIndex: 4, level: 3, weight: 1 },
             ],
-            titleChance: { base: 0.1, perRealm: 0.05 },
+            titleChance: { base: 0.2, perRealm: 0.05 },
             titleThemes: ['ẩn tu', 'tiền bối', 'quy ẩn'],
             equipmentTierRange: ['HUYEN', 'DIA'],
             attributeProfile: { canCot: 8, thanPhap: 9, thanThuc: 14, ngoTinh: 15, coDuyen: 4, tamCanh: 10 },
@@ -192,7 +192,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 0, level: 0, weight: 10 }, { realmIndex: 1, level: 1, weight: 8 }, { realmIndex: 1, level: 2, weight: 6 }, { realmIndex: 1, level: 3, weight: 4 },
               { realmIndex: 2, level: 0, weight: 3 }, { realmIndex: 2, level: 1, weight: 2 }, { realmIndex: 2, level: 2, weight: 1 }, { realmIndex: 2, level: 3, weight: 1 },
             ],
-            titleChance: { base: 0, perRealm: 0.005 },
+            titleChance: { base: 0, perRealm: 0 },
             titleThemes: [],
             equipmentTierRange: ['HOANG', 'HUYEN'],
             attributeProfile: { canCot: 8, thanPhap: 8, thanThuc: 11, ngoTinh: 12, coDuyen: 15, tamCanh: 6 },
@@ -258,7 +258,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 4, level: 1, weight: 10 }, { realmIndex: 4, level: 2, weight: 5 }, { realmIndex: 4, level: 3, weight: 2 },
               { realmIndex: 5, level: 0, weight: 1 },
             ],
-            titleChance: { base: 0.6, perRealm: 0.05 },
+            titleChance: { base: 0.009, perRealm: 0.001 },
             titleThemes: ['thành chủ', 'cai quản', 'uy dũng'],
             equipmentTierRange: ['DIA', 'THIEN'],
             attributeProfile: { canCot: 12, thanPhap: 10, thanThuc: 12, ngoTinh: 10, coDuyen: 6, tamCanh: 15 },
@@ -270,7 +270,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
             realmDistribution: [
               { realmIndex: 4, level: 0, weight: 10 }, { realmIndex: 4, level: 1, weight: 8 }, { realmIndex: 4, level: 2, weight: 3 },
             ],
-            titleChance: { base: 0.4, perRealm: 0.05 },
+            titleChance: { base: 0.05, perRealm: 0 },
             titleThemes: ['khách khanh', 'tự do', 'cường đại'],
             equipmentTierRange: ['DIA', 'DIA'],
             attributeProfile: { canCot: 10, thanPhap: 11, thanThuc: 11, ngoTinh: 11, coDuyen: 12, tamCanh: 5 },
@@ -282,7 +282,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
             realmDistribution: [
               { realmIndex: 3, level: 1, weight: 10 }, { realmIndex: 3, level: 2, weight: 8 }, { realmIndex: 3, level: 3, weight: 4 },
             ],
-            titleChance: { base: 0.05, perRealm: 0.05 },
+            titleChance: { base: 0, perRealm: 0 },
             titleThemes: ['thống lĩnh', 'thiết huyết', 'sát phạt'],
             equipmentTierRange: ['HUYEN', 'DIA'],
             attributeProfile: { canCot: 14, thanPhap: 12, thanThuc: 9, ngoTinh: 6, coDuyen: 5, tamCanh: 14 },
@@ -294,7 +294,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
             realmDistribution: [
               { realmIndex: 2, level: 3, weight: 10 }, { realmIndex: 3, level: 0, weight: 8 }, { realmIndex: 3, level: 1, weight: 4 }, { realmIndex: 3, level: 2, weight: 1 },
             ],
-            titleChance: { base: 0.02, perRealm: 0.02 },
+            titleChance: { base: 0, perRealm: 0 },
             titleThemes: ['thương nhân', 'giàu có', 'bảo vật'],
             equipmentTierRange: ['HUYEN', 'DIA'],
             attributeProfile: { canCot: 8, thanPhap: 8, thanThuc: 12, ngoTinh: 12, coDuyen: 15, tamCanh: 5 },
@@ -362,7 +362,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
                 { realmIndex: 2, level: 0, weight: 8 }, { realmIndex: 2, level: 1, weight: 8 }, { realmIndex: 2, level: 2, weight: 6 }, { realmIndex: 2, level: 3, weight: 4 },
                 { realmIndex: 3, level: 0, weight: 3 }, { realmIndex: 3, level: 1, weight: 2 }, { realmIndex: 3, level: 2, weight: 1 }, { realmIndex: 3, level: 3, weight: 1 },
             ],
-            titleChance: { base: 0.02, perRealm: 0.02 },
+            titleChance: { base: 0.09, perRealm: 0.01 },
             titleThemes: ['uy mãnh', 'chiến đấu', 'gia tộc'],
             equipmentTierRange: ['HUYEN', 'DIA'],
             attributeProfile: { canCot: 13, thanPhap: 12, thanThuc: 10, ngoTinh: 8, coDuyen: 5, tamCanh: 12 },
@@ -376,7 +376,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 2, level: 0, weight: 8 }, { realmIndex: 2, level: 1, weight: 8 }, { realmIndex: 2, level: 2, weight: 6 }, { realmIndex: 2, level: 3, weight: 4 },
               { realmIndex: 3, level: 0, weight: 3 }, { realmIndex: 3, level: 1, weight: 1 },
             ],
-            titleChance: { base: 0.01, perRealm: 0.01 },
+            titleChance: { base: 0.008, perRealm: 0.01 },
             titleThemes: ['chấp sự', 'truyền công', 'hộ pháp'],
             equipmentTierRange: ['HUYEN', 'HUYEN'],
             attributeProfile: { canCot: 11, thanPhap: 9, thanThuc: 11, ngoTinh: 11, coDuyen: 7, tamCanh: 11 },
@@ -389,7 +389,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 1, level: 0, weight: 10 }, { realmIndex: 1, level: 1, weight: 10 }, { realmIndex: 1, level: 2, weight: 8 }, { realmIndex: 1, level: 3, weight: 5 },
               { realmIndex: 2, level: 0, weight: 3 }, { realmIndex: 2, level: 1, weight: 1 },
             ],
-            titleChance: { base: 0, perRealm: 0.01 },
+            titleChance: { base: 0, perRealm: 0 },
             titleThemes: ['thiên tài', 'hạt giống'],
             equipmentTierRange: ['HOANG', 'HUYEN'],
             attributeProfile: { canCot: 10, thanPhap: 11, thanThuc: 10, ngoTinh: 10, coDuyen: 9, tamCanh: 10 },
@@ -422,7 +422,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
                 { realmIndex: 2, level: 0, weight: 8 }, { realmIndex: 2, level: 1, weight: 8 }, { realmIndex: 2, level: 2, weight: 6 }, { realmIndex: 2, level: 3, weight: 4 },
                 { realmIndex: 3, level: 0, weight: 3 }, { realmIndex: 3, level: 1, weight: 2 }, { realmIndex: 3, level: 2, weight: 1 }, { realmIndex: 3, level: 3, weight: 1 },
             ],
-            titleChance: { base: 0.02, perRealm: 0.02 },
+            titleChance: { base: 0.08, perRealm: 0.01 },
             titleThemes: ['dược sư', 'ôn hòa', 'linh thảo'],
             equipmentTierRange: ['HUYEN', 'DIA'],
             attributeProfile: { canCot: 9, thanPhap: 8, thanThuc: 12, ngoTinh: 15, coDuyen: 6, tamCanh: 10 },
@@ -437,7 +437,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 2, level: 0, weight: 6 }, { realmIndex: 2, level: 1, weight: 5 }, { realmIndex: 2, level: 2, weight: 4 }, { realmIndex: 2, level: 3, weight: 3 },
               { realmIndex: 3, level: 0, weight: 1 },
             ],
-            titleChance: { base: 0.01, perRealm: 0.01 },
+            titleChance: { base: 0, perRealm: 0 },
             titleThemes: ['luyện đan', 'chăm sóc dược viên', 'hiền từ'],
             equipmentTierRange: ['HUYEN', 'HUYEN'],
             attributeProfile: { canCot: 10, thanPhap: 7, thanThuc: 11, ngoTinh: 14, coDuyen: 8, tamCanh: 10 },
@@ -450,7 +450,7 @@ export const THIENNAM_FACTIONS: Faction[] = [
               { realmIndex: 0, level: 9, weight: 10 }, { realmIndex: 0, level: 10, weight: 9 }, { realmIndex: 0, level: 11, weight: 8 }, { realmIndex: 0, level: 12, weight: 7 },
               { realmIndex: 1, level: 0, weight: 6 }, { realmIndex: 1, level: 1, weight: 5 }, { realmIndex: 1, level: 2, weight: 3 }, { realmIndex: 1, level: 3, weight: 1 },
             ],
-            titleChance: { base: 0, perRealm: 0.01 },
+            titleChance: { base: 0.004, perRealm: 0.001 },
             titleThemes: ['luyện đan', 'dược đồng'],
             equipmentTierRange: ['HOANG', 'HUYEN'],
             attributeProfile: { canCot: 8, thanPhap: 8, thanThuc: 12, ngoTinh: 16, coDuyen: 8, tamCanh: 8 },

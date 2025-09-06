@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, GenerateContentResponse, Chat } from "@google/genai";
-import type { PlayerState, NPC, ChatMessage, NpcIntent, JournalEntry } from '../types/character';
+import type { PlayerState, NPC, ChatMessage, NpcIntent, JournalEntry, RelationshipType } from '../types/character';
 import type { Interactable } from '../types/interaction';
 import type { Item } from '../types/item';
 import type { NpcDecision } from '../types/combat';
@@ -15,6 +15,7 @@ import type { PointOfInterest } from '../types/map';
 import { gameTimeToMinutes } from "./timeService";
 import { getAffinityLevel } from './affinityService';
 import { getMapHierarchyBreadcrumbs } from './mapService';
+import { CHINH_TAGS, TRUNG_LAP_TAGS, TA_TAGS } from '../data/personality_tags';
 
 
 let ai: GoogleGenAI | null = null;
@@ -172,27 +173,7 @@ export const createChatSession = (playerState: PlayerState, npc: NPC, history?: 
     
     const personalityString = npc.personalityTags?.join(', ') || 'Không rõ';
 
-    // 5. World Events (Gossip System)
-    const allJournalEntries: JournalEntry[] = [];
-    for (const mapId in playerState.generatedNpcs) {
-        for (const otherNpc of playerState.generatedNpcs[mapId]) {
-            if (otherNpc.id !== npc.id && otherNpc.actionHistory) {
-                allJournalEntries.push(...otherNpc.actionHistory);
-            }
-        }
-    }
-    const recentEvents = allJournalEntries
-        .sort((a, b) => gameTimeToMinutes(b.time) - gameTimeToMinutes(a.time))
-        .slice(0, 3) // Get the 3 most recent events
-        .map(entry => `- ${entry.message}`);
-    
-    let recentEventsString = '';
-    if (recentEvents.length > 0) {
-        recentEventsString = `TIN TỨC GẦN ĐÂY TRONG GIANG HỒ (bạn có thể kể lại những chuyện này nếu được hỏi thăm tin tức)
-${recentEvents.join('\n')}`;
-    }
-
-    // 6. NPC Current State (Dynamic Interaction)
+    // 5. NPC Current State (Dynamic Interaction)
     let currentStateString = '';
     if (npc.currentIntent && npc.intentProgress) {
         const allPois = Object.values(POIS_BY_MAP).flat();
@@ -210,12 +191,49 @@ ${recentEvents.join('\n')}`;
 - Khi được hỏi đang làm gì, hãy trả lời dựa trên điều này. Ví dụ: "Ta đang trên đường đến Hắc Ám Sâm Lâm để tìm Huyết Tinh Chi." hoặc "Ta đang bận thu thập khoáng thạch ở Thiên Nguyên Sơn."`;
     }
 
+    // 6. NPC Relationships
+    const allNpcs = Object.values(playerState.generatedNpcs).flat();
+    const npcMap = new Map(allNpcs.map(n => [n.id, n]));
+
+    const RELATIONSHIP_TEXT_MAP: Record<RelationshipType, string> = {
+        father: 'Phụ Thân', mother: 'Mẫu Thân', son: 'Con Trai', daughter: 'Con Gái',
+        older_brother: 'Huynh Trưởng', younger_brother: 'Đệ Đệ', older_sister: 'Tỷ Tỷ', younger_sister: 'Muội Muội',
+        sibling: 'Huynh Đệ/Tỷ Muội', husband: 'Phu Quân', wife: 'Thê Tử',
+        master: 'Sư Phụ', disciple: 'Đệ Tử',
+        superior: 'Cấp Trên', subordinate: 'Cấp Dưới',
+        peer_same_role: 'Đồng Môn', peer_different_role: 'Đồng Cấp',
+        // FIX: Add missing relationship types to satisfy Record<RelationshipType, string>
+        sworn_sibling: 'Huynh Đệ/Tỷ Muội Kết Nghĩa',
+        adopted_father: 'Nghĩa Phụ', adopted_mother: 'Nghĩa Mẫu',
+        adopted_son: 'Nghĩa Tử', adopted_daughter: 'Nghĩa Nữ',
+    };
+
+    const relationshipsString = (npc.relationships || [])
+        .map(rel => {
+            const targetNpc = npcMap.get(rel.targetNpcId);
+            if (!targetNpc) return null;
+            const relationshipName = RELATIONSHIP_TEXT_MAP[rel.type] || rel.type;
+            
+            // NEW: Get score from central store, which is the single source of truth.
+            const key = [npc.id, rel.targetNpcId].sort().join('_');
+            const score = playerState.npcAffinityStore?.[key] ?? 0;
+
+            const affinityLevel = getAffinityLevel(score);
+            return `- ${relationshipName}: ${targetNpc.name} (mối quan hệ: ${affinityLevel.level}, điểm: ${score})`;
+        })
+        .filter(Boolean)
+        .join('\n');
+
+    let relationshipsSectionString = '';
+    if (relationshipsString) {
+        relationshipsSectionString = `QUAN HỆ VỚI CÁC NPC KHÁC (bạn có thể nhắc đến những người này trong cuộc trò chuyện)
+${relationshipsString}`;
+    }
 
     const initialNpcPrompt = `BỐI CẢNH THẾ GIỚI
 - Hệ thống cảnh giới tu luyện trong thế giới này, từ thấp đến cao, là: ${realmNames}.
 - Sơ đồ địa lý của thế giới:
 ${worldGeographyString}
-${recentEventsString ? `\n${recentEventsString}\n` : ''}
 THÔNG TIN VỀ BẢN THÂN BẠN (${npc.name})
 - Chức vụ: ${npc.role}${npc.title ? `\n- Danh hiệu: ${npc.title}` : ''}
 - Quyền lực: ${npc.power || 'Không rõ'} (trên thang điểm 100, quyền lực càng cao, địa vị càng lớn, thái độ càng uy nghiêm hoặc thâm sâu).
@@ -228,6 +246,7 @@ THÔNG TIN VỀ BẢN THÂN BẠN (${npc.name})
 - Trang bị đang mặc: ${equipmentString}.
 - Vật phẩm trong túi đồ: ${inventoryString}.
 - Vật phẩm đang bán: ${forSaleString}.
+${relationshipsSectionString ? `\n${relationshipsSectionString}\n` : ''}
 ${currentStateString ? `\n${currentStateString}\n` : ''}
 BỐI CẢNH TRÒ CHUYỆN
 - Vị trí: ${mapHierarchyString} (Cụ thể: ${npcLocationString}).

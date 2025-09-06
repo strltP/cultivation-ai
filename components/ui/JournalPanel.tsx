@@ -43,7 +43,7 @@ const JournalGroup: React.FC<JournalGroupProps> = ({ entries, sortedKeys, emptyM
     );
 };
 
-const isMajorWorldEvent = (entry: JournalEntry): boolean => {
+export const isMajorWorldEvent = (entry: JournalEntry): boolean => {
     if (entry.type !== 'world') return false;
 
     // Criterion 1: Breakthroughs to major realms or peak minor realms
@@ -88,11 +88,13 @@ const JournalPanel: React.FC<{ playerState: PlayerState; onClose: () => void }> 
     const [worldTab, setWorldTab] = useState<'major' | 'minor'>('major');
 
     const tabs: { id: 'player' | 'world'; label: string; icon: React.ReactNode }[] = [
-        { id: 'player', label: 'Nhật Ký Người Chơi', icon: <GiScrollQuill /> },
-        { id: 'world', label: 'Nhật Ký Thế Giới', icon: <FaBookOpen /> },
+        { id: 'player', label: 'Tiểu Sự Ký', icon: <GiScrollQuill /> },
+        { id: 'world', label: 'Đại Sự Ký', icon: <FaBookOpen /> },
     ];
     
     const { playerJournal, majorWorldEvents, minorWorldEvents } = useMemo(() => {
+        const markedIds = new Set(playerState.markedNpcIds || []);
+
         const groupEntriesByDate = (entries: JournalEntry[]) => {
             return entries.reduce((acc, entry) => {
                 const key = `Tháng ${entry.time.month}, Năm ${entry.time.year}`;
@@ -104,16 +106,29 @@ const JournalPanel: React.FC<{ playerState: PlayerState; onClose: () => void }> 
         
         const playerEntries = (playerState.journal || []).filter(entry => (entry.type || 'player') === 'player');
         
-        const worldEntries = (playerState.journal || []).filter(entry => entry.type === 'world');
+        const worldEntries = (playerState.journal || []).filter(entry => {
+            if (entry.type !== 'world') return false;
+            // If entry has no npcId, it's an old entry or a true world event. Show it.
+            if (!entry.npcId) return true;
+            // Otherwise, only show if the NPC is marked.
+            return markedIds.has(entry.npcId);
+        });
+
         const majorEntries = worldEntries.filter(isMajorWorldEvent);
-        const minorEntries = worldEntries.filter(entry => !isMajorWorldEvent(entry));
+        const minorEntriesRaw = worldEntries.filter(entry => !isMajorWorldEvent(entry));
+
+        const currentTimeInMonths = playerState.time.year * 12 + playerState.time.month;
+        const minorEntries = minorEntriesRaw.filter(entry => {
+            const entryTimeInMonths = entry.time.year * 12 + entry.time.month;
+            return (currentTimeInMonths - entryTimeInMonths) <= 2;
+        });
 
         return {
             playerJournal: groupEntriesByDate(playerEntries),
             majorWorldEvents: groupEntriesByDate(majorEntries),
             minorWorldEvents: groupEntriesByDate(minorEntries),
         };
-    }, [playerState.journal]);
+    }, [playerState.journal, playerState.markedNpcIds, playerState.time]);
 
     const sortDateKeys = (dateKeys: string[]) => {
         return dateKeys.sort((a, b) => {
@@ -174,18 +189,18 @@ const JournalPanel: React.FC<{ playerState: PlayerState; onClose: () => void }> 
                                     onClick={() => setWorldTab('major')}
                                     className={`px-6 py-2 text-lg font-semibold transition-colors duration-200 border-b-4 ${worldTab === 'major' ? 'text-yellow-300 border-yellow-400' : 'text-gray-400 border-transparent hover:text-white'}`}
                                 >
-                                    Đại Sự Ký
+                                    Sự Kiện Trọng Yếu
                                 </button>
                                 <button
                                     onClick={() => setWorldTab('minor')}
                                     className={`px-6 py-2 text-lg font-semibold transition-colors duration-200 border-b-4 ${worldTab === 'minor' ? 'text-yellow-300 border-yellow-400' : 'text-gray-400 border-transparent hover:text-white'}`}
                                 >
-                                    Tiểu Sự Ký
+                                    Sự Kiện Thường Nhật
                                 </button>
                             </nav>
                              <div className="flex-grow overflow-y-auto pr-2 -mr-2">
-                                {worldTab === 'major' && <JournalGroup entries={majorWorldEvents} sortedKeys={sortedMajorWorldKeys} emptyMessage="Chưa có đại sự nào xảy ra trong thế giới." />}
-                                {worldTab === 'minor' && <JournalGroup entries={minorWorldEvents} sortedKeys={sortedMinorWorldKeys} emptyMessage="Thế giới vẫn còn yên tĩnh." />}
+                                {worldTab === 'major' && <JournalGroup entries={majorWorldEvents} sortedKeys={sortedMajorWorldKeys} emptyMessage="Chưa có đại sự nào từ các NPC được tiêu kí." />}
+                                {worldTab === 'minor' && <JournalGroup entries={minorWorldEvents} sortedKeys={sortedMinorWorldKeys} emptyMessage="Chưa có sự kiện nhỏ nào từ các NPC được tiêu kí." />}
                             </div>
                         </>
                     )}

@@ -1,0 +1,66 @@
+import React from 'react';
+import type { Item } from '../../../../types/item';
+import { GiBookCover } from 'react-icons/gi';
+
+export const CONG_PHAP_BOOKS_DIA: Item[] = [
+    {
+        id: 'book_dia_long_quyen',
+        name: 'Địa Long Quyển - Thần Thông',
+        description: 'Ghi chép thần thông Địa Long Quyển, triệu hồi rồng đất tấn công kẻ địch. Nghiên cứu có thể lĩnh ngộ công pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-orange-800" }),
+        stackable: 1,
+        value: 8000,
+        skillId: 'cong-phap-dia-1',
+    },
+    {
+        id: 'book_thien_loi_no',
+        name: 'Thiên Lôi Nộ - Thần Thông',
+        description: 'Ghi chép thần thông Thiên Lôi Nộ, gọi xuống một tia Thiên Lôi cuồng nộ. Nghiên cứu có thể lĩnh ngộ công pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-yellow-200" }),
+        stackable: 1,
+        value: 8500,
+        skillId: 'cong-phap-dia-2',
+    },
+    {
+        id: 'book_bang_phach_than_cham',
+        name: 'Băng Phách Thần Châm - Thần Thông',
+        description: 'Ngưng tụ hàn khí thành một cây kim băng, có khả năng đóng băng linh hồn. Nghiên cứu có thể lĩnh ngộ công pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-cyan-200" }),
+        stackable: 1,
+        value: 8200,
+        skillId: 'cong-phap-dia-3',
+    },
+    {
+        id: 'book_cuu_chuyen_phong_sat_tran',
+        name: 'Cửu Chuyển Phong Sát Trận - Trận Đồ',
+        description: 'Trận đồ ghi lại cách tạo ra trận pháp gió xoáy, nhốt và cắt xé kẻ địch. Nghiên cứu có thể lĩnh ngộ công pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-green-300" }),
+        stackable: 1,
+        value: 9000,
+        skillId: 'cong-phap-dia-4',
+    },
+    {
+        id: 'book_pha_khong_nhat_thuong',
+        name: 'Phá Không Nhất Thương - Thần Thông',
+        description: 'Thần thông dồn toàn bộ chân khí vào một mũi thương, có thể xuyên thủng không gian. Nghiên cứu có thể lĩnh ngộ công pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-gray-400" }),
+        stackable: 1,
+        value: 9500,
+        skillId: 'cong-phap-dia-5',
+    },
+    {
+        id: 'book_vo_tinh_kiem',
+        name: 'Vô Tình Kiếm - Kiếm Phổ',
+        description: 'Một kiếm vô tình, dứt khoát và lạnh lùng. Nghiên cứu có thể lĩnh ngộ công pháp này.',
+        type: 'book',
+        icon: React.createElement(GiBookCover, { className: "text-slate-300" }),
+        stackable: 1,
+        value: 9800,
+        skillId: 'cong-phap-dia-6',
+    },
+];

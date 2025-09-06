@@ -56,7 +56,7 @@ const ItemsTab: React.FC<ItemsTabProps> = ({ playerState, setPlayerState, onUseI
             }
             
             const newLearnedSkills = [...prev.learnedSkills, { skillId, currentLevel: 1 }];
-            const { finalStats, finalAttributes } = calculateAllStats(prev.attributes, prev.cultivation, prev.cultivationStats, newLearnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
+            const { finalStats, finalAttributes } = calculateAllStats(prev.baseAttributes, prev.cultivation, prev.cultivationStats, newLearnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
             
             setSelectedSlotIndex(null);
 

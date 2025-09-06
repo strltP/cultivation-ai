@@ -17,6 +17,9 @@ import * as lucYenThonData from './thien_nam/thuong_lan_de_quoc/luc_yen_thon/ind
 
 import * as bacVucData from './bac_vuc/index';
 import * as huyenNgocThanhData from './bac_vuc/huyen_ngoc_thanh/index';
+import * as huyenThienKiemTongData from './bac_vuc/huyen_thien_kiem_tong';
+import * as cuuTuyetMonData from './bac_vuc/cuu_tuyet_mon';
+import * as thanThuongMonData from './bac_vuc/than_thuong_mon';
 import * as daiHoangData from './dai_hoang/index';
 import * as dongHaiData from './dong_hai/index';
 
@@ -38,6 +41,9 @@ const allMapData = {
     TIEU_GIA: tieuGiaData,
     BAC_VUC: bacVucData,
     HUYEN_NGOC_THANH: huyenNgocThanhData,
+    HUYEN_THIEN_KIEM_TONG: huyenThienKiemTongData,
+    CUU_TUYET_MON: cuuTuyetMonData,
+    THAN_THUONG_MON: thanThuongMonData,
     DAI_HOANG: daiHoangData,
     DONG_HAI: dongHaiData
 };

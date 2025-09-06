@@ -23,7 +23,7 @@ export const COMMON_FACTIONS: Faction[] = [
                 // Nguyen Anh (Realm 4) - Total Weight: 1
                 { realmIndex: 4, level: 0, weight: 1 },
             ],
-            titleChance: { base: 0.01, perRealm: 0.02 },
+            titleChance: { base: 0.05, perRealm: 0.01 },
             titleThemes: ['lãng du', 'cô độc', 'ẩn dật', 'giang hồ'],
             equipmentTierRange: ['HOANG', 'HUYEN'],
             attributeProfile: { canCot: 10, thanPhap: 10, thanThuc: 10, ngoTinh: 10, coDuyen: 10, tamCanh: 10 },

@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'VAN_BAO_LAU',
     name: 'Vạn Bảo Lâu',
+    description: 'Tòa lầu giao dịch lớn nhất Thất Huyền Thành, nơi có thể tìm thấy mọi loại kỳ trân dị bảo, từ pháp khí, đan dược đến công pháp.',
     type: 'building_interior',
     parentMapId: 'THAT_HUYEN_THANH',
     size: { width: 2400, height: 2000 },

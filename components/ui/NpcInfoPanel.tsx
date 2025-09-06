@@ -4,7 +4,7 @@ import { getCultivationInfo, getLinhCanTierInfo } from '../../services/cultivati
 import AttributeDisplay from './AttributeDisplay';
 import CombatStatDisplay from './CombatStatDisplay';
 import { ALL_SKILLS, SKILL_TIER_INFO } from '../../data/skills/skills';
-import { FaBookDead, FaBook, FaGem, FaHourglassHalf, FaLock, FaShoePrints, FaInfoCircle, FaFistRaised, FaUsers, FaHeart, FaLongArrowAltRight, FaMale, FaFemale } from 'react-icons/fa';
+import { FaBookDead, FaBook, FaGem, FaHourglassHalf, FaLock, FaShoePrints, FaInfoCircle, FaFistRaised, FaUsers, FaHeart, FaLongArrowAltRight, FaMale, FaFemale, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { ALL_ITEMS } from '../../data/items/index';
 import type { EquipmentSlot } from '../../types/equipment';
 import { EQUIPMENT_SLOT_NAMES } from '../../types/equipment';
@@ -19,6 +19,7 @@ import { FACTIONS } from '../../data/factions';
 interface ProcessedRelationship {
     targetNpc: NPC;
     type: RelationshipType;
+    score: number;
 }
 
 const RELATIONSHIP_MAP: Partial<Record<RelationshipType, RelationshipType>> = {
@@ -28,6 +29,11 @@ const RELATIONSHIP_MAP: Partial<Record<RelationshipType, RelationshipType>> = {
     disciple: 'master',
     husband: 'wife',
     wife: 'husband',
+    adopted_father: 'adopted_son',
+    adopted_mother: 'adopted_son', // Gender is handled dynamically
+    adopted_son: 'adopted_father', // Gender is handled dynamically
+    adopted_daughter: 'adopted_father', // Gender is handled dynamically
+    sworn_sibling: 'sworn_sibling',
 };
 
 const RELATIONSHIP_CATEGORY_MAP: Record<RelationshipType, 'GIA TỘC' | 'TÔNG MÔN & THẾ LỰC'> = {
@@ -35,6 +41,8 @@ const RELATIONSHIP_CATEGORY_MAP: Record<RelationshipType, 'GIA TỘC' | 'TÔNG M
     older_brother: 'GIA TỘC', younger_brother: 'GIA TỘC', older_sister: 'GIA TỘC', younger_sister: 'GIA TỘC',
     sibling: 'GIA TỘC', husband: 'GIA TỘC', wife: 'GIA TỘC',
     master: 'GIA TỘC', disciple: 'GIA TỘC',
+    sworn_sibling: 'GIA TỘC',
+    adopted_father: 'GIA TỘC', adopted_mother: 'GIA TỘC', adopted_son: 'GIA TỘC', adopted_daughter: 'GIA TỘC',
     superior: 'TÔNG MÔN & THẾ LỰC', subordinate: 'TÔNG MÔN & THẾ LỰC',
     peer_same_role: 'TÔNG MÔN & THẾ LỰC', peer_different_role: 'TÔNG MÔN & THẾ LỰC',
 };
@@ -48,12 +56,11 @@ const RELATIONSHIP_TEXT_MAP_CARD: Record<RelationshipType, string> = {
     master: 'Sư Phụ', disciple: 'Đệ Tử',
     superior: 'Cấp Trên', subordinate: 'Cấp Dưới',
     peer_same_role: 'Đồng Môn', peer_different_role: 'Đồng Cấp',
+    sworn_sibling: 'Huynh Đệ/Tỷ Muội Kết Nghĩa',
+    adopted_father: 'Nghĩa Phụ', adopted_mother: 'Nghĩa Mẫu',
+    adopted_son: 'Nghĩa Tử', adopted_daughter: 'Nghĩa Nữ',
 };
 
-interface FactionHierarchyLevel {
-    roleName: string;
-    members: NPC[];
-}
 
 // --- Main Component ---
 
@@ -61,44 +68,67 @@ interface NpcInfoPanelProps {
   npc: NPC;
   onClose: () => void;
   playerState: PlayerState;
+  onMarkNpc: (npc: NPC) => void;
 }
 
-const PersonalRelationshipCard: React.FC<{ relationship: ProcessedRelationship; playerState: PlayerState }> = ({ relationship, playerState }) => {
-    const { targetNpc, type } = relationship;
+const PersonalRelationshipCard: React.FC<{ relationship: ProcessedRelationship; playerState: PlayerState; viewedNpcName: string }> = ({ relationship, playerState, viewedNpcName }) => {
+    const { targetNpc, type, score } = relationship;
     const cultivationInfo = getCultivationInfo(targetNpc.cultivation!);
-    const affinityScore = playerState.affinity?.[targetNpc.id] || 0;
-    const affinityInfo = getAffinityLevel(affinityScore);
+    const affinityWithPlayer = playerState.affinity?.[targetNpc.id] || 0;
+    const affinityWithPlayerInfo = getAffinityLevel(affinityWithPlayer);
+    const npcToNpcAffinityInfo = getAffinityLevel(score);
 
     return (
-        <div className="bg-gray-800/60 p-3 rounded-lg border border-gray-700 flex items-center gap-3 transition-colors hover:bg-gray-700/50">
-            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-black/30 border-2 border-gray-600 text-2xl">
-                 {targetNpc.gender === 'Nữ' ? <FaFemale className="text-pink-300" /> : <FaMale className="text-blue-300" />}
-            </div>
-            <div className="flex-grow overflow-hidden">
-                <p className="text-sm font-bold text-yellow-300">{RELATIONSHIP_TEXT_MAP_CARD[type] || type}</p>
-                <p className="text-base font-semibold text-white truncate" title={targetNpc.name}>{targetNpc.name}</p>
-                {targetNpc.title && <p className="text-xs text-cyan-400 italic truncate" title={targetNpc.title}>« {targetNpc.title} »</p>}
-                <p className="text-xs text-gray-400 truncate">{cultivationInfo.name}</p>
-                <div className="flex items-center gap-1.5 text-xs mt-1" title={`Thiện cảm: ${affinityScore}`}>
-                    <FaHeart className={affinityInfo.color} />
-                    <span className={`font-semibold ${affinityInfo.color}`}>{affinityInfo.level}</span>
+        <div className="bg-gray-800/60 p-3 rounded-lg border border-gray-700 flex flex-col gap-2 transition-colors hover:bg-gray-700/50">
+            <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-black/30 border-2 border-gray-600 text-2xl">
+                     {targetNpc.gender === 'Nữ' ? <FaFemale className="text-pink-300" /> : <FaMale className="text-blue-300" />}
+                </div>
+                <div className="flex-grow overflow-hidden">
+                    <p className="text-sm font-bold text-yellow-300">{RELATIONSHIP_TEXT_MAP_CARD[type] || type}</p>
+                    <p className="text-base font-semibold text-white truncate" title={targetNpc.name}>{targetNpc.name}</p>
+                    {targetNpc.title && <p className="text-xs text-cyan-400 italic truncate" title={targetNpc.title}>« {targetNpc.title} »</p>}
+                    <p className="text-xs text-gray-400 truncate">{cultivationInfo.name}</p>
                 </div>
             </div>
+             <div className="mt-1 pt-2 border-t border-gray-700/50 space-y-1 text-xs">
+                 <div className="flex justify-between" title={`Thiện cảm giữa ${viewedNpcName} và ${targetNpc.name}: ${score}`}>
+                    <span className="text-gray-400">Quan hệ với nhau:</span>
+                    <div className="flex items-center gap-1.5">
+                        <FaUsers className={npcToNpcAffinityInfo.color} />
+                        <span className={`font-semibold ${npcToNpcAffinityInfo.color}`}>{npcToNpcAffinityInfo.level} ({score})</span>
+                    </div>
+                 </div>
+                 <div className="flex justify-between" title={`Thiện cảm của bạn với ${targetNpc.name}: ${affinityWithPlayer}`}>
+                    <span className="text-gray-400">Quan hệ với bạn:</span>
+                    <div className="flex items-center gap-1.5">
+                        <FaHeart className={affinityWithPlayerInfo.color} />
+                        <span className={`font-semibold ${affinityWithPlayerInfo.color}`}>{affinityWithPlayerInfo.level} ({affinityWithPlayer})</span>
+                    </div>
+                 </div>
+             </div>
         </div>
-    )
-}
+    );
+};
 
-const OrgChartNode: React.FC<{ member: NPC; isCurrent: boolean }> = ({ member, isCurrent }) => (
-    <div className={`p-2 rounded-lg border-2 text-center transition-all duration-300 ${isCurrent ? 'border-yellow-400 bg-yellow-900/50 scale-105 shadow-lg' : 'border-gray-600 bg-gray-800/70'}`}
-        title={`${member.name}\n${member.role}`}
-    >
-        <p className="font-bold text-white truncate text-sm">{member.name}</p>
-        <p className="text-xs text-gray-400 truncate">{member.role}</p>
-    </div>
-);
+const SocialRelationshipCard: React.FC<{ relationship: ProcessedRelationship }> = ({ relationship }) => {
+    const { targetNpc, score } = relationship;
+    const npcToNpcAffinityInfo = getAffinityLevel(score);
 
-const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }) => {
-  const [activeTab, setActiveTab] = useState<'info' | 'history' | 'relationships'>('info');
+    return (
+        <div className="bg-gray-800/60 p-2 rounded-lg border border-gray-700 flex items-center justify-between transition-colors hover:bg-gray-700/50">
+            <p className="text-sm font-semibold text-white truncate" title={targetNpc.name}>{targetNpc.name}</p>
+            <div className="flex items-center gap-1.5" title={`Mối quan hệ: ${npcToNpcAffinityInfo.level}`}>
+                <FaHeart className={npcToNpcAffinityInfo.color} />
+                <span className={`font-semibold text-sm ${npcToNpcAffinityInfo.color}`}>{score}</span>
+            </div>
+        </div>
+    );
+};
+
+
+const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState, onMarkNpc }) => {
+  const [activeTab, setActiveTab] = useState<'info' | 'relationships'>('info');
   const isMonster = npc.npcType === 'monster';
   const cultivationInfo = !isMonster ? getCultivationInfo(npc.cultivation!) : null;
   const age = playerState.time.year - npc.birthTime.year;
@@ -112,6 +142,13 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
 
   const affinityScore = playerState.affinity?.[npc.id] || 0;
   const affinityInfo = getAffinityLevel(affinityScore);
+  
+  const isMarked = playerState.markedNpcIds?.includes(npc.id);
+  const realmDiff = (npc.cultivation?.realmIndex ?? 0) - playerState.cultivation.realmIndex;
+  let markCost = 150;
+  if (realmDiff < 0) markCost = 50;
+  else if (realmDiff > 0) markCost = 150 + 200 * Math.pow(realmDiff, 2);
+  const canAffordMark = playerState.mana >= markCost;
 
   const tamPhapList = npc.learnedSkills
     .map(ls => ({ learned: ls, def: ALL_SKILLS.find(s => s.id === ls.skillId) }))
@@ -163,65 +200,85 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
     
     const linhCanTierInfo = !isMonster ? getLinhCanTierInfo(npc.linhCan) : null;
     
-    const { personalRelationships, factionHierarchy } = useMemo(() => {
-        if (npc.npcType === 'monster') return { personalRelationships: [], factionHierarchy: null };
-
-        // --- Personal Relationship Logic ---
+    const { personalRelationships, otherRelationships } = useMemo(() => {
+        if (npc.npcType === 'monster') return { personalRelationships: [], otherRelationships: [] };
+    
         const allNpcs = Object.values(playerState.generatedNpcs).flat();
         const npcMap = new Map(allNpcs.map(n => [n.id, n]));
-        let allRelationships: ProcessedRelationship[] = [];
-
-        npc.relationships?.forEach(rel => {
+    
+        const relationshipsMap = new Map<string, { types: Set<RelationshipType>, score: number | null }>();
+    
+        // 1. Get all formal relationships (from `npc.relationships`)
+        (npc.relationships || []).forEach(rel => {
             const targetNpc = npcMap.get(rel.targetNpcId);
-            if (targetNpc) allRelationships.push({ targetNpc, type: rel.type });
+            if (targetNpc && !playerState.defeatedNpcIds.includes(targetNpc.id)) {
+                if (!relationshipsMap.has(rel.targetNpcId)) {
+                    relationshipsMap.set(rel.targetNpcId, { types: new Set(), score: null });
+                }
+                relationshipsMap.get(rel.targetNpcId)!.types.add(rel.type);
+            }
         });
-
+    
+        // 2. Get all reciprocal formal relationships
         allNpcs.forEach(otherNpc => {
-            otherNpc.relationships?.forEach(rel => {
+            if (otherNpc.id === npc.id) return;
+            (otherNpc.relationships || []).forEach(rel => {
                 if (rel.targetNpcId === npc.id) {
                     let reciprocalType = RELATIONSHIP_MAP[rel.type];
                     if (reciprocalType) {
-                        if ((rel.type === 'father' || rel.type === 'mother') && npc.gender === 'Nữ') {
-                            reciprocalType = 'daughter';
+                        if ((rel.type === 'father' || rel.type === 'mother') && npc.gender === 'Nữ') reciprocalType = 'daughter';
+                        if ((rel.type === 'adopted_father' || rel.type === 'adopted_mother') && npc.gender === 'Nữ') reciprocalType = 'adopted_daughter';
+                        
+                        if (!playerState.defeatedNpcIds.includes(otherNpc.id)) {
+                             if (!relationshipsMap.has(otherNpc.id)) {
+                                relationshipsMap.set(otherNpc.id, { types: new Set(), score: null });
+                            }
+                            relationshipsMap.get(otherNpc.id)!.types.add(reciprocalType);
                         }
-                        allRelationships.push({ targetNpc: otherNpc, type: reciprocalType });
                     }
                 }
             });
         });
-        
-        const uniquePersonalRelationships = new Map<string, ProcessedRelationship>();
-        allRelationships.filter(r => RELATIONSHIP_CATEGORY_MAP[r.type] === 'GIA TỘC').forEach(r => {
-            uniquePersonalRelationships.set(`${r.targetNpc.id}-${r.type}`, r);
-        });
-        
-        // --- Faction Hierarchy Logic ---
-        let hierarchy: FactionHierarchyLevel[] | null = null;
-        if (npc.factionId) {
-            const faction = FACTIONS.find(f => f.id === npc.factionId);
-            if (faction) {
-                const factionMembers = allNpcs.filter(member => member.factionId === npc.factionId && !playerState.defeatedNpcIds.includes(member.id));
-                const membersByRole = new Map<string, NPC[]>();
-                factionMembers.forEach(member => {
-                    if (!membersByRole.has(member.role)) {
-                        membersByRole.set(member.role, []);
+    
+        // 3. Get all affinity scores from the central store
+        for (const key in playerState.npcAffinityStore) {
+            if (key.includes(npc.id)) {
+                const ids = key.split('_');
+                const targetNpcId = ids[0] === npc.id ? ids[1] : ids[0];
+                const targetNpc = npcMap.get(targetNpcId);
+                 if (targetNpc && !playerState.defeatedNpcIds.includes(targetNpcId)) {
+                    if (!relationshipsMap.has(targetNpcId)) {
+                         relationshipsMap.set(targetNpcId, { types: new Set(), score: null });
                     }
-                    membersByRole.get(member.role)!.push(member);
-                });
-
-                hierarchy = [...faction.roles]
-                    .sort((a, b) => b.power - a.power)
-                    .map(role => ({
-                        roleName: role.name,
-                        members: membersByRole.get(role.name) || []
-                    }))
-                    .filter(level => level.members.length > 0);
+                    relationshipsMap.get(targetNpcId)!.score = playerState.npcAffinityStore[key];
+                 }
             }
         }
-
+    
+        // 4. Convert map to ProcessedRelationship array
+        const finalRelationships: ProcessedRelationship[] = [];
+        relationshipsMap.forEach((data, targetNpcId) => {
+            const targetNpc = npcMap.get(targetNpcId);
+            if (!targetNpc) return;
+    
+            const key = [npc.id, targetNpcId].sort().join('_');
+            const finalScore = playerState.npcAffinityStore?.[key] ?? 0;
+            
+            if (data.types.size > 0) {
+                 data.types.forEach(type => {
+                    finalRelationships.push({ targetNpc, type, score: finalScore });
+                 });
+            } else if (finalScore !== 0) { // Only add if there's affinity but no formal relationship
+                 finalRelationships.push({ targetNpc, type: 'peer_same_role', score: finalScore });
+            }
+        });
+        
+        const giaTocRelationships = finalRelationships.filter(r => RELATIONSHIP_CATEGORY_MAP[r.type] === 'GIA TỘC');
+        const theLucRelationships = finalRelationships.filter(r => RELATIONSHIP_CATEGORY_MAP[r.type] === 'TÔNG MÔN & THẾ LỰC');
+        
         return {
-            personalRelationships: Array.from(uniquePersonalRelationships.values()),
-            factionHierarchy: hierarchy,
+            personalRelationships: giaTocRelationships,
+            otherRelationships: theLucRelationships,
         };
     }, [npc, playerState]);
 
@@ -235,7 +292,7 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start flex-shrink-0">
-            <div>
+            <div className="flex-grow">
                 <h2 className="text-2xl font-bold text-yellow-300">{npc.name}</h2>
                 {!isMonster && npc.title && <p className="text-lg text-cyan-400 mt-1 italic">« {npc.title} »</p>}
                 <p className="text-base text-gray-400">
@@ -278,15 +335,27 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
                     </>
                 )}
             </div>
-            <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-white transition-colors"
-                aria-label="Đóng"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
+            <div className="flex items-center gap-2">
+                 {!isMonster && (
+                    <button
+                        onClick={() => onMarkNpc(npc)}
+                        disabled={!isMarked && !canAffordMark}
+                        className="p-2 rounded-full hover:bg-gray-700 transition-colors disabled:opacity-50"
+                        title={isMarked ? 'Hủy tiêu kí' : `Tiêu kí (Tốn ${markCost} Linh Lực)`}
+                    >
+                        {isMarked ? <FaEyeSlash size={22} className="text-cyan-300" /> : <FaEye size={22} className="text-cyan-300" />}
+                    </button>
+                 )}
+                <button
+                    onClick={onClose}
+                    className="text-gray-400 hover:text-white transition-colors"
+                    aria-label="Đóng"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
         </div>
         
         <div className="flex flex-col gap-y-2 flex-shrink-0">
@@ -333,15 +402,6 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
                 >
                     <FaInfoCircle />
                     <span>Thông Tin</span>
-                </button>
-                 <button
-                    onClick={() => setActiveTab('history')}
-                    className={`flex items-center gap-2 px-4 py-2 text-lg font-semibold transition-colors duration-200 border-b-4 ${
-                        activeTab === 'history' ? 'text-yellow-300 border-yellow-400' : 'text-gray-400 border-transparent hover:text-white'
-                    }`}
-                >
-                    <FaShoePrints />
-                    <span>Hành Tung</span>
                 </button>
                  <button
                     onClick={() => setActiveTab('relationships')}
@@ -529,68 +589,39 @@ const NpcInfoPanel: React.FC<NpcInfoPanelProps> = ({ npc, onClose, playerState }
                 )}
              </>
             )}
-
-             {activeTab === 'history' && (
-                <div className="space-y-3 pt-2">
-                    {npc.currentIntent && (
-                        <div className="bg-yellow-800/50 p-3 rounded-md border-l-4 border-yellow-500 animate-pulse">
-                            <p className="text-xs text-yellow-300 font-mono">
-                                HÀNH ĐỘNG HIỆN TẠI
-                            </p>
-                            <p className="text-white mt-1 text-sm font-semibold">{formatCurrentIntentStatus(npc)}</p>
-                        </div>
-                    )}
-                    {npc.actionHistory && npc.actionHistory.length > 0 ? (
-                        [...npc.actionHistory].reverse().map((entry, index) => (
-                            <div key={index} className="bg-gray-800/50 p-3 rounded-md border-l-4 border-gray-600">
-                                <p className="text-xs text-gray-400 font-mono">
-                                    Ngày {entry.time.day}, Tháng {entry.time.month}, Năm {entry.time.year}
-                                </p>
-                                <p className="text-white mt-1 text-sm">{entry.message}</p>
-                            </div>
-                        ))
-                    ) : (
-                        !npc.currentIntent && <p className="text-gray-500 italic text-center pt-8">Chưa có hành động nào được ghi lại.</p>
-                    )}
-                </div>
-            )}
              {activeTab === 'relationships' && (
                 <div className="space-y-6 pt-2">
-                    {factionHierarchy && factionHierarchy.length > 0 ? (
-                        <div>
-                             <h3 className="text-xl font-semibold text-amber-300 border-b border-amber-500/50 pb-2 mb-3">
-                                Quan Hệ Thế Lực: {FACTIONS.find(f => f.id === npc.factionId)?.name}
-                            </h3>
-                            <div className="flex flex-col items-center gap-0">
-                                {factionHierarchy.map((level) => (
-                                    <div key={level.roleName} className="org-chart-level">
-                                        {level.members.map(member => (
-                                            <OrgChartNode key={member.id} member={member} isCurrent={member.id === npc.id} />
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        <p className="text-gray-500 italic text-center pt-4">Người này là tán tu, không thuộc thế lực nào.</p>
-                    )}
-
                     {personalRelationships.length > 0 && (
                         <div>
-                            <h3 className="text-xl font-semibold text-amber-300 border-b border-amber-500/50 pb-2 mb-3 mt-6">
-                                Quan Hệ Nhân Mạch
+                            <h3 className="text-xl font-semibold text-amber-300 border-b border-amber-500/50 pb-2 mb-3">
+                                Quan Hệ Gia Tộc & Sư Môn
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {personalRelationships
                                     .sort((a,b) => (b.targetNpc.power || 0) - (a.targetNpc.power || 0))
                                     .map((rel, index) => (
-                                    <PersonalRelationshipCard key={index} relationship={rel} playerState={playerState} />
+                                    <PersonalRelationshipCard key={index} relationship={rel} playerState={playerState} viewedNpcName={npc.name} />
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {(!factionHierarchy || factionHierarchy.length === 0) && personalRelationships.length === 0 && (
+                    {otherRelationships.length > 0 && (
+                        <div>
+                            <h3 className="text-xl font-semibold text-amber-300 border-b border-amber-500/50 pb-2 mb-3 mt-6">
+                                Quan Hệ Xã Giao
+                            </h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {otherRelationships
+                                    .sort((a,b) => b.score - a.score)
+                                    .map((rel, index) => (
+                                    <SocialRelationshipCard key={index} relationship={rel} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {personalRelationships.length === 0 && otherRelationships.length === 0 && (
                          <p className="text-gray-500 italic text-center pt-8">Người này không có mối quan hệ nào đáng chú ý.</p>
                     )}
                 </div>

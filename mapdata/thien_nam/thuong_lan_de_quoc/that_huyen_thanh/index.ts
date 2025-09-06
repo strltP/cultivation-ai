@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'THAT_HUYEN_THANH',
     name: 'Thất Huyền Thành',
+    description: 'Thủ đô phồn hoa của Thương Lan Đế Quốc, nơi giao thương sầm uất, tụ hội của các tu sĩ và thế lực khắp nơi.',
     type: 'city_map',
     parentMapId: 'THIEN_NAM',
     controllingFactionId: 'THAT_HUYEN_THANH',

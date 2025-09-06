@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'THIEN_MA_TUU_LAU',
     name: 'Thiên Mã Tửu Lâu',
+    description: 'Tửu lâu nổi tiếng nhất thành, là nơi các tu sĩ tụ tập, trao đổi tin tức và thưởng thức những loại linh tửu hảo hạng.',
     type: 'building_interior',
     parentMapId: 'THAT_HUYEN_THANH',
     size: { width: 2800, height: 2000 },

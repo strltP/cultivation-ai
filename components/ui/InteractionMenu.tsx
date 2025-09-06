@@ -1,19 +1,21 @@
 import React from 'react';
-import type { NPC } from '../../types/character';
-import { FaCommentDots, FaInfoCircle } from 'react-icons/fa';
+import type { NPC, PlayerState } from '../../types/character';
+import { FaCommentDots, FaInfoCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { GiCrossedSwords, GiTwoCoins } from 'react-icons/gi';
 
 interface InteractionMenuProps {
     npc: NPC;
     position: { top: number; left: number };
+    playerState: PlayerState;
     onStartChat: () => void;
     onChallenge: () => void;
     onViewInfo: () => void;
     onTrade: () => void;
+    onMark: () => void;
     onClose: () => void;
 }
 
-const InteractionMenu: React.FC<InteractionMenuProps> = ({ npc, position, onStartChat, onChallenge, onViewInfo, onTrade, onClose }) => {
+const InteractionMenu: React.FC<InteractionMenuProps> = ({ npc, position, playerState, onStartChat, onChallenge, onViewInfo, onTrade, onMark, onClose }) => {
     // Stop propagation to prevent world click from closing the menu immediately
     const handleMenuClick = (e: React.MouseEvent) => e.stopPropagation();
 
@@ -23,6 +25,13 @@ const InteractionMenu: React.FC<InteractionMenuProps> = ({ npc, position, onStar
     };
 
     const hasTradeOption = npc.forSale && npc.forSale.length > 0;
+    
+    const isMarked = playerState.markedNpcIds?.includes(npc.id);
+    const realmDiff = (npc.cultivation?.realmIndex ?? 0) - playerState.cultivation.realmIndex;
+    let markCost = 150;
+    if (realmDiff < 0) markCost = 50;
+    else if (realmDiff > 0) markCost = 150 + 200 * Math.pow(realmDiff, 2);
+    const canAffordMark = playerState.mana >= markCost;
 
     return (
         <div
@@ -42,7 +51,7 @@ const InteractionMenu: React.FC<InteractionMenuProps> = ({ npc, position, onStar
                     <span>Trò chuyện</span>
                 </button>
             )}
-             {hasTradeOption && (
+            {hasTradeOption && (
                  <button
                     onClick={createHandler(onTrade)}
                     className="flex items-center gap-3 w-full text-left px-3 py-2 rounded-md text-gray-200 hover:bg-green-600/50 transition-colors"
@@ -58,6 +67,17 @@ const InteractionMenu: React.FC<InteractionMenuProps> = ({ npc, position, onStar
                 <FaInfoCircle className="text-blue-300" />
                 <span>Xem thông tin</span>
             </button>
+             {npc.npcType !== 'monster' && (
+                <button
+                    onClick={createHandler(onMark)}
+                    disabled={!isMarked && !canAffordMark}
+                    className="flex items-center gap-3 w-full text-left px-3 py-2 rounded-md text-gray-200 hover:bg-cyan-600/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={isMarked ? 'Hủy tiêu kí' : `Tiêu kí (Tốn ${markCost} Linh Lực)`}
+                >
+                    {isMarked ? <FaEyeSlash className="text-cyan-300" /> : <FaEye className="text-cyan-300" />}
+                    <span>{isMarked ? 'Hủy Tiêu Kí' : 'Tiêu Kí'}</span>
+                </button>
+            )}
             <button
                 onClick={createHandler(onChallenge)}
                 className="flex items-center gap-3 w-full text-left px-3 py-2 rounded-md text-gray-200 hover:bg-red-600/50 transition-colors"

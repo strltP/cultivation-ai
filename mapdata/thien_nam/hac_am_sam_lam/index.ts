@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'HAC_AM_SAM_LAM',
     name: 'Hắc Ám Sâm Lâm',
+    description: 'Khu rừng rậm cổ xưa, âm u và đầy rẫy nguy hiểm. Ánh sáng mặt trời khó lòng xuyên qua tán lá dày đặc, là nơi trú ngụ của nhiều yêu thú và ma vật.',
     type: 'dungeon_map',
     parentMapId: 'THIEN_NAM',
     size: { width: 3000, height: 4000 },

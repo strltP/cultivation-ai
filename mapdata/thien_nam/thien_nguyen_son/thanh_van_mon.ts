@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'THANH_VAN_MON',
     name: 'Thanh Vân Môn',
+    description: 'Tông môn chính đạo đứng đầu Thiên Nguyên Sơn, nổi tiếng với Ngự Phong Quyết và môn quy nghiêm ngặt.',
     type: 'sect_map',
     parentMapId: 'THIEN_NAM',
     controllingFactionId: 'THANH_VAN_MON',

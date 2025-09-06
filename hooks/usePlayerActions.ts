@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { PlayerState, JournalEntry } from '../types/character';
+import type { PlayerState, JournalEntry, NPC } from '../types/character';
 import { getNextCultivationLevel, getCultivationInfo, calculateAllStats, getRealmLevelInfo } from '../services/cultivationService';
 import { ALL_SKILLS } from '../data/skills/skills';
 import { advanceTime } from '../services/timeService';
@@ -7,7 +7,7 @@ import { ALL_ITEMS } from '../data/items/index';
 import type { CharacterAttributes, CombatStats } from '../types/stats';
 import { INITIAL_PLAYER_STATE, DAYS_PER_MONTH } from '../hooks/usePlayerPersistence';
 import { processNpcTimeSkip } from '../services/npcProgressionService';
-import { processNpcActionsForTimeSkip } from '../services/npcActionService';
+import { processNpcActionsForTimeSkip, processSocialInteractionsForTimeSkip } from '../services/npcActionService';
 import { processNpcPopulationChanges } from '../services/npcPopulationService';
 
 const STAT_ATTRIBUTE_NAMES: Record<string, string> = {
@@ -149,7 +149,7 @@ export const usePlayerActions = (
             
             const nextCultivationInfo = getCultivationInfo(nextCultivation);
             const { finalStats, finalAttributes } = calculateAllStats(
-                INITIAL_PLAYER_STATE.attributes, 
+                prev.baseAttributes, 
                 nextCultivation, 
                 newCultivationStats, 
                 prev.learnedSkills, 
@@ -191,31 +191,49 @@ export const usePlayerActions = (
         const monthsToSkip = Math.floor(days / DAYS_PER_MONTH);
         const remainingDays = days % DAYS_PER_MONTH;
 
-        let tempState = { ...playerState };
+        let tempState: PlayerState = JSON.parse(JSON.stringify(playerState));
         const collectedReportEntries: JournalEntry[] = [];
+        const markedIds = new Set(playerState.markedNpcIds || []);
 
         if (monthsToSkip > 0) {
             for (let i = 0; i < monthsToSkip; i++) {
                 setSimulationProgress({ current: i + 1, total: monthsToSkip });
                 
                 const timeAfterMonth = advanceTime(tempState.time, DAYS_PER_MONTH * 24 * 60);
-                tempState.time = timeAfterMonth;
                 
-                const populationResult = processNpcPopulationChanges(tempState);
-                tempState.generatedNpcs = populationResult.updatedNpcs;
-                tempState.nextNpcSpawnCheck = populationResult.updatedNextNpcSpawnCheck;
+                let stateForThisMonth = { ...tempState, time: timeAfterMonth };
                 
-                const actionsResult = processNpcActionsForTimeSkip(tempState, 1);
-                tempState.generatedNpcs = actionsResult.updatedNpcs;
-
-                const progressionResult = processNpcTimeSkip(tempState, 1);
-                tempState.generatedNpcs = progressionResult.updatedNpcs;
+                const populationResult = processNpcPopulationChanges(stateForThisMonth, 1);
+                stateForThisMonth.generatedNpcs = populationResult.updatedNpcs;
+                stateForThisMonth.nameUsageCounts = populationResult.updatedNameUsageCounts;
                 
-                collectedReportEntries.push(
-                    ...populationResult.newJournalEntries,
-                    ...actionsResult.newJournalEntries,
-                    ...progressionResult.newJournalEntries
+                const filteredPopulationEntries = populationResult.newJournalEntries.filter(
+                    entry => entry.type !== 'world' || !entry.npcId || markedIds.has(entry.npcId)
                 );
+                collectedReportEntries.push(...filteredPopulationEntries);
+                
+                const actionsResult = processNpcActionsForTimeSkip(stateForThisMonth, 1);
+                stateForThisMonth.generatedNpcs = actionsResult.updatedNpcs;
+                const filteredActionEntries = actionsResult.newJournalEntries.filter(
+                    entry => entry.type !== 'world' || !entry.npcId || markedIds.has(entry.npcId)
+                );
+                collectedReportEntries.push(...filteredActionEntries);
+
+                const progressionResult = processNpcTimeSkip(stateForThisMonth, 1);
+                stateForThisMonth.generatedNpcs = progressionResult.updatedNpcs;
+                 const filteredProgressionEntries = progressionResult.newJournalEntries.filter(
+                    entry => entry.type !== 'world' || !entry.npcId || markedIds.has(entry.npcId)
+                );
+                collectedReportEntries.push(...filteredProgressionEntries);
+
+                const socialResult = processSocialInteractionsForTimeSkip(stateForThisMonth, 1);
+                stateForThisMonth.generatedNpcs = socialResult.updatedNpcs; 
+                const filteredSocialEntries = socialResult.newJournalEntries.filter(
+                    entry => entry.type !== 'world' || !entry.npcId || markedIds.has(entry.npcId)
+                );
+                collectedReportEntries.push(...filteredSocialEntries);
+                
+                tempState = stateForThisMonth;
     
                 await new Promise(resolve => setTimeout(resolve, 0));
             }
@@ -256,9 +274,10 @@ export const usePlayerActions = (
             camNgo: newCamNgo,
             hp: prev.stats.maxHp,
             mana: prev.stats.maxMana,
-            generatedNpcs: tempState.generatedNpcs, // Use the NPC state from after the monthly simulation
+            generatedNpcs: tempState.generatedNpcs,
+            npcAffinityStore: tempState.npcAffinityStore, // FIX: Ensure the affinity store is saved.
             journal: [...(prev.journal || []), ...collectedReportEntries, playerJournalEntry],
-            nextNpcSpawnCheck: tempState.nextNpcSpawnCheck,
+            nameUsageCounts: tempState.nameUsageCounts,
         }));
 
         setIsSimulating(false);
@@ -320,7 +339,7 @@ export const usePlayerActions = (
             const newLearnedSkills = prev.learnedSkills.map(s => 
                 s.skillId === skillId ? { ...s, currentLevel: s.currentLevel + 1 } : s
             );
-            const { finalStats, finalAttributes } = calculateAllStats(INITIAL_PLAYER_STATE.attributes, prev.cultivation, prev.cultivationStats, newLearnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
+            const { finalStats, finalAttributes } = calculateAllStats(prev.baseAttributes, prev.cultivation, prev.cultivationStats, newLearnedSkills, ALL_SKILLS, prev.equipment, ALL_ITEMS, prev.linhCan);
             
             const message = `"${skillDef.name}" đã được tu luyện tới tầng ${skillToLevelUp.currentLevel + 1}! (Tiêu tốn ${cost} Cảm Ngộ và 2 giờ)`;
             setGameMessage(message);
@@ -343,6 +362,44 @@ export const usePlayerActions = (
             };
         });
     }, [updateAndPersistPlayerState, setGameMessage]);
+
+    const handleMarkNpc = useCallback((npc: NPC) => {
+        if (!npc || npc.npcType === 'monster') return;
+        
+        updateAndPersistPlayerState(p => {
+            if (!p) return p;
+            const markedIds = new Set(p.markedNpcIds || []);
+
+            if (markedIds.has(npc.id)) {
+                // Un-mark
+                markedIds.delete(npc.id);
+                setGameMessage(`Đã hủy tiêu kí ${npc.name}.`);
+                return { ...p, markedNpcIds: Array.from(markedIds) };
+            } else {
+                // Mark
+                const realmDiff = (npc.cultivation?.realmIndex ?? 0) - p.cultivation.realmIndex;
+                let cost = 150;
+                if (realmDiff < 0) {
+                    cost = 50;
+                } else if (realmDiff > 0) {
+                    cost = 150 + 200 * Math.pow(realmDiff, 2);
+                }
+                
+                if (p.mana < cost) {
+                    setGameMessage(`Linh lực không đủ để tiêu kí ${npc.name} (cần ${cost}).`);
+                    return p;
+                }
+
+                markedIds.add(npc.id);
+                setGameMessage(`Tiêu kí ${npc.name} thành công. (Tốn ${cost} Linh Lực)`);
+                return {
+                    ...p,
+                    mana: p.mana - cost,
+                    markedNpcIds: Array.from(markedIds),
+                };
+            }
+        });
+    }, [updateAndPersistPlayerState, setGameMessage]);
     
     return {
         isMeditating,
@@ -351,5 +408,6 @@ export const usePlayerActions = (
         handleToggleMeditation,
         handleLevelUpSkill,
         handleStartSeclusion,
+        handleMarkNpc,
     };
 };

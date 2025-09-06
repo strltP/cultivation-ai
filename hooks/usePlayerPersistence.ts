@@ -12,6 +12,9 @@ import { MAPS, POIS_BY_MAP } from '../mapdata';
 import { loadNpcsForMap } from '../services/npcService';
 import { NPC_SPAWN_DEFINITIONS_BY_MAP } from '../mapdata/npc_spawns';
 import type { MapID } from '../types/map';
+import { initializeFactionAssets } from '../services/factionService';
+import { ALL_STATIC_NPCS } from '../data/npcs/static_npcs';
+import LZString from 'lz-string';
 
 
 const PLAYER_STATE_STORAGE_KEY = 'tu_tien_player_state_v3';
@@ -19,13 +22,16 @@ const CURRENT_SAVE_VERSION = '2.2';
 
 export const INITIAL_PLAYER_STATE: PlayerState = {
     ...BASE_INITIAL_PLAYER_STATE,
+    // FIX: Provide default attributes for a new character to satisfy the PlayerState type and fix initialization logic.
+    attributes: { canCot: 10, thanPhap: 10, thanThuc: 10, ngoTinh: 10, coDuyen: 10, tamCanh: 10 },
+    baseAttributes: { canCot: 10, thanPhap: 10, thanThuc: 10, ngoTinh: 10, coDuyen: 10, tamCanh: 10 },
     journal: [],
     saveVersion: CURRENT_SAVE_VERSION,
     nextMonsterSpawnCheck: {},
-    nextNpcSpawnCheck: {},
     nextInteractableSpawnCheck: {},
     harvestedInteractableIds: [],
     lastNpcProgressionCheck: { year: 17, season: 'Xuân', month: 1, day: 1, hour: 8, minute: 0 },
+    factionRecruitmentTimers: {},
     deathInfo: {},
     apiUsageStats: {
         totalTokens: 0,
@@ -38,10 +44,13 @@ export const INITIAL_PLAYER_STATE: PlayerState = {
         }
     },
     affinity: {},
+    npcAffinityStore: {},
     nameUsageCounts: { male: {}, female: {} },
     leaderboards: {},
     lastLeaderboardUpdateYear: 0,
     lastYoungStarsLeaderboardUpdateYear: 0,
+    markedNpcIds: [],
+    factionAssets: {},
 };
 export { DAYS_PER_MONTH };
 
@@ -132,11 +141,14 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         }
         
         // --- 3. BACKWARD COMPATIBILITY & DEFAULTS ---
+        if (!parsed.baseAttributes) { // MIGRATION FOR OLD SAVES
+            parsed.baseAttributes = { ...parsed.attributes };
+        }
         if (!parsed.cultivationStats) parsed.cultivationStats = {};
         if (parsed.cultivation.level === undefined || parsed.cultivation.level === null) parsed.cultivation.level = 0;
         if (parsed.attributes && parsed.attributes.linhLuc !== undefined) delete parsed.attributes.linhLuc; // Migration
-        if (parsed.attributes.coDuyen === undefined) parsed.attributes.coDuyen = 10;
-        if (parsed.attributes.tamCanh === undefined) parsed.attributes.tamCanh = 10;
+        if (parsed.baseAttributes.coDuyen === undefined) parsed.baseAttributes.coDuyen = 10;
+        if (parsed.baseAttributes.tamCanh === undefined) parsed.baseAttributes.tamCanh = 10;
         if (!parsed.learnedSkills) parsed.learnedSkills = [];
         if (!parsed.learnedRecipes) parsed.learnedRecipes = [];
         if (!parsed.inventory) parsed.inventory = [];
@@ -174,9 +186,13 @@ const processLoadedState = (parsed: any): PlayerState | null => {
             delete parsed.lastPopCheck;
         }
         if (!parsed.nextMonsterSpawnCheck) parsed.nextMonsterSpawnCheck = {};
-        if (!parsed.nextNpcSpawnCheck) parsed.nextNpcSpawnCheck = {};
+        if (parsed.nextRecruitmentCheck) delete parsed.nextRecruitmentCheck; // Remove obsolete property
+        if (parsed.nextStableCountCheck) delete parsed.nextStableCountCheck; // Remove obsolete property
+        if (parsed.nextNpcSpawnCheck) delete parsed.nextNpcSpawnCheck; // Remove obsolete property
         if (!parsed.nextInteractableSpawnCheck) parsed.nextInteractableSpawnCheck = {};
+        if (!parsed.factionRecruitmentTimers) parsed.factionRecruitmentTimers = {};
         if (!parsed.affinity) parsed.affinity = {};
+        if (!parsed.npcAffinityStore) parsed.npcAffinityStore = {};
         if (!parsed.apiUsageStats) {
             parsed.apiUsageStats = {
                 totalTokens: 0,
@@ -193,6 +209,8 @@ const processLoadedState = (parsed: any): PlayerState | null => {
         if (!parsed.leaderboards) parsed.leaderboards = {};
         if (parsed.lastLeaderboardUpdateYear === undefined) parsed.lastLeaderboardUpdateYear = 0;
         if (parsed.lastYoungStarsLeaderboardUpdateYear === undefined) parsed.lastYoungStarsLeaderboardUpdateYear = 0;
+        if (!parsed.markedNpcIds) parsed.markedNpcIds = [];
+        if (!parsed.factionAssets) parsed.factionAssets = {};
 
         
         // Add checks for numeric stats that might be missing in old saves.
@@ -266,10 +284,29 @@ const processLoadedState = (parsed: any): PlayerState | null => {
             }
         }
 
+        // --- 5. MIGRATE to npcAffinityStore ---
+        // Populate store from existing relationships for faster lookups, handling old saves.
+        const allNpcIds = new Set(Object.values(parsed.generatedNpcs).flat().map((npc: any) => npc.id));
+        for (const mapId in parsed.generatedNpcs) {
+            for (const npc of parsed.generatedNpcs[mapId]) {
+                if (npc.relationships && Array.isArray(npc.relationships)) {
+                    for (const rel of npc.relationships) {
+                        if (rel.score !== undefined && allNpcIds.has(rel.targetNpcId)) {
+                            const key = [npc.id, rel.targetNpcId].sort().join('_');
+                            // Prioritize the score from the first NPC found in the pair to avoid conflicts
+                            if (parsed.npcAffinityStore[key] === undefined) {
+                                parsed.npcAffinityStore[key] = rel.score;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
 
         // Always recalculate stats on load to apply balancing changes and new properties.
         const { finalStats, finalAttributes } = calculateAllStats(
-            INITIAL_PLAYER_STATE.attributes, 
+            parsed.baseAttributes, 
             parsed.cultivation, 
             parsed.cultivationStats,
             parsed.learnedSkills || [], 
@@ -299,8 +336,21 @@ const loadPlayerState = (): PlayerState | null => {
   try {
     const savedState = localStorage.getItem(PLAYER_STATE_STORAGE_KEY);
     if (savedState) {
-      const parsed = JSON.parse(savedState);
-      return processLoadedState(parsed);
+        let jsonString: string | null = null;
+        try {
+            // Try to decompress first. If it returns null, it's either invalid or an old uncompressed format.
+            jsonString = LZString.decompressFromUTF16(savedState);
+        } catch (e) {
+            // Ignore decompression errors, it might be plain JSON
+        }
+        
+        // If decompression failed, assume it's an old uncompressed save.
+        if (jsonString === null || jsonString === '') {
+            jsonString = savedState;
+        }
+
+        const parsed = JSON.parse(jsonString);
+        return processLoadedState(parsed);
     }
     return null;
   } catch (error) {
@@ -311,13 +361,19 @@ const loadPlayerState = (): PlayerState | null => {
 };
 
 export const savePlayerState = (state: PlayerState) => {
-  try {
-    // Ensure the state being saved always has the current version
-    const stateToSave = { ...state, saveVersion: CURRENT_SAVE_VERSION };
-    localStorage.setItem(PLAYER_STATE_STORAGE_KEY, JSON.stringify(stateToSave));
-  } catch (error) {
-    console.error("Failed to save player state:", error);
-  }
+  // Defer the expensive save operation to the next event loop tick.
+  // This prevents the UI from freezing during frequent state updates.
+  setTimeout(() => {
+    try {
+      // Ensure the state being saved always has the current version
+      const stateToSave = { ...state, saveVersion: CURRENT_SAVE_VERSION };
+      const jsonString = JSON.stringify(stateToSave);
+      const compressedString = LZString.compressToUTF16(jsonString);
+      localStorage.setItem(PLAYER_STATE_STORAGE_KEY, compressedString);
+    } catch (error) {
+      console.error("Failed to save player state:", error);
+    }
+  }, 0);
 };
 
 export const usePlayerPersistence = (): [PlayerState | null, React.Dispatch<React.SetStateAction<PlayerState | null>>] => {
@@ -365,6 +421,36 @@ export const initializeNewWorld = async (playerState: PlayerState): Promise<Play
             }
         };
     }
+
+    // Populate initial affinities for static NPCs.
+    const allSpawnedNpcs = Object.values(stateWithNpcs.generatedNpcs).flat();
+    const initialAffinityStore = { ...(stateWithNpcs.npcAffinityStore || {}) };
+
+    for (const staticDef of ALL_STATIC_NPCS) {
+        if (staticDef.initialAffinities) {
+            // Find the spawned instance of this static NPC. Note: This assumes only one instance per baseId.
+            const sourceNpc = allSpawnedNpcs.find(npc => npc.baseId === staticDef.baseId);
+            if (!sourceNpc) continue;
+
+            for (const targetNpcId in staticDef.initialAffinities) {
+                const score = staticDef.initialAffinities[targetNpcId];
+                // Check if target NPC exists. The ID is hardcoded in the static def.
+                const targetNpc = allSpawnedNpcs.find(npc => npc.id === targetNpcId);
+                if (targetNpc) {
+                    const key = [sourceNpc.id, targetNpc.id].sort().join('_');
+                    // Only set if not already present, to respect any previous logic
+                    if (initialAffinityStore[key] === undefined) {
+                        initialAffinityStore[key] = score;
+                    }
+                }
+            }
+        }
+    }
+    stateWithNpcs.npcAffinityStore = initialAffinityStore;
+
+    // Initialize faction assets
+    stateWithNpcs.factionAssets = initializeFactionAssets();
+
     return stateWithNpcs;
 };
 
@@ -379,6 +465,7 @@ export const createNewPlayer = (name: string, linhCan: LinhCan[], gender: 'Nam' 
         },
         chatHistories: {},
         linhCan: linhCan,
+        baseAttributes: { ...INITIAL_PLAYER_STATE.baseAttributes },
         cultivation: { realmIndex: 0, level: -1 }, // Start as Mortal
         cultivationStats: {},
         generatedInteractables: {},
@@ -414,7 +501,7 @@ export const createNewPlayer = (name: string, linhCan: LinhCan[], gender: 'Nam' 
     
     // Recalculate stats for the new character based on initial state
     const { finalStats, finalAttributes } = calculateAllStats(
-        newPlayerState.attributes, 
+        newPlayerState.baseAttributes, 
         newPlayerState.cultivation, 
         newPlayerState.cultivationStats,
         newPlayerState.learnedSkills, 
@@ -442,8 +529,8 @@ export const exportPlayerState = (playerState: PlayerState | null) => {
     }
     try {
         const stateToExport = { ...playerState, saveVersion: CURRENT_SAVE_VERSION };
-        const jsonString = JSON.stringify(stateToExport, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
+        const compressedString = LZString.compressToUTF16(JSON.stringify(stateToExport));
+        const blob = new Blob([compressedString], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -464,7 +551,7 @@ export const importPlayerState = (
 ) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,application/json';
+    input.accept = '.json,application/json,text/plain';
     input.onchange = (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) {
@@ -478,7 +565,17 @@ export const importPlayerState = (
                 if (typeof text !== 'string') {
                     throw new Error("Nội dung file không hợp lệ.");
                 }
-                const importedState = JSON.parse(text);
+                
+                let jsonString: string | null = null;
+                try {
+                    jsonString = LZString.decompressFromUTF16(text);
+                } catch (e) {}
+
+                if (jsonString === null || jsonString === '') {
+                    jsonString = text; // Assume it's an uncompressed JSON file
+                }
+
+                const importedState = JSON.parse(jsonString);
 
                 const processedState = processLoadedState(importedState);
 

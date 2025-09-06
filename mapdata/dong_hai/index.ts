@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'DONG_HAI',
     name: 'Đông Phương Hải Vực',
+    description: 'Vùng biển rộng lớn ở phía đông, với vô số hòn đảo lớn nhỏ. Dưới lòng biển sâu ẩn chứa nhiều tài nguyên quý giá cũng như những hải thú hung dữ.',
     type: 'continent',
     parentMapId: undefined,
     size: { width: 8000, height: 8000 },

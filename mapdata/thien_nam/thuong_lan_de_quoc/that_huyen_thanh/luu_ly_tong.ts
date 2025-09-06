@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'LUU_LY_TONG',
     name: 'Lưu Ly Tông',
+    description: 'Tông môn nổi tiếng với kiếm pháp thanh thoát và đệ tử nữ xinh đẹp như ngọc. Kiến trúc của tông môn tinh xảo, tao nhã.',
     type: 'sect_map',
     parentMapId: 'THAT_HUYEN_THANH',
     controllingFactionId: 'LUU_LY_TONG',

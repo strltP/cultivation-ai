@@ -3,6 +3,7 @@ import type { GameMap, TeleportLocation, PointOfInterest, MapArea } from '../../
 export const mapDefinition: GameMap = {
     id: 'MO_LINH_THANH',
     name: 'Mộ Linh Thành',
+    description: 'Một thành trì cổ kính nằm gần biên giới, nổi tiếng với những khu lăng mộ và di tích cổ xưa, thu hút nhiều tu sĩ đến tìm kiếm cơ duyên.',
     type: 'city_map',
     parentMapId: 'THIEN_NAM',
     size: { width: 3600, height: 3000 },
